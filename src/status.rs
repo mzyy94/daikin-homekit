@@ -31,39 +31,36 @@ pub struct DaikinStatus {
 }
 
 impl DaikinStatus {
-    pub fn power(&self) -> bool {
+    pub fn power(&self) -> Option<bool> {
         get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> bool)
-            .unwrap_or(false)
     }
 
-    pub fn current_temperature(&self) -> f64 {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> f64).unwrap_or(0.0)
+    pub fn current_temperature(&self) -> Option<f64> {
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> f64)
     }
 
-    pub fn current_humidity(&self) -> f64 {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02 -> f64).unwrap_or(0.0)
+    pub fn current_humidity(&self) -> Option<f64> {
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02 -> f64)
     }
 
-    pub fn current_outside_temperature(&self) -> f64 {
-        get_prop!(self."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01 -> f64).unwrap_or(0.0)
+    pub fn current_outside_temperature(&self) -> Option<f64> {
+        get_prop!(self."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01 -> f64)
     }
 
-    pub fn mode(&self) -> Mode {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> u8)
-            .unwrap_or(0)
-            .into()
+    pub fn mode(&self) -> Option<Mode> {
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> u8).map(|v| v.into())
     }
 
-    pub fn target_cooling_temperature(&self) -> f64 {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> f64).unwrap_or(0.0)
+    pub fn target_cooling_temperature(&self) -> Option<f64> {
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> f64)
     }
 
-    pub fn target_heating_temperature(&self) -> f64 {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> f64).unwrap_or(0.0)
+    pub fn target_heating_temperature(&self) -> Option<f64> {
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> f64)
     }
 
-    pub fn target_automatic_temperature(&self) -> f64 {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> f64).unwrap_or(0.0)
+    pub fn target_automatic_temperature(&self) -> Option<f64> {
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> f64)
     }
 }
 

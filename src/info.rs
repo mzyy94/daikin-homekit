@@ -7,16 +7,16 @@ pub struct DaikinInfo {
 }
 
 impl DaikinInfo {
-    pub fn name(&self) -> String {
-        get_prop!(self."/dsiot/edge.adp_d".name -> str).unwrap_or("".to_string())
+    pub fn name(&self) -> Option<String> {
+        get_prop!(self."/dsiot/edge.adp_d".name -> str)
     }
 
-    pub fn mac(&self) -> String {
-        get_prop!(self."/dsiot/edge.adp_i".mac -> str).unwrap_or("".to_string())
+    pub fn mac(&self) -> Option<String> {
+        get_prop!(self."/dsiot/edge.adp_i".mac -> str)
     }
 
-    pub fn version(&self) -> String {
-        get_prop!(self."/dsiot/edge.adp_i".ver -> str).unwrap_or("".to_string())
+    pub fn version(&self) -> Option<String> {
+        get_prop!(self."/dsiot/edge.adp_i".ver -> str)
     }
 }
 
