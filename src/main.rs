@@ -1,3 +1,5 @@
+use serde_json::json;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match std::env::args().nth(1) {
@@ -11,7 +13,18 @@ async fn get_status(ip_addr: String) -> Result<(), Box<dyn std::error::Error>> {
         .http1_title_case_headers()
         .build()?;
     let url = format!("http://{}/dsiot/multireq", ip_addr);
-    let resp = client.post(url).send().await?;
+    let payload = json!({"requests": [
+        {
+            "op": 2,
+            "to": "/dsiot/edge/adr_0100.dgc_status?filter=pv,md"
+        },
+        {
+            "op": 2,
+            "to": "/dsiot/edge/adr_0200.dgc_status?filter=pv,md"
+        }
+    ]});
+
+    let resp = client.post(url).json(&payload).send().await?;
 
     if resp.status() != reqwest::StatusCode::OK {
         println!("{}", resp.status());
