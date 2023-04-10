@@ -37,7 +37,7 @@ async fn get_status(ip_addr: String) -> Result<(), Box<dyn std::error::Error>> {
     let body = resp.text().await?;
     let res: DaikinResponse = serde_json::from_str(&body)?;
 
-    println!("{:?}", res);
+    println!("{:#?}", res);
 
     let val = res.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_A00B/p_01");
     println!("current temperature: {}", val.unwrap().get_f64().unwrap());

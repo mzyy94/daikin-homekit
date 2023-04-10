@@ -24,7 +24,7 @@ struct Response {
     rsc: u32,     // ??
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Property {
     Tree {
@@ -63,7 +63,7 @@ impl Property {
                 md: Some(md),
                 ..
             } => {
-                if md.pt == "b" {
+                if md.pt == "b" && !(md.mi == None && md.mx == None) {
                     let mut bytes = vec![0u8; pv.len() / 2];
                     hex::decode_to_slice(pv, &mut bytes as &mut [u8]).ok();
                     let mut rdr = Cursor::new(bytes);
@@ -105,6 +105,49 @@ impl Property {
                 }
             }
             _ => None,
+        }
+    }
+}
+
+impl std::fmt::Debug for Property {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Property::Tree { pn, pch, .. } => f
+                .debug_struct("Tree")
+                .field("name", pn)
+                .field("pch", pch)
+                .finish(),
+            Property::Item {
+                pn,
+                pv: Some(PropValue::String(pv)),
+                ..
+            } => match self.get_f64() {
+                Some(val) => f
+                    .debug_struct("Item")
+                    .field("name", pn)
+                    .field("pv", &val)
+                    .finish(),
+                None => f
+                    .debug_struct("Item")
+                    .field("name", pn)
+                    .field("pv", pv)
+                    .finish(),
+            },
+
+            Property::Item {
+                pn,
+                pv: Some(PropValue::Integer(pv)),
+                ..
+            } => f
+                .debug_struct("Item")
+                .field("name", pn)
+                .field("pv", pv)
+                .finish(),
+            Property::Item { pn, pv, .. } => f
+                .debug_struct("Item")
+                .field("name", pn)
+                .field("pv", pv)
+                .finish(),
         }
     }
 }
