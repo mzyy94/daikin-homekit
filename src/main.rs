@@ -1,4 +1,5 @@
 mod daikin;
+mod response;
 mod status;
 
 use crate::daikin::Daikin;
