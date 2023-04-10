@@ -26,7 +26,7 @@ pub enum Property {
 }
 
 impl Property {
-    fn find(&self, name: &str) -> Option<&Property> {
+    pub fn find(&self, name: &str) -> Option<&Property> {
         match self {
             Property::Tree { pch, .. } => pch.iter().find(|p| match p {
                 Property::Tree { pn, .. } => pn == name,
@@ -34,11 +34,6 @@ impl Property {
             }),
             _ => None,
         }
-    }
-
-    pub fn search(&self, path: &str) -> Option<&Property> {
-        path.split('/')
-            .fold(Some(&self), |prop, name| prop.and_then(|p| p.find(name)))
     }
 
     pub fn get_f64(&self) -> Option<f64> {
@@ -170,4 +165,32 @@ pub struct Metadata {
     st: u8, // step
     mi: Option<String>, // min
     mx: Option<String>, // max
+}
+
+macro_rules! get_child_prop {
+    ({ $vopt:expr }) => {
+        $vopt
+    };
+    ({ $vopt:expr } -> f64) => {
+        $vopt.and_then(|v| v.get_f64())
+    };
+    ({ $vopt:expr } -> bool) => {
+        $vopt.and_then(|v| v.get_f64()).map(|v| v  == 1.0)
+    };
+    ({ $vopt:expr } -> str) => {
+        $vopt.and_then(|v| v.get_string())
+    };
+    ({ $vopt:expr } . $key:ident $($rest:tt)*) => {
+        get_child_prop!(
+            { $vopt.and_then(|v| v.find(stringify!($key))) } $($rest)*
+        )
+    };
+}
+
+macro_rules! get_prop {
+    ($v:tt . $key:literal $($rest:tt)*) => {
+        get_child_prop!(
+            { $v.responses.iter().find(|&r| r.fr == $key).map(|r| &r.pc) }  $($rest)*
+        )
+    };
 }

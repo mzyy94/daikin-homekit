@@ -1,6 +1,7 @@
 mod daikin;
-mod info;
+#[macro_use]
 mod response;
+mod info;
 mod status;
 
 use crate::daikin::Daikin;

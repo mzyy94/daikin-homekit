@@ -1,4 +1,4 @@
-use crate::response::{Property, Response};
+use crate::response::Response;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -7,54 +7,37 @@ pub struct DaikinStatus {
 }
 
 impl DaikinStatus {
-    fn find_property(&self, name: &str) -> Option<&Property> {
-        self.responses.iter().find(|&r| r.fr == name).map(|r| &r.pc)
-    }
-
-    pub fn get(&self, name: &str, path: &str) -> Option<&Property> {
-        let root = self.find_property(name);
-        root.and_then(|prop| prop.search(path))
-    }
-
     pub fn power(&self) -> bool {
-        self.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_A002/p_01")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
-            != 0.0
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> bool)
+            .unwrap_or(false)
     }
 
     pub fn current_temperature(&self) -> f64 {
-        self.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_A00B/p_01")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> f64).unwrap_or(0.0)
     }
 
     pub fn current_humidity(&self) -> f64 {
-        self.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_A00B/p_02")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02 -> f64).unwrap_or(0.0)
     }
 
     pub fn current_outside_temperature(&self) -> f64 {
-        self.get("/dsiot/edge/adr_0200.dgc_status", "e_1003/e_A00D/p_01")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
+        get_prop!(self."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01 -> f64).unwrap_or(0.0)
     }
 
     pub fn mode(&self) -> f64 {
-        self.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_3001/p_01")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> f64).unwrap_or(0.0)
     }
 
     pub fn target_cooling_temperature(&self) -> f64 {
-        self.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_3001/p_02")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> f64).unwrap_or(0.0)
     }
 
     pub fn target_heating_temperature(&self) -> f64 {
-        self.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_3001/p_03")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> f64).unwrap_or(0.0)
     }
 
     pub fn target_automatic_temperature(&self) -> f64 {
-        self.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_3001/p_1F")
-            .map_or(0.0, |p| p.get_f64().unwrap_or(0.0))
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> f64).unwrap_or(0.0)
     }
 }
 
