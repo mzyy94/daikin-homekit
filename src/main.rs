@@ -39,5 +39,8 @@ async fn get_status(ip_addr: String) -> Result<(), Box<dyn std::error::Error>> {
 
     println!("{:?}", res);
 
+    let val = res.get("/dsiot/edge/adr_0100.dgc_status", "e_1002/e_A00B/p_01");
+    println!("current temperature: {}", val.unwrap().get_f64().unwrap());
+
     Ok(())
 }
