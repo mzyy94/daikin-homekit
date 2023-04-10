@@ -1,5 +1,6 @@
+use crate::property::{PropValue, Property};
 use crate::request::Request;
-use crate::response::{PropValue, Property, Response};
+use crate::response::Response;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]

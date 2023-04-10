@@ -1,7 +1,7 @@
 use crate::response::Response;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct DaikinInfo {
     pub responses: Vec<Response>,
 }

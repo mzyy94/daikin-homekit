@@ -1,7 +1,7 @@
-use crate::response::Property;
-use serde::{Deserialize, Serialize};
+use crate::property::Property;
+use serde::Serialize;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug)]
 pub struct Request {
     pub op: u8,
     pub pc: Property,

@@ -4,6 +4,7 @@ mod response;
 mod info;
 #[macro_use]
 mod request;
+mod property;
 mod status;
 
 use crate::{daikin::Daikin, status::DaikinStatus};
