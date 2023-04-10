@@ -1,4 +1,5 @@
-use crate::response::Response;
+use crate::request::Request;
+use crate::response::{PropValue, Property, Response};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,12 +28,27 @@ impl std::convert::From<u8> for Mode {
 
 #[derive(Serialize, Deserialize)]
 pub struct DaikinStatus {
+    #[serde(skip_serializing)]
     responses: Vec<Response>,
+    #[serde(skip_deserializing)]
+    requests: Vec<Request>,
 }
 
 impl DaikinStatus {
+    pub fn new() -> DaikinStatus {
+        DaikinStatus {
+            responses: vec![],
+            requests: vec![],
+        }
+    }
+
     pub fn power(&self) -> Option<bool> {
         get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> bool)
+    }
+
+    pub fn set_power(&mut self, on: bool) {
+        let val = if on { "01" } else { "00" };
+        set_prop!(&mut self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = val);
     }
 
     pub fn current_temperature(&self) -> Option<f64> {

@@ -2,9 +2,11 @@ mod daikin;
 #[macro_use]
 mod response;
 mod info;
+#[macro_use]
+mod request;
 mod status;
 
-use crate::daikin::Daikin;
+use crate::{daikin::Daikin, status::DaikinStatus};
 use std::net::Ipv4Addr;
 
 #[tokio::main]
@@ -26,6 +28,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Box<dyn std::error::Error>>
 
     let status = daikin.get_status().await?;
     println!("{:#?}", status);
+
+    let mut status = DaikinStatus::new();
+    status.set_power(false);
+    let j = serde_json::to_string_pretty(&status)?;
+    println!("{}", j);
 
     Ok(())
 }

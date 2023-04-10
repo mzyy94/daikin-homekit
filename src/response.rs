@@ -13,19 +13,39 @@ pub struct Response {
 #[serde(untagged)]
 pub enum Property {
     Tree {
-        pn: String,         // name
-        pt: u8,             // type
+        pn: String, // name
+        #[serde(skip_serializing)]
+        pt: u8, // type
         pch: Vec<Property>, // children
     },
     Item {
-        pn: String,            // name
-        pt: u8,                // type
+        pn: String, // name
+        #[serde(skip_serializing)]
+        pt: u8, // type
         pv: Option<PropValue>, // value
-        md: Option<Metadata>,  // metadata
+        #[serde(skip_serializing)]
+        md: Option<Metadata>, // metadata
     },
 }
 
 impl Property {
+    pub fn new(name: &str, value: PropValue) -> Property {
+        Property::Item {
+            pn: name.to_string(),
+            pt: 2,
+            pv: Some(value),
+            md: None,
+        }
+    }
+
+    pub fn new_tree(name: &str) -> Property {
+        Property::Tree {
+            pn: name.to_string(),
+            pt: 3,
+            pch: vec![],
+        }
+    }
+
     pub fn find(&self, name: &str) -> Option<&Property> {
         match self {
             Property::Tree { pch, .. } => pch.iter().find(|p| match p {
