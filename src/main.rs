@@ -1,6 +1,6 @@
-mod response;
+mod status;
 
-use crate::response::DaikinResponse;
+use crate::status::DaikinStatus;
 use serde_json::json;
 
 #[tokio::main]
@@ -35,7 +35,7 @@ async fn get_status(ip_addr: String) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let body = resp.text().await?;
-    let res: DaikinResponse = serde_json::from_str(&body)?;
+    let res: DaikinStatus = serde_json::from_str(&body)?;
 
     println!("{:#?}", res);
 

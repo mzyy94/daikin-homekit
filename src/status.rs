@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
 #[derive(Serialize, Deserialize)]
-pub struct DaikinResponse {
+pub struct DaikinStatus {
     responses: Vec<Response>,
 }
 
-impl DaikinResponse {
+impl DaikinStatus {
     fn find_property(&self, name: &str) -> Option<&Property> {
         self.responses.iter().find(|&r| r.fr == name).map(|r| &r.pc)
     }
@@ -59,9 +59,9 @@ impl DaikinResponse {
     }
 }
 
-impl std::fmt::Debug for DaikinResponse {
+impl std::fmt::Debug for DaikinStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("DaikinResponse")
+        f.debug_struct("DaikinStatus")
             .field("power", &self.power())
             .field("current_temperature", &self.current_temperature())
             .field("current_humidity", &self.current_humidity())
