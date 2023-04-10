@@ -1,4 +1,5 @@
 mod daikin;
+mod info;
 mod response;
 mod status;
 
@@ -14,6 +15,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn get_status(ip_addr: String) -> Result<(), Box<dyn std::error::Error>> {
     let daikin = Daikin::new(ip_addr);
+
+    let info = daikin.get_info().await?;
+    println!("{:#?}", info);
+
     let status = daikin.get_status().await?;
     println!("{:#?}", status);
 

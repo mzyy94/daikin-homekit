@@ -92,6 +92,25 @@ impl Property {
             _ => None,
         }
     }
+
+    pub fn get_string(&self) -> Option<String> {
+        match self {
+            Property::Item {
+                pv: Some(PropValue::String(pv)),
+                md: Some(md),
+                ..
+            } => {
+                if md.pt == "s" {
+                    Some(String::from(pv))
+                } else if md.pt == "b" && md.st == 0 && md.mi == None && md.mx == None {
+                    todo!() // decode hex string
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
 }
 
 impl std::fmt::Debug for Property {
