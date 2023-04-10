@@ -2,13 +2,14 @@ use crate::info::DaikinInfo;
 use crate::status::DaikinStatus;
 use serde_json::json;
 use serde_json::value::Value;
+use std::net::Ipv4Addr;
 
 pub struct Daikin {
     endpoint: String,
 }
 
 impl Daikin {
-    pub fn new(ip_addr: String) -> Daikin {
+    pub fn new(ip_addr: Ipv4Addr) -> Daikin {
         Daikin {
             endpoint: format!("http://{}/dsiot/multireq", ip_addr),
         }
