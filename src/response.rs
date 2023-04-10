@@ -174,6 +174,9 @@ macro_rules! get_child_prop {
     ({ $vopt:expr } -> f64) => {
         $vopt.and_then(|v| v.get_f64())
     };
+    ({ $vopt:expr } -> u8) => {
+        $vopt.and_then(|v| v.get_f64()).map(|v| v as u8)
+    };
     ({ $vopt:expr } -> bool) => {
         $vopt.and_then(|v| v.get_f64()).map(|v| v  == 1.0)
     };

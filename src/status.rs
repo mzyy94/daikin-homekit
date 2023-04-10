@@ -1,6 +1,30 @@
 use crate::response::Response;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Mode {
+    Fan = 0,
+    Heating = 1,
+    Cooling = 2,
+    Auto = 3,
+    Dehumidify = 5,
+
+    Unknown = 255,
+}
+
+impl std::convert::From<u8> for Mode {
+    fn from(num: u8) -> Self {
+        match num {
+            0 => Self::Fan,
+            1 => Self::Heating,
+            2 => Self::Cooling,
+            3 => Self::Auto,
+            5 => Self::Dehumidify,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct DaikinStatus {
     responses: Vec<Response>,
@@ -24,8 +48,10 @@ impl DaikinStatus {
         get_prop!(self."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01 -> f64).unwrap_or(0.0)
     }
 
-    pub fn mode(&self) -> f64 {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> f64).unwrap_or(0.0)
+    pub fn mode(&self) -> Mode {
+        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> u8)
+            .unwrap_or(0)
+            .into()
     }
 
     pub fn target_cooling_temperature(&self) -> f64 {
