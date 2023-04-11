@@ -1,4 +1,4 @@
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
@@ -46,6 +46,23 @@ impl Property {
                 Property::Item { pn, .. } => pn == name,
             }),
             _ => None,
+        }
+    }
+
+    pub fn step(&self) -> u8 {
+        match self {
+            Property::Item { md: Some(md), .. } => md.st,
+            _ => 0,
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        match self {
+            Property::Item {
+                pv: Some(PropValue::String(str)),
+                ..
+            } => str.len(),
+            _ => 0,
         }
     }
 
@@ -164,11 +181,40 @@ impl std::fmt::Debug for Property {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum PropValue {
     String(String),
     Integer(i32),
+}
+
+impl PropValue {
+    pub fn from(value: f64, step: u8, size: usize) -> PropValue {
+        let mut wtr = vec![];
+
+        let step_base = f64::from(step & 0xf);
+        let exp: i32 = ((step & 0xf0) >> 4).into();
+        let step_coefficient = if exp < 8 {
+            10.0_f64.powi(exp)
+        } else {
+            10.0_f64.powi(exp - 16)
+        };
+        let step = step_base * step_coefficient;
+
+        let value: i32 = if step == 0.0 {
+            value as i32
+        } else {
+            (value / step) as i32
+        };
+        match size {
+            2 => wtr.write_i8(value as i8).unwrap(),
+            4 => wtr.write_i16::<LittleEndian>(value as i16).unwrap(),
+            6 => wtr.write_i24::<LittleEndian>(value).unwrap(),
+            8 => wtr.write_i32::<LittleEndian>(value).unwrap(),
+            _ => {}
+        };
+        PropValue::String(hex::encode(wtr))
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -237,6 +283,26 @@ mod tests {
         });
         let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
         assert_eq!(p.get_string(), None);
+    }
+
+    #[test]
+    fn propvalue() {
+        let json = json!({
+            "pn": "p_01",
+            "pt": 3,
+            "pv": "2600",
+            "md": {
+                "pt": "b",
+                "st": 245,
+                "mi": "EEFF",
+                "mx": "4E00"
+            }
+        });
+        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        let pv = PropValue::from(p.get_f64().unwrap(), p.step(), p.size());
+        let expect = PropValue::String("2600".into());
+
+        assert_eq!(pv, expect);
     }
 
     #[test]

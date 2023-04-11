@@ -9,18 +9,17 @@ pub struct Request {
 }
 
 macro_rules! set_child_prop {
-    ( $v:tt . $key:ident = $val:tt) => {
+    ( $v:tt . $key:ident = $propval:tt) => {
         match $v {
             Property::Tree{ref mut pch, ..} => {
-                let value = PropValue::String( $val.to_string());
                 let found = pch.iter_mut().find(|p| match p {
                     Property::Tree { pn, .. } => pn == stringify!($key),
                     Property::Item { pn, .. } => pn == stringify!($key),
                 });
                 if let Some(Property::Item { ref mut pv, .. }) = found {
-                    *pv = Some(value);
+                    *pv = Some($propval);
                 } else {
-                    let pp = Property::new(stringify!($key), value);
+                    let pp = Property::new(stringify!($key), $propval);
                     pch.push(pp);
                 }
 
@@ -88,7 +87,8 @@ mod tests {
     fn set_prop() {
         let mut status = TestDaikinStatus { requests: vec![] };
 
-        set_prop!(&mut status."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03 = "3800");
+        let pv = PropValue::String("3800".into());
+        set_prop!(&mut status."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03 = pv);
         assert_eq!(
             serde_json::to_string(&status).unwrap(),
             r#"{"requests":[{"op":3,"pc":{"pn":"dgc_status","pch":[{"pn":"e_1002","pch":[{"pn":"e_A001","pch":[{"pn":"p_03","pv":"3800"}]}]}]},"to":"/dsiot/edge/adr_0100.dgc_status"}]}"#
