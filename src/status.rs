@@ -27,7 +27,7 @@ impl std::convert::From<u8> for Mode {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DaikinStatus {
     #[serde(skip_serializing)]
     responses: Vec<Response>,
@@ -36,13 +36,6 @@ pub struct DaikinStatus {
 }
 
 impl DaikinStatus {
-    pub fn new() -> DaikinStatus {
-        DaikinStatus {
-            responses: vec![],
-            requests: vec![],
-        }
-    }
-
     pub fn power(&self) -> Option<bool> {
         get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> bool)
     }

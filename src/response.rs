@@ -1,7 +1,7 @@
 use crate::property::Property;
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Response {
     pub fr: String,   // from
     pub pc: Property, // content
