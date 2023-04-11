@@ -66,4 +66,11 @@ impl Daikin {
 
         Ok(res)
     }
+
+    pub async fn update(&self, status: DaikinStatus) -> Result<(), Box<dyn std::error::Error>> {
+        let payload = serde_json::to_value(status).unwrap();
+        let _ = self.send_request(payload).await?;
+
+        Ok(())
+    }
 }

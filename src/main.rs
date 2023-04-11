@@ -30,10 +30,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Box<dyn std::error::Error>>
     let status = daikin.get_status().await?;
     println!("{:#?}", status);
 
+    let power = status.power();
+
     let mut status = DaikinStatus::new();
-    status.set_power(false);
-    let j = serde_json::to_string_pretty(&status)?;
-    println!("{}", j);
+    status.set_power(!power.unwrap());
+    daikin.update(status).await?;
 
     Ok(())
 }
