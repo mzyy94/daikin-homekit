@@ -38,3 +38,28 @@ macro_rules! get_prop {
         )
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Deserialize)]
+    struct TestDaikinStatus {
+        responses: Vec<Response>,
+    }
+
+    #[test]
+    fn get_prop() {
+        let status: TestDaikinStatus = serde_json::from_str(include_str!("./fixtures/status.json"))
+            .expect("Invalid JSON file.");
+
+        let p = get_prop!(status."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
+        assert_eq!(
+            format!("{:?}", p),
+            r#"Some(Item { name: "p_03", pv: 5.6000000000000005 })"#
+        );
+
+        let p = get_prop!(status."/hoge".fuga.piyo);
+        assert_eq!(format!("{:?}", p), r#"None"#);
+    }
+}

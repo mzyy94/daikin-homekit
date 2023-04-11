@@ -179,3 +179,90 @@ pub struct Metadata {
     mi: Option<String>, // min
     mx: Option<String>, // max
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn get_f64() {
+        let json = json!({
+            "pn": "p_02",
+            "pt": 2,
+            "pv": "31",
+            "md": {
+                "pt": "b",
+                "st": 245,
+                "mi": "24",
+                "mx": "40"
+            }
+        });
+        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        assert_eq!(p.get_f64(), Some(24.5));
+
+        let json = json!({
+            "pn": "root_entity_name",
+            "pt": 3,
+            "pv": "e_1002",
+            "md": {
+                "pt": "s"
+            }
+        });
+        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        assert_eq!(p.get_f64(), None);
+    }
+
+    #[test]
+    fn get_string() {
+        let json = json!({
+            "pn": "root_entity_name",
+            "pt": 3,
+            "pv": "e_1002",
+            "md": {
+                "pt": "s"
+            }
+        });
+        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        assert_eq!(p.get_string(), Some("e_1002".into()));
+
+        let json = json!({
+            "pn": "data_model_code",
+            "pt": 3,
+            "pv": 26,
+            "md": {
+                "pt": "i"
+            }
+        });
+        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        assert_eq!(p.get_string(), None);
+    }
+
+    #[test]
+    fn debug_display() {
+        let json = json!({
+            "pn": "e_A00D",
+            "pt": 1,
+            "pch": [
+                {
+                    "pn": "p_01",
+                    "pt": 3,
+                    "pv": "2600",
+                    "md": {
+                        "pt": "b",
+                        "st": 245,
+                        "mi": "EEFF",
+                        "mx": "4E00"
+                    }
+                }
+            ]
+        });
+        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+
+        assert_eq!(
+            format!("{:?}", p),
+            r#"Tree { name: "e_A00D", pch: [Item { name: "p_01", pv: 19.0 }] }"#
+        );
+    }
+}

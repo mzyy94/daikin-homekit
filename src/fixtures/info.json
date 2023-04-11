@@ -1,0 +1,512 @@
+{
+    "responses": [
+        {
+            "fr": "/dsiot/edge.adp_i",
+            "pc": {
+                "pn": "adp_i",
+                "pt": 1,
+                "pch": [
+                    {
+                        "pn": "kind",
+                        "pt": 3,
+                        "pv": 4,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "ver",
+                        "pt": 3,
+                        "pv": "2_7_0",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "rev",
+                        "pt": 3,
+                        "pv": "aabbcc00",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "reg",
+                        "pt": 3,
+                        "pv": "jp",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "mac",
+                        "pt": 3,
+                        "pv": "00005E005342",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "ssid",
+                        "pt": 3,
+                        "pv": "DaikinAP12345",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "enlv",
+                        "pt": 3,
+                        "pv": "2.20",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "edid",
+                        "pt": 3,
+                        "pv": "0000000001234567",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "func",
+                        "pt": 1,
+                        "pch": [
+                            {
+                                "pn": "en_ipower",
+                                "pt": 3,
+                                "pv": 1,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "en_ipw_sep",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "en_scdltmr",
+                                "pt": 3,
+                                "pv": 1,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "en_patrol",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "en_demand",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "rsc": 2000
+        },
+        {
+            "fr": "/dsiot/edge.adp_r",
+            "pc": {
+                "pn": "adp_r",
+                "pt": 1,
+                "pch": [
+                    {
+                        "pn": "wlan_info",
+                        "pt": 1,
+                        "pch": [
+                            {
+                                "pn": "ssid",
+                                "pt": 3,
+                                "pv": "WLAN_SSID",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            },
+                            {
+                                "pn": "rssi",
+                                "pt": 3,
+                                "pv": -30,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "sec_type",
+                                "pt": 3,
+                                "pv": "WPA2",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "pn": "err_info",
+                        "pt": 1,
+                        "pch": [
+                            {
+                                "pn": "con_ltime",
+                                "pt": 3,
+                                "pv": "----/--/-- --:--:--",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            },
+                            {
+                                "pn": "discon_ltime",
+                                "pt": 3,
+                                "pv": "----/--/-- --:--:--",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            },
+                            {
+                                "pn": "boot_cnt",
+                                "pt": 3,
+                                "pv": 3,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "reboot_cnt_ping",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "reboot_cnt_sync",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "fw_update_log_0",
+                                "pt": 3,
+                                "pv": "----/--/-- --:--:--,--_--_--,--_--_--,0",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            },
+                            {
+                                "pn": "fw_update_log_1",
+                                "pt": 3,
+                                "pv": "----/--/-- --:--:--,--_--_--,--_--_--,0",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            },
+                            {
+                                "pn": "fw_update_log_2",
+                                "pt": 3,
+                                "pv": "----/--/-- --:--:--,--_--_--,--_--_--,0",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_update_success",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_info_rsc_error",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_info_timeout_error",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_url_error",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_dl_error",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_auth_error",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_write_error",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "cnt_fw_behave_error",
+                                "pt": 3,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "rsc": 2000
+        },
+        {
+            "fr": "/dsiot/edge.adp_d",
+            "pc": {
+                "pn": "adp_d",
+                "pt": 1,
+                "pch": [
+                    {
+                        "pn": "timz",
+                        "pt": 1,
+                        "pch": [
+                            {
+                                "pn": "tmdf",
+                                "pt": 2,
+                                "pv": 540,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "dst",
+                                "pt": 2,
+                                "pv": 1,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "zone",
+                                "pt": 2,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "pn": "name",
+                        "pt": 2,
+                        "pv": "display_name",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "icon",
+                        "pt": 2,
+                        "pv": 23,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "location",
+                        "pt": 2,
+                        "pv": 0,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "led",
+                        "pt": 2,
+                        "pv": 1,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "holiday",
+                        "pt": 2,
+                        "pv": 0,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "notify",
+                        "pt": 1,
+                        "pch": [
+                            {
+                                "pn": "auto_off_flg",
+                                "pt": 2,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "auto_off_tm",
+                                "pt": 2,
+                                "pv": "- -",
+                                "md": {
+                                    "pt": "s"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "pn": "group",
+                        "pt": 1,
+                        "pch": [
+                            {
+                                "pn": "ena",
+                                "pt": 2,
+                                "pv": 0,
+                                "md": {
+                                    "pt": "i"
+                                }
+                            },
+                            {
+                                "pn": "name",
+                                "pt": 2,
+                                "pv": null,
+                                "md": {
+                                    "pt": "s"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "pn": "method",
+                        "pt": 2,
+                        "pv": "polling",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "lpw_flag",
+                        "pt": 2,
+                        "pv": 0,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "adp_mode",
+                        "pt": 3,
+                        "pv": "ap_run",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "disp_ssid",
+                        "pt": 2,
+                        "pv": 0,
+                        "md": {
+                            "pt": "i"
+                        }
+                    }
+                ]
+            },
+            "rsc": 2000
+        },
+        {
+            "fr": "/dsiot/edge.dev_i",
+            "pc": {
+                "pn": "dev_i",
+                "pt": 1,
+                "pch": [
+                    {
+                        "pn": "pver",
+                        "pt": 3,
+                        "pv": "03.000",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "type",
+                        "pt": 3,
+                        "pv": "RA",
+                        "md": {
+                            "pt": "s"
+                        }
+                    },
+                    {
+                        "pn": "n_inu",
+                        "pt": 3,
+                        "pv": 1,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "n_oun",
+                        "pt": 3,
+                        "pv": 1,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "n_rem",
+                        "pt": 3,
+                        "pv": 0,
+                        "md": {
+                            "pt": "i"
+                        }
+                    },
+                    {
+                        "pn": "comm_err",
+                        "pt": 3,
+                        "pv": 0,
+                        "md": {
+                            "pt": "i"
+                        }
+                    }
+                ]
+            },
+            "rsc": 2000
+        }
+    ]
+}

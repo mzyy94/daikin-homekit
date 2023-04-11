@@ -3,7 +3,7 @@ use crate::request::Request;
 use crate::response::Response;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub enum Mode {
     Fan = 0,
     Heating = 1,
@@ -105,5 +105,36 @@ impl std::fmt::Debug for DaikinStatus {
                 &self.target_automatic_temperature(),
             )
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn getter() {
+        let status: DaikinStatus = serde_json::from_str(include_str!("./fixtures/status.json"))
+            .expect("Invalid JSON file.");
+
+        assert_eq!(status.power(), Some(false));
+        assert_eq!(status.current_temperature(), Some(20.0));
+        assert_eq!(status.current_humidity(), Some(50.0));
+        assert_eq!(status.current_outside_temperature(), Some(19.0));
+        assert_eq!(status.mode(), Some(Mode::Cooling));
+        assert_eq!(status.target_cooling_temperature(), Some(24.5));
+        assert_eq!(status.target_heating_temperature(), Some(25.0));
+        assert_eq!(status.target_automatic_temperature(), Some(0.0));
+    }
+
+    #[test]
+    fn debug_display() {
+        let status: DaikinStatus = serde_json::from_str(include_str!("./fixtures/status.json"))
+            .expect("Invalid JSON file.");
+
+        assert_eq!(
+            format!("{:?}", status),
+            r#"DaikinStatus { power: Some(false), current_temperature: Some(20.0), current_humidity: Some(50.0), current_outside_temperature: Some(19.0), mode: Some(Cooling), target_cooling_temperature: Some(24.5), target_heating_temperature: Some(25.0), target_automatic_temperature: Some(0.0) }"#
+        );
     }
 }
