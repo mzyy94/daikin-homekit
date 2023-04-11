@@ -1,24 +1,25 @@
-mod daikin;
-#[macro_use]
-mod response;
-mod info;
-#[macro_use]
-mod request;
-mod property;
-mod status;
-
-use crate::daikin::Daikin;
+use clap::Parser;
+use daikin_homekit::daikin::Daikin;
+use daikin_homekit::status;
 use std::net::Ipv4Addr;
+
+#[derive(Parser)]
+#[clap(
+    author = "mzyy94",
+    version = "v0.0.1",
+    about = "Get current status from Daikin AC"
+)]
+struct Cli {
+    /// IPv4 address of Daikin AC
+    #[arg(value_name = "ip_address")]
+    ip_addr: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    match std::env::args().nth(1) {
-        Some(ip_addr) => {
-            let addr = ip_addr.parse::<Ipv4Addr>()?;
-            get_status(addr).await
-        }
-        None => Ok(()),
-    }
+    let cli = Cli::parse();
+    let addr = cli.ip_addr.parse::<Ipv4Addr>()?;
+    get_status(addr).await
 }
 
 async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Box<dyn std::error::Error>> {
