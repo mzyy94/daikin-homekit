@@ -7,7 +7,7 @@ mod request;
 mod property;
 mod status;
 
-use crate::{daikin::Daikin, status::DaikinStatus};
+use crate::daikin::Daikin;
 use std::net::Ipv4Addr;
 
 #[tokio::main]
@@ -27,13 +27,14 @@ async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Box<dyn std::error::Error>>
     let info = daikin.get_info().await?;
     println!("{:#?}", info);
 
-    let status = daikin.get_status().await?;
+    let mut status = daikin.get_status().await?;
     println!("{:#?}", status);
 
-    let power = status.power();
-
-    let mut status = DaikinStatus::new();
-    status.set_power(!power.unwrap());
+    status.set_power(false);
+    status.set_mode(status::Mode::Cooling);
+    status.set_target_cooling_temperature(28.0);
+    status.set_target_heating_temperature(24.0);
+    status.set_target_automatic_temperature(-1.0);
     daikin.update(status).await?;
 
     Ok(())
