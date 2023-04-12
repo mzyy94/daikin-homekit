@@ -100,6 +100,7 @@ pub async fn discovery(
                 item.get("name").cloned(),
                 item.get("mac").cloned(),
                 item.get("ver").cloned(),
+                item.get("edid").cloned(),
             );
 
             yield_!(Ok((daikin, info)));

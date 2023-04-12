@@ -1,5 +1,7 @@
 use crate::response::Response;
+use byteorder::{BigEndian, ReadBytesExt};
 use serde::Deserialize;
+use std::io::Cursor;
 
 #[derive(Deserialize)]
 pub struct DaikinInfo {
@@ -7,15 +9,22 @@ pub struct DaikinInfo {
     name: Option<String>,
     mac: Option<String>,
     version: Option<String>,
+    edid: Option<String>,
 }
 
 impl DaikinInfo {
-    pub fn new(name: Option<String>, mac: Option<String>, version: Option<String>) -> DaikinInfo {
+    pub fn new(
+        name: Option<String>,
+        mac: Option<String>,
+        version: Option<String>,
+        edid: Option<String>,
+    ) -> DaikinInfo {
         DaikinInfo {
             responses: vec![],
-            name: name,
-            mac: mac,
-            version: version,
+            name,
+            mac,
+            version,
+            edid,
         }
     }
 
@@ -36,6 +45,22 @@ impl DaikinInfo {
             .clone()
             .or(get_prop!(self."/dsiot/edge.adp_i".ver -> str))
     }
+
+    pub fn edid(&self) -> Option<u64> {
+        self.edid
+            .clone()
+            .or(get_prop!(self."/dsiot/edge.adp_i".edid -> str))
+            .and_then(|s| {
+                let mut bytes = vec![0u8; 8];
+                match hex::decode_to_slice(&s, &mut bytes as &mut [u8]) {
+                    Ok(_) => {}
+                    Err(_) => return None,
+                };
+                let mut rdr = Cursor::new(bytes);
+
+                rdr.read_u64::<BigEndian>().ok()
+            })
+    }
 }
 
 impl std::fmt::Debug for DaikinInfo {
@@ -44,6 +69,7 @@ impl std::fmt::Debug for DaikinInfo {
             .field("name", &self.name())
             .field("mac", &self.mac())
             .field("version", &self.version())
+            .field("edid", &self.edid())
             .finish()
     }
 }
@@ -60,6 +86,7 @@ mod tests {
         assert_eq!(info.name(), Some("display_name".into()));
         assert_eq!(info.mac(), Some("00005E005342".into()));
         assert_eq!(info.version(), Some("2_7_0".into()));
+        assert_eq!(info.edid(), Some(19088743));
     }
 
     #[test]
@@ -69,7 +96,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", info),
-            r#"DaikinInfo { name: Some("display_name"), mac: Some("00005E005342"), version: Some("2_7_0") }"#
+            r#"DaikinInfo { name: Some("display_name"), mac: Some("00005E005342"), version: Some("2_7_0"), edid: Some(19088743) }"#
         );
     }
 }
