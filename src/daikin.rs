@@ -8,7 +8,7 @@ use serde_json::value::Value;
 use std::net::Ipv4Addr;
 use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Daikin {
     endpoint: String,
 }

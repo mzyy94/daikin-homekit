@@ -17,6 +17,8 @@ pub enum Error {
     AddrParseError(AddrParseError),
     /// Missing Property
     NoProperty,
+    /// HAP Server error
+    HAPError(hap::Error),
 }
 
 impl fmt::Display for Error {
@@ -29,6 +31,7 @@ impl fmt::Display for Error {
             Error::JSONError(err) => write!(f, "json error: {}", err),
             Error::AddrParseError(err) => write!(f, "parse ip address error: {}", err),
             Error::NoProperty => write!(f, "no property found error"),
+            Error::HAPError(err) => write!(f, "hap server error: {}", err),
         }
     }
 }
@@ -60,5 +63,11 @@ impl From<reqwest::Error> for Error {
 impl From<AddrParseError> for Error {
     fn from(err: AddrParseError) -> Self {
         Error::AddrParseError(err)
+    }
+}
+
+impl From<hap::Error> for Error {
+    fn from(err: hap::Error) -> Self {
+        Error::HAPError(err)
     }
 }
