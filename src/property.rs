@@ -66,7 +66,7 @@ impl Property {
         }
     }
 
-    pub fn get_f64(&self) -> Option<f64> {
+    pub fn get_f32(&self) -> Option<f32> {
         match self {
             Property::Item {
                 pv: Some(PropValue::String(pv)),
@@ -78,20 +78,20 @@ impl Property {
                     hex::decode_to_slice(pv, &mut bytes as &mut [u8]).ok();
                     let mut rdr = Cursor::new(bytes);
 
-                    let value: f64 = match pv.len() {
-                        2 => f64::from(rdr.read_i8().unwrap()),
-                        4 => f64::from(rdr.read_i16::<LittleEndian>().unwrap()),
-                        6 => f64::from(rdr.read_i24::<LittleEndian>().unwrap()),
-                        8 => f64::from(rdr.read_i32::<LittleEndian>().unwrap()),
+                    let value: f32 = match pv.len() {
+                        2 => rdr.read_i8().unwrap() as f32,
+                        4 => rdr.read_i16::<LittleEndian>().unwrap() as f32,
+                        6 => rdr.read_i24::<LittleEndian>().unwrap() as f32,
+                        8 => rdr.read_i32::<LittleEndian>().unwrap() as f32,
                         _ => 0.0,
                     };
 
-                    let step_base = f64::from(md.st & 0xf);
+                    let step_base = f32::from(md.st & 0xf);
                     let exp: i32 = ((md.st & 0xf0) >> 4).into();
                     let step_coefficient = if exp < 8 {
-                        10.0_f64.powi(exp)
+                        10.0_f32.powi(exp)
                     } else {
-                        10.0_f64.powi(exp - 16)
+                        10.0_f32.powi(exp - 16)
                     };
                     let step = step_base * step_coefficient;
                     if step == 0.0 {
@@ -109,7 +109,7 @@ impl Property {
                 ..
             } => {
                 if md.pt == "i" {
-                    Some(f64::from(*pv))
+                    Some(*pv as f32)
                 } else {
                     None
                 }
@@ -150,7 +150,7 @@ impl std::fmt::Debug for Property {
                 pn,
                 pv: Some(PropValue::String(pv)),
                 ..
-            } => match self.get_f64() {
+            } => match self.get_f32() {
                 Some(val) => f
                     .debug_struct("Item")
                     .field("name", pn)
@@ -189,15 +189,15 @@ pub enum PropValue {
 }
 
 impl PropValue {
-    pub fn from(value: f64, step: u8, size: usize) -> PropValue {
+    pub fn from(value: f32, step: u8, size: usize) -> PropValue {
         let mut wtr = vec![];
 
-        let step_base = f64::from(step & 0xf);
+        let step_base = f32::from(step & 0xf);
         let exp: i32 = ((step & 0xf0) >> 4).into();
         let step_coefficient = if exp < 8 {
-            10.0_f64.powi(exp)
+            10.0_f32.powi(exp)
         } else {
-            10.0_f64.powi(exp - 16)
+            10.0_f32.powi(exp - 16)
         };
         let step = step_base * step_coefficient;
 
@@ -233,7 +233,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_f64() {
+    fn get_f32() {
         let json = json!({
             "pn": "p_02",
             "pt": 2,
@@ -246,7 +246,7 @@ mod tests {
             }
         });
         let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
-        assert_eq!(p.get_f64(), Some(24.5));
+        assert_eq!(p.get_f32(), Some(24.5));
 
         let json = json!({
             "pn": "root_entity_name",
@@ -257,7 +257,7 @@ mod tests {
             }
         });
         let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
-        assert_eq!(p.get_f64(), None);
+        assert_eq!(p.get_f32(), None);
     }
 
     #[test]
@@ -299,7 +299,7 @@ mod tests {
             }
         });
         let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
-        let pv = PropValue::from(p.get_f64().unwrap(), p.step(), p.size());
+        let pv = PropValue::from(p.get_f32().unwrap(), p.step(), p.size());
         let expect = PropValue::String("2600".into());
 
         assert_eq!(pv, expect);

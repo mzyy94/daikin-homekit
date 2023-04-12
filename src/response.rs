@@ -12,14 +12,14 @@ macro_rules! get_child_prop {
     ({ $vopt:expr }) => {
         $vopt.ok_or(Error::NoProperty)
     };
-    ({ $vopt:expr } -> f64) => {
-        $vopt.and_then(|v| v.get_f64())
+    ({ $vopt:expr } -> f32) => {
+        $vopt.and_then(|v| v.get_f32())
     };
     ({ $vopt:expr } -> u8) => {
-        $vopt.and_then(|v| v.get_f64()).map(|v| v as u8)
+        $vopt.and_then(|v| v.get_f32()).map(|v| v as u8)
     };
     ({ $vopt:expr } -> bool) => {
-        $vopt.and_then(|v| v.get_f64()).map(|v| v  == 1.0)
+        $vopt.and_then(|v| v.get_f32()).map(|v| v  == 1.0)
     };
     ({ $vopt:expr } -> str) => {
         $vopt.and_then(|v| v.get_string())
@@ -56,10 +56,7 @@ mod tests {
             .expect("Invalid JSON file.");
 
         let p = get_prop!(status."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
-        assert_eq!(
-            format!("{:?}", p),
-            r#"Ok(Item { name: "p_03", pv: 5.6000000000000005 })"#
-        );
+        assert_eq!(format!("{:?}", p), r#"Ok(Item { name: "p_03", pv: 5.6 })"#);
 
         let p = get_prop!(status."/hoge".fuga.piyo);
         assert_eq!(format!("{:?}", p), r#"Err(NoProperty)"#);
