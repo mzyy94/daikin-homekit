@@ -5,12 +5,12 @@ use serde::Deserialize;
 pub struct Response {
     pub fr: String,   // from
     pub pc: Property, // content
-    pub rsc: u32,     // ??
+    pub rsc: u32,     // response code
 }
 
 macro_rules! get_child_prop {
     ({ $vopt:expr }) => {
-        $vopt
+        $vopt.ok_or(Error::NoProperty)
     };
     ({ $vopt:expr } -> f64) => {
         $vopt.and_then(|v| v.get_f64())
@@ -41,6 +41,8 @@ macro_rules! get_prop {
 
 #[cfg(test)]
 mod tests {
+    use crate::error::Error;
+
     use super::*;
 
     #[derive(Deserialize)]
@@ -56,10 +58,10 @@ mod tests {
         let p = get_prop!(status."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Some(Item { name: "p_03", pv: 5.6000000000000005 })"#
+            r#"Ok(Item { name: "p_03", pv: 5.6000000000000005 })"#
         );
 
         let p = get_prop!(status."/hoge".fuga.piyo);
-        assert_eq!(format!("{:?}", p), r#"None"#);
+        assert_eq!(format!("{:?}", p), r#"Err(NoProperty)"#);
     }
 }

@@ -1,4 +1,5 @@
 use crate::discovery;
+use crate::error::Error;
 use crate::info::DaikinInfo;
 use crate::status::DaikinStatus;
 use futures::prelude::*;
@@ -34,7 +35,7 @@ impl Daikin {
         }
     }
 
-    async fn send_request(&self, payload: Value) -> Result<String, Box<dyn std::error::Error>> {
+    async fn send_request(&self, payload: Value) -> Result<String, Error> {
         let client = reqwest::Client::builder()
             .http1_title_case_headers()
             .build()?;
@@ -43,14 +44,14 @@ impl Daikin {
 
         if resp.status() != reqwest::StatusCode::OK {
             dbg!(resp.status());
-            todo!();
+            return Err(Error::HTTPError(resp.status()));
         }
 
         let text = resp.text().await?;
         Ok(text)
     }
 
-    pub async fn get_status(&self) -> Result<DaikinStatus, Box<dyn std::error::Error>> {
+    pub async fn get_status(&self) -> Result<DaikinStatus, Error> {
         let payload = json!({"requests": [
             {
                 "op": 2,
@@ -68,7 +69,7 @@ impl Daikin {
         Ok(res)
     }
 
-    pub async fn get_info(&self) -> Result<DaikinInfo, Box<dyn std::error::Error>> {
+    pub async fn get_info(&self) -> Result<DaikinInfo, Error> {
         let payload = json!({"requests": [
             {
                 "op": 2,
@@ -86,8 +87,8 @@ impl Daikin {
         Ok(res)
     }
 
-    pub async fn update(&self, status: DaikinStatus) -> Result<(), Box<dyn std::error::Error>> {
-        let payload = serde_json::to_value(status).unwrap();
+    pub async fn update(&self, status: DaikinStatus) -> Result<(), Error> {
+        let payload = serde_json::to_value(status)?;
         let _ = self.send_request(payload).await?;
 
         Ok(())

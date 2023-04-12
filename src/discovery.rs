@@ -1,4 +1,5 @@
 use crate::daikin::Daikin;
+use crate::error::Error;
 use crate::info::DaikinInfo;
 use futures::prelude::*;
 use genawaiter::sync::gen;
@@ -11,7 +12,15 @@ use std::time::Duration;
 use tokio::net::UdpSocket;
 
 fn get_ipaddr() -> (IpAddr, IpAddr) {
-    let network_interfaces = NetworkInterface::show().unwrap();
+    let network_interfaces = match NetworkInterface::show() {
+        Ok(i) => i,
+        Err(_) => {
+            return (
+                IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
+                IpAddr::V4(Ipv4Addr::new(255, 255, 255, 255)),
+            )
+        }
+    };
 
     let nis: Vec<&NetworkInterface> = network_interfaces
         .iter()
@@ -40,10 +49,7 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
 
 pub async fn discovery(
     timeout: Duration,
-) -> Result<
-    impl Stream<Item = Result<(Daikin, DaikinInfo), Box<dyn std::error::Error>>>,
-    Box<dyn std::error::Error>,
-> {
+) -> Result<impl Stream<Item = Result<(Daikin, DaikinInfo), Error>>, Error> {
     let (srcip, dstip) = get_ipaddr();
     let src_addr = format!("{}:30000", srcip);
     let dst_addr = format!("{}:30050", dstip);
@@ -69,8 +75,8 @@ pub async fn discovery(
                             match str::from_utf8(&buf[..buf_size]) {
                                 Ok(val) => (val, src_addr),
                                 Err(e) => {
-                                    todo!("tell an error with yield_!(e)");
-                                    // continue;
+                                    yield_!(Err(e.into()));
+                                    continue;
                                 }
                             }
                         }
@@ -78,8 +84,8 @@ pub async fn discovery(
                             continue;
                         }
                         Err(e) => {
-                            todo!("tell an error with yield_!(e)");
-                            // continue;
+                            yield_!(Err(e.into()));
+                            continue;
                         }
                     },
                 };

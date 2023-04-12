@@ -1,5 +1,6 @@
 use clap::Parser;
 use daikin_homekit::daikin::Daikin;
+use daikin_homekit::error::Error;
 use daikin_homekit::status;
 use std::net::Ipv4Addr;
 
@@ -16,13 +17,13 @@ struct Cli {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Error> {
     let cli = Cli::parse();
     let addr = cli.ip_addr.parse::<Ipv4Addr>()?;
     get_status(addr).await
 }
 
-async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Box<dyn std::error::Error>> {
+async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Error> {
     let daikin = Daikin::new(ip_addr);
 
     let info = daikin.get_info().await?;
@@ -31,11 +32,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Box<dyn std::error::Error>>
     let mut status = daikin.get_status().await?;
     println!("{:#?}", status);
 
-    status.set_power(false);
-    status.set_mode(status::Mode::Cooling);
-    status.set_target_cooling_temperature(28.0);
-    status.set_target_heating_temperature(24.0);
-    status.set_target_automatic_temperature(-1.0);
+    status.set_power(false).ok();
+    status.set_mode(status::Mode::Cooling).ok();
+    status.set_target_cooling_temperature(28.0).ok();
+    status.set_target_heating_temperature(24.0).ok();
+    status.set_target_automatic_temperature(-1.0).ok();
     daikin.update(status).await?;
 
     Ok(())
