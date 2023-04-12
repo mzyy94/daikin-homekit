@@ -2,6 +2,11 @@ use crate::property::Property;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct DaikinResponse {
+    pub responses: Vec<Response>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct Response {
     pub fr: String,   // from
     pub pc: Property, // content
@@ -11,6 +16,9 @@ pub struct Response {
 macro_rules! get_child_prop {
     ({ $vopt:expr }) => {
         $vopt.ok_or(Error::NoProperty)
+    };
+    ({ $vopt:expr } -> step_size) => {
+        ($vopt.map(|v| v.step()).unwrap_or_default(), $vopt.map(|v| v.size()).unwrap_or_default())
     };
     ({ $vopt:expr } -> f32) => {
         $vopt.and_then(|v| v.get_f32())

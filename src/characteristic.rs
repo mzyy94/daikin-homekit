@@ -32,7 +32,7 @@ pub async fn set_initial_value(
     status: DaikinStatus,
     service: &mut HeaterCoolerService,
 ) -> Result<(), Error> {
-    service.active.set_value(status.power().into()).await?;
+    service.active.set_value(status.power.into()).await?;
     service
         .current_heater_cooler_state
         .set_value(Value::Number(Number::from(0)))
@@ -43,20 +43,20 @@ pub async fn set_initial_value(
         .await?;
     service
         .current_temperature
-        .set_value(status.current_temperature().into())
+        .set_value(status.current_temperature.into())
         .await?;
 
     service
         .heating_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_value(status.target_heating_temperature().into())
+        .set_value(status.target_heating_temperature.into())
         .await?;
     service
         .cooling_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_value(status.target_cooling_temperature().into())
+        .set_value(status.target_cooling_temperature.into())
         .await?;
 
     Ok(())
@@ -69,7 +69,7 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
         async move {
             println!("active characteristic read (async)");
             let status = dk.get_status().await.unwrap();
-            Ok(status.power())
+            Ok(status.power)
         }
         .boxed()
     }));
@@ -80,7 +80,7 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
         async move {
             println!("active updated from {} to {} (async)", current_val, new_val);
             let mut status = dk.get_status().await.unwrap();
-            status.set_power(new_val == 1).unwrap();
+            status.power = Some(new_val);
             dk.update(status).await.unwrap();
             Ok(())
         }
@@ -98,7 +98,7 @@ pub fn setup_current_heater_cooler_state(
         async move {
             println!("current_heater_cooler_state characteristic read (async)");
             let status = dk.get_status().await.unwrap();
-            match status.mode() {
+            match status.mode {
                 Some(Mode::Fan) => Ok(Some(0)),        // Inactive
                 Some(Mode::Dehumidify) => Ok(Some(1)), // Idle
                 Some(Mode::Heating) => Ok(Some(2)),    // Heating
@@ -134,7 +134,7 @@ pub fn setup_target_heater_cooler_state(
         async move {
             println!("target_heater_cooler_state characteristic read (async)");
             let status = dk.get_status().await.unwrap();
-            match status.mode() {
+            match status.mode {
                 Some(Mode::Auto) => Ok(Some(0)),    // auto
                 Some(Mode::Heating) => Ok(Some(1)), // heating
                 Some(Mode::Cooling) => Ok(Some(2)), // cooling
@@ -159,7 +159,7 @@ pub fn setup_target_heater_cooler_state(
                 2 => Some(Mode::Cooling),
                 _ => None,
             } {
-                status.set_mode(mode).unwrap();
+                status.mode = Some(mode);
                 dk.update(status).await.unwrap();
             }
 
@@ -176,7 +176,7 @@ pub fn setup_current_temperature(daikin: Daikin, char: &mut CurrentTemperatureCh
         async move {
             println!("current_temperature characteristic read (async)");
             let status = dk.get_status().await.unwrap();
-            Ok(status.current_temperature())
+            Ok(status.current_temperature)
         }
         .boxed()
     }));
@@ -206,7 +206,7 @@ pub fn setup_heating_threshold_temperature(
         async move {
             println!("heating_threshold_temperature characteristic read (async)");
             let status = dk.get_status().await.unwrap();
-            Ok(status.target_heating_temperature())
+            Ok(status.target_heating_temperature)
         }
         .boxed()
     }));
@@ -220,7 +220,7 @@ pub fn setup_heating_threshold_temperature(
                 "heating_threshold_temperature updated from {} to {} (async)",
                 current_val, new_val
             );
-            status.set_target_heating_temperature(new_val).unwrap();
+            status.target_heating_temperature = Some(new_val);
             dk.update(status).await.unwrap();
             Ok(())
         }
@@ -238,7 +238,7 @@ pub fn setup_cooling_threshold_temperature(
         async move {
             println!("cooling_threshold_temperature characteristic read (async)");
             let status = dk.get_status().await.unwrap();
-            Ok(status.target_cooling_temperature())
+            Ok(status.target_cooling_temperature)
         }
         .boxed()
     }));
@@ -252,7 +252,7 @@ pub fn setup_cooling_threshold_temperature(
                 "cooling_threshold_temperature updated from {} to {} (async)",
                 current_val, new_val
             );
-            status.set_target_cooling_temperature(new_val).unwrap();
+            status.target_cooling_temperature = Some(new_val);
             dk.update(status).await.unwrap();
             Ok(())
         }

@@ -1,10 +1,9 @@
-use crate::error::Error;
 use crate::property::{PropValue, Property};
-use crate::request::Request;
-use crate::response::Response;
+use crate::request::{DaikinRequest, Request};
+use crate::response::DaikinResponse;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Mode {
     Fan = 0,
     Heating = 1,
@@ -28,107 +27,91 @@ impl std::convert::From<u8> for Mode {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct DaikinStatus {
-    #[serde(skip_serializing)]
-    responses: Vec<Response>,
-    #[serde(skip_deserializing)]
-    requests: Vec<Request>,
+    pub power: Option<u8>,
+    pub current_temperature: Option<f32>,
+    pub current_humidity: Option<f32>,
+    pub current_outside_temperature: Option<f32>,
+    pub mode: Option<Mode>,
+    pub target_cooling_temperature: Option<f32>,
+    pub target_heating_temperature: Option<f32>,
+    pub target_automatic_temperature: Option<f32>,
+    meta: Meta,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+struct Meta {
+    power: (u8, usize),
+    mode: (u8, usize),
+    target_cooling_temperature: (u8, usize),
+    target_heating_temperature: (u8, usize),
+    target_automatic_temperature: (u8, usize),
 }
 
 impl DaikinStatus {
-    pub fn power(&self) -> Option<u8> {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> u8)
+    pub fn new(response: DaikinResponse) -> Self {
+        DaikinStatus {
+            power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> u8),
+            current_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> f32),
+            current_humidity: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02 -> f32),
+            current_outside_temperature: get_prop!(response."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01 -> f32),
+            mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> u8)
+                .map(|v| v.into()),
+            target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> f32),
+            target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> f32),
+            target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> f32),
+            meta: Meta {
+                power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> step_size),
+                mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> step_size),
+                target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> step_size),
+                target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> step_size),
+                target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> step_size),
+            },
+        }
     }
 
-    pub fn set_power(&mut self, on: bool) -> Result<(), Error> {
-        let val = PropValue::String(if on { "01" } else { "00" }.into());
-        set_prop!(&mut self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = val);
-        Ok(())
-    }
+    pub fn build_request(&self) -> DaikinRequest {
+        let mut req = DaikinRequest { requests: vec![] };
 
-    pub fn current_temperature(&self) -> Option<f32> {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> f32)
-    }
+        if let Some(value) = self.power {
+            let pv = PropValue::from(value as f32, self.meta.power.0, self.meta.power.1);
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = pv);
+        };
 
-    pub fn current_humidity(&self) -> Option<f32> {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02 -> f32)
-    }
+        if let Some(value) = self.mode {
+            let pv = PropValue::from(value as u8 as f32, self.meta.mode.0, self.meta.mode.1);
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = pv);
+        };
 
-    pub fn current_outside_temperature(&self) -> Option<f32> {
-        get_prop!(self."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01 -> f32)
-    }
+        if let Some(value) = self.target_cooling_temperature {
+            let pv = PropValue::from(
+                value,
+                self.meta.target_cooling_temperature.0,
+                self.meta.target_cooling_temperature.1,
+            );
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = pv);
+        };
 
-    pub fn mode(&self) -> Option<Mode> {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> u8).map(|v| v.into())
-    }
+        if let Some(value) = self.target_heating_temperature {
+            let pv = PropValue::from(
+                value,
+                self.meta.target_heating_temperature.0,
+                self.meta.target_heating_temperature.1,
+            );
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = pv);
+        };
 
-    pub fn set_mode(&mut self, mode: Mode) -> Result<(), Error> {
-        let prop = get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01)?;
-        let value = f32::from(mode as u8);
-        let pv = PropValue::from(value, prop.step(), prop.size());
-        set_prop!(&mut self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = pv);
-        Ok(())
-    }
+        if let Some(value) = self.target_automatic_temperature {
+            let pv = PropValue::from(
+                value,
+                self.meta.target_automatic_temperature.0,
+                self.meta.target_automatic_temperature.1,
+            );
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = pv);
+        };
 
-    pub fn target_cooling_temperature(&self) -> Option<f32> {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> f32)
-    }
-
-    pub fn set_target_cooling_temperature(&mut self, temp: f32) -> Result<(), Error> {
-        let prop = get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02)?;
-        let pv = PropValue::from(temp, prop.step(), prop.size());
-        set_prop!(&mut self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = pv);
-        Ok(())
-    }
-
-    pub fn target_heating_temperature(&self) -> Option<f32> {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> f32)
-    }
-
-    pub fn set_target_heating_temperature(&mut self, temp: f32) -> Result<(), Error> {
-        let prop = get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03)?;
-        let pv = PropValue::from(temp, prop.step(), prop.size());
-        set_prop!(&mut self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = pv);
-        Ok(())
-    }
-
-    pub fn target_automatic_temperature(&self) -> Option<f32> {
-        get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> f32)
-    }
-
-    pub fn set_target_automatic_temperature(&mut self, temp: f32) -> Result<(), Error> {
-        let prop = get_prop!(self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F)?;
-        let pv = PropValue::from(temp, prop.step(), prop.size());
-        set_prop!(&mut self."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = pv);
-        Ok(())
-    }
-}
-
-impl std::fmt::Debug for DaikinStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("DaikinStatus")
-            .field("power", &self.power())
-            .field("current_temperature", &self.current_temperature())
-            .field("current_humidity", &self.current_humidity())
-            .field(
-                "current_outside_temperature",
-                &self.current_outside_temperature(),
-            )
-            .field("mode", &self.mode())
-            .field(
-                "target_cooling_temperature",
-                &self.target_cooling_temperature(),
-            )
-            .field(
-                "target_heating_temperature",
-                &self.target_heating_temperature(),
-            )
-            .field(
-                "target_automatic_temperature",
-                &self.target_automatic_temperature(),
-            )
-            .finish()
+        req
     }
 }
 
@@ -138,45 +121,38 @@ mod tests {
 
     #[test]
     fn getter() {
-        let status: DaikinStatus = serde_json::from_str(include_str!("./fixtures/status.json"))
+        let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
             .expect("Invalid JSON file.");
+        let status = DaikinStatus::new(res);
 
-        assert_eq!(status.power(), Some(0));
-        assert_eq!(status.current_temperature(), Some(20.0));
-        assert_eq!(status.current_humidity(), Some(50.0));
-        assert_eq!(status.current_outside_temperature(), Some(19.0));
-        assert_eq!(status.mode(), Some(Mode::Cooling));
-        assert_eq!(status.target_cooling_temperature(), Some(24.5));
-        assert_eq!(status.target_heating_temperature(), Some(25.0));
-        assert_eq!(status.target_automatic_temperature(), Some(0.0));
+        assert_eq!(status.power, Some(0));
+        assert_eq!(status.current_temperature, Some(20.0));
+        assert_eq!(status.current_humidity, Some(50.0));
+        assert_eq!(status.current_outside_temperature, Some(19.0));
+        assert_eq!(status.mode, Some(Mode::Cooling));
+        assert_eq!(status.target_cooling_temperature, Some(24.5));
+        assert_eq!(status.target_heating_temperature, Some(25.0));
+        assert_eq!(status.target_automatic_temperature, Some(0.0));
     }
 
     #[test]
     fn setter() {
-        let mut status: DaikinStatus = serde_json::from_str(include_str!("./fixtures/status.json"))
+        let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
             .expect("Invalid JSON file.");
-        status.set_power(true).unwrap();
-        status.set_mode(Mode::Cooling).unwrap();
-        status.set_target_cooling_temperature(24.5).unwrap();
-        status.set_target_heating_temperature(25.0).unwrap();
-        status.set_target_automatic_temperature(0.0).unwrap();
+        let mut status = DaikinStatus::new(res);
 
-        let json = serde_json::to_value(&status).unwrap();
+        status.power = Some(1);
+        status.mode = Some(Mode::Cooling);
+        status.target_cooling_temperature = Some(24.5);
+        status.target_heating_temperature = Some(25.0);
+        status.target_automatic_temperature = Some(0.0);
+
+        let req = status.build_request();
+        let json = serde_json::to_value(&req).unwrap();
         assert_eq!(
             json,
             serde_json::from_str::<serde_json::Value>(include_str!("./fixtures/update.json"))
                 .unwrap()
-        );
-    }
-
-    #[test]
-    fn debug_display() {
-        let status: DaikinStatus = serde_json::from_str(include_str!("./fixtures/status.json"))
-            .expect("Invalid JSON file.");
-
-        assert_eq!(
-            format!("{:?}", status),
-            r#"DaikinStatus { power: Some(0), current_temperature: Some(20.0), current_humidity: Some(50.0), current_outside_temperature: Some(19.0), mode: Some(Cooling), target_cooling_temperature: Some(24.5), target_heating_temperature: Some(25.0), target_automatic_temperature: Some(0.0) }"#
         );
     }
 }
