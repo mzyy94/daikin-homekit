@@ -4,5 +4,6 @@ pub mod response;
 pub mod info;
 #[macro_use]
 pub mod request;
+pub mod discovery;
 pub mod property;
 pub mod status;

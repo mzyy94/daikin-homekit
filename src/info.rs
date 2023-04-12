@@ -3,20 +3,38 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct DaikinInfo {
-    pub responses: Vec<Response>,
+    responses: Vec<Response>,
+    name: Option<String>,
+    mac: Option<String>,
+    version: Option<String>,
 }
 
 impl DaikinInfo {
+    pub fn new(name: Option<String>, mac: Option<String>, version: Option<String>) -> DaikinInfo {
+        DaikinInfo {
+            responses: vec![],
+            name: name,
+            mac: mac,
+            version: version,
+        }
+    }
+
     pub fn name(&self) -> Option<String> {
-        get_prop!(self."/dsiot/edge.adp_d".name -> str)
+        self.name
+            .clone()
+            .or(get_prop!(self."/dsiot/edge.adp_d".name -> str))
     }
 
     pub fn mac(&self) -> Option<String> {
-        get_prop!(self."/dsiot/edge.adp_i".mac -> str)
+        self.mac
+            .clone()
+            .or(get_prop!(self."/dsiot/edge.adp_i".mac -> str))
     }
 
     pub fn version(&self) -> Option<String> {
-        get_prop!(self."/dsiot/edge.adp_i".ver -> str)
+        self.version
+            .clone()
+            .or(get_prop!(self."/dsiot/edge.adp_i".ver -> str))
     }
 }
 

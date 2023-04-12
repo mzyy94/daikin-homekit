@@ -1,9 +1,13 @@
+use crate::discovery;
 use crate::info::DaikinInfo;
 use crate::status::DaikinStatus;
+use futures::prelude::*;
 use serde_json::json;
 use serde_json::value::Value;
 use std::net::Ipv4Addr;
+use std::time::Duration;
 
+#[derive(Debug)]
 pub struct Daikin {
     endpoint: String,
 }
@@ -12,6 +16,21 @@ impl Daikin {
     pub fn new(ip_addr: Ipv4Addr) -> Daikin {
         Daikin {
             endpoint: format!("http://{}/dsiot/multireq", ip_addr),
+        }
+    }
+
+    pub async fn discovery(timeout: Duration) -> Option<(Daikin, DaikinInfo)> {
+        if let Ok(mut stream) = discovery::discovery(timeout).await {
+            if let Some(item) = stream.next().await {
+                match item {
+                    Ok(item) => Some(item),
+                    Err(_) => None,
+                }
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 

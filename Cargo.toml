@@ -9,6 +9,8 @@ edition = "2021"
 byteorder = "1.4.3"
 clap = { version = "4.2.1", features = ["derive"] }
 form_urlencoded = "1.1.0"
+futures = "0.3.28"
+genawaiter = { version = "0.99.1", features = ["futures03"] }
 hap = { git = "https://github.com/ewilken/hap-rs", tag = "v0.1.0-pre.15", version = "0.1.0-pre.15" }
 hex = "0.4.3"
 network-interface = "1.0.0"
