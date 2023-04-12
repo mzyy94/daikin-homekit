@@ -311,8 +311,10 @@ version = "0.1.0"
 dependencies = [
  "byteorder",
  "clap",
+ "form_urlencoded",
  "hap",
  "hex",
+ "network-interface",
  "reqwest",
  "serde",
  "serde_json",
@@ -1036,6 +1038,18 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "network-interface"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10c4dbf727f42893b058d7619d5b4da3743dfe9cdb6e440880f7717a68b57e0e"
+dependencies = [
+ "cc",
+ "libc",
+ "thiserror",
+ "winapi 0.3.9",
 ]
 
 [[package]]
