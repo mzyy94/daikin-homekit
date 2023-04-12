@@ -44,6 +44,7 @@ impl DaikinInfo {
         self.version
             .clone()
             .or(get_prop!(self."/dsiot/edge.adp_i".ver -> str))
+            .map(|v| v.replace("_", "."))
     }
 
     pub fn edid(&self) -> Option<u64> {
@@ -85,7 +86,7 @@ mod tests {
 
         assert_eq!(info.name(), Some("display_name".into()));
         assert_eq!(info.mac(), Some("00005E005342".into()));
-        assert_eq!(info.version(), Some("2_7_0".into()));
+        assert_eq!(info.version(), Some("2.7.0".into()));
         assert_eq!(info.edid(), Some(19088743));
     }
 
@@ -96,7 +97,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", info),
-            r#"DaikinInfo { name: Some("display_name"), mac: Some("00005E005342"), version: Some("2_7_0"), edid: Some(19088743) }"#
+            r#"DaikinInfo { name: Some("display_name"), mac: Some("00005E005342"), version: Some("2.7.0"), edid: Some(19088743) }"#
         );
     }
 }
