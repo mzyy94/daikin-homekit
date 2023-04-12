@@ -79,6 +79,10 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
         let dk = dk.clone();
         async move {
             println!("active updated from {} to {} (async)", current_val, new_val);
+            if current_val == new_val {
+                println!("- skip");
+                return Ok(());
+            }
             let mut status = dk.get_status().await.unwrap();
             status.power = Some(new_val);
             dk.update(status).await.unwrap();
@@ -152,6 +156,10 @@ pub fn setup_target_heater_cooler_state(
                 "target_heater_cooler_state updated from {} to {} (async)",
                 current_val, new_val
             );
+            if current_val == new_val {
+                println!("- skip");
+                return Ok(());
+            }
             let mut status = dk.get_status().await.unwrap();
             if let Some(mode) = match new_val {
                 0 => Some(Mode::Auto),
@@ -185,11 +193,11 @@ pub fn setup_current_temperature(daikin: Daikin, char: &mut CurrentTemperatureCh
     char.on_update_async(Some(move |current_val: f32, new_val: f32| {
         let dk = dk.clone();
         async move {
-            let _ = dk.get_status().await.unwrap();
             println!(
                 "current_temperature updated from {} to {} (async)",
                 current_val, new_val
             );
+            let _ = dk.get_status().await.unwrap();
             Ok(())
         }
         .boxed()
@@ -215,11 +223,15 @@ pub fn setup_heating_threshold_temperature(
     char.on_update_async(Some(move |current_val: f32, new_val: f32| {
         let dk = dk.clone();
         async move {
-            let mut status = dk.get_status().await.unwrap();
             println!(
                 "heating_threshold_temperature updated from {} to {} (async)",
                 current_val, new_val
             );
+            if current_val == new_val {
+                println!("- skip");
+                return Ok(());
+            }
+            let mut status = dk.get_status().await.unwrap();
             status.target_heating_temperature = Some(new_val);
             dk.update(status).await.unwrap();
             Ok(())
@@ -247,11 +259,15 @@ pub fn setup_cooling_threshold_temperature(
     char.on_update_async(Some(move |current_val: f32, new_val: f32| {
         let dk = dk.clone();
         async move {
-            let mut status = dk.get_status().await.unwrap();
             println!(
                 "cooling_threshold_temperature updated from {} to {} (async)",
                 current_val, new_val
             );
+            if current_val == new_val {
+                println!("- skip");
+                return Ok(());
+            }
+            let mut status = dk.get_status().await.unwrap();
             status.target_cooling_temperature = Some(new_val);
             dk.update(status).await.unwrap();
             Ok(())
