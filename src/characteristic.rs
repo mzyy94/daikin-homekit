@@ -1,4 +1,6 @@
-use crate::status::DaikinStatus;
+use crate::status::{
+    AutoModeWindSpeed, DaikinStatus, HorizontalDirection, VerticalDirection, WindSpeed,
+};
 use crate::{daikin::Daikin, error::Error, status::Mode};
 use futures::prelude::*;
 use hap::characteristic::{
@@ -7,11 +9,11 @@ use hap::characteristic::{
     current_heater_cooler_state::CurrentHeaterCoolerStateCharacteristic,
     current_temperature::CurrentTemperatureCharacteristic,
     heating_threshold_temperature::HeatingThresholdTemperatureCharacteristic,
+    rotation_speed::RotationSpeedCharacteristic, swing_mode::SwingModeCharacteristic,
     target_heater_cooler_state::TargetHeaterCoolerStateCharacteristic,
     AsyncCharacteristicCallbacks, HapCharacteristic,
 };
 use hap::service::heater_cooler::HeaterCoolerService;
-use serde_json::{Number, Value};
 
 pub fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerService) {
     setup_active(daikin.clone(), &mut service.active);
@@ -26,6 +28,8 @@ pub fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerS
         daikin.clone(),
         service.cooling_threshold_temperature.as_mut().unwrap(),
     );
+    setup_rotation_speed(daikin.clone(), service.rotation_speed.as_mut().unwrap());
+    setup_swing_mode(daikin.clone(), service.swing_mode.as_mut().unwrap());
 }
 
 pub async fn set_initial_value(
@@ -35,11 +39,28 @@ pub async fn set_initial_value(
     service.active.set_value(status.power.into()).await?;
     service
         .current_heater_cooler_state
-        .set_value(Value::Number(Number::from(0)))
+        .set_value(
+            match status.mode {
+                Some(Mode::Fan) => 0,        // Inactive,
+                Some(Mode::Dehumidify) => 1, // Idle
+                Some(Mode::Heating) => 2,    // Heating
+                Some(Mode::Cooling) => 3,    // Cooling
+                _ => 0,
+            }
+            .into(),
+        )
         .await?;
     service
         .target_heater_cooler_state
-        .set_value(Value::Number(Number::from(0)))
+        .set_value(
+            match status.mode {
+                Some(Mode::Auto) => 0,    // Auto,
+                Some(Mode::Heating) => 1, // Heat
+                Some(Mode::Cooling) => 2, // Cool
+                _ => 0,
+            }
+            .into(),
+        )
         .await?;
     service
         .current_temperature
@@ -57,6 +78,36 @@ pub async fn set_initial_value(
         .as_mut()
         .unwrap()
         .set_value(status.target_cooling_temperature.into())
+        .await?;
+    service
+        .rotation_speed
+        .as_mut()
+        .unwrap()
+        .set_value(
+            match status.wind_speed {
+                Some(WindSpeed::Silent) => Some(0.0),
+                Some(WindSpeed::Lev1) => Some(10.0),
+                Some(WindSpeed::Lev2) => Some(30.0),
+                Some(WindSpeed::Lev3) => Some(50.0),
+                Some(WindSpeed::Lev4) => Some(70.0),
+                Some(WindSpeed::Lev5) => Some(90.0),
+                Some(WindSpeed::Auto) => Some(100.0),
+                _ => None,
+            }
+            .into(),
+        )
+        .await?;
+    service
+        .swing_mode
+        .as_mut()
+        .unwrap()
+        .set_value(
+            match status.vertical_wind_direction {
+                Some(VerticalDirection::Swing) => Some(1),
+                _ => Some(0),
+            }
+            .into(),
+        )
         .await?;
 
     Ok(())
@@ -269,6 +320,108 @@ pub fn setup_cooling_threshold_temperature(
             }
             let mut status = dk.get_status().await.unwrap();
             status.target_cooling_temperature = Some(new_val);
+            dk.update(status).await.unwrap();
+            Ok(())
+        }
+        .boxed()
+    }));
+}
+
+pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacteristic) {
+    let dk = daikin.clone();
+    char.on_read_async(Some(move || {
+        let dk = dk.clone();
+        async move {
+            println!("rotation_speed characteristic read (async)");
+            let status = dk.get_status().await.unwrap();
+            let speed = match status.wind_speed {
+                Some(WindSpeed::Silent) => Some(5.0),
+                Some(WindSpeed::Lev1) => Some(10.0),
+                Some(WindSpeed::Lev2) => Some(30.0),
+                Some(WindSpeed::Lev3) => Some(50.0),
+                Some(WindSpeed::Lev4) => Some(70.0),
+                Some(WindSpeed::Lev5) => Some(90.0),
+                Some(WindSpeed::Auto) => Some(100.0),
+                _ => None,
+            };
+
+            Ok(speed)
+        }
+        .boxed()
+    }));
+
+    let dk = daikin.clone();
+    char.on_update_async(Some(move |current_val: f32, new_val: f32| {
+        let dk = dk.clone();
+        async move {
+            println!(
+                "rotation_speed updated from {} to {} (async)",
+                current_val, new_val
+            );
+            if current_val == new_val {
+                println!("- skip");
+                return Ok(());
+            }
+            let mut status = dk.get_status().await.unwrap();
+            let speed = match new_val as u8 {
+                0..=5 => WindSpeed::Silent,
+                6..=20 => WindSpeed::Lev1,
+                21..=35 => WindSpeed::Lev2,
+                36..=50 => WindSpeed::Lev3,
+                51..=75 => WindSpeed::Lev4,
+                76..=90 => WindSpeed::Lev5,
+                _ => WindSpeed::Auto,
+            };
+            let auto_speed = if new_val < 50.0 {
+                AutoModeWindSpeed::Silent
+            } else {
+                AutoModeWindSpeed::Auto
+            };
+            status.wind_speed = Some(speed);
+            status.automode_wind_speed = Some(auto_speed);
+            dk.update(status).await.unwrap();
+            Ok(())
+        }
+        .boxed()
+    }));
+}
+
+pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
+    let dk = daikin.clone();
+    char.on_read_async(Some(move || {
+        let dk = dk.clone();
+        async move {
+            println!("swing_mode characteristic read (async)");
+            let status = dk.get_status().await.unwrap();
+            let mode = match status.vertical_wind_direction {
+                Some(VerticalDirection::Swing) => Some(1),
+                _ => Some(0),
+            };
+            Ok(mode)
+        }
+        .boxed()
+    }));
+
+    let dk = daikin.clone();
+    char.on_update_async(Some(move |current_val: u8, new_val: u8| {
+        let dk = dk.clone();
+        async move {
+            println!(
+                "swing_mode updated from {} to {} (async)",
+                current_val, new_val
+            );
+            if current_val == new_val {
+                println!("- skip");
+                return Ok(());
+            }
+            let mut status = dk.get_status().await.unwrap();
+            if new_val == 0 {
+                status.vertical_wind_direction = Some(VerticalDirection::Auto);
+                status.horizontal_wind_direction = Some(HorizontalDirection::Auto);
+            } else {
+                status.vertical_wind_direction = Some(VerticalDirection::Swing);
+                status.horizontal_wind_direction = Some(HorizontalDirection::Swing);
+            }
             dk.update(status).await.unwrap();
             Ok(())
         }

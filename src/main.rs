@@ -78,8 +78,6 @@ async fn main() -> Result<(), Error> {
 
     ac.heater_cooler.lock_physical_controls = None;
     ac.heater_cooler.name = None;
-    ac.heater_cooler.rotation_speed = None;
-    ac.heater_cooler.swing_mode = None;
     ac.heater_cooler.temperature_display_units = None;
 
     let status = daikin.get_status().await?;
