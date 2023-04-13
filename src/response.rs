@@ -26,8 +26,8 @@ macro_rules! get_child_prop {
     ({ $vopt:expr } -> u8) => {
         $vopt.and_then(|v| v.get_f32()).map(|v| v as u8)
     };
-    ({ $vopt:expr } -> bool) => {
-        $vopt.and_then(|v| v.get_f32()).map(|v| v  == 1.0)
+    ({ $vopt:expr } -> Value) => {
+        from_value($vopt.and_then(|v| v.get_f32()).map(|v| Value::Number(Number::from(v as u8))).unwrap_or_default()).unwrap_or_default()
     };
     ({ $vopt:expr } -> str) => {
         $vopt.and_then(|v| v.get_string())
