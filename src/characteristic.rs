@@ -74,11 +74,71 @@ pub async fn set_initial_value(
         .set_value(status.target_heating_temperature.into())
         .await?;
     service
+        .heating_threshold_temperature
+        .as_mut()
+        .unwrap()
+        .set_step_value(Some(status.meta.target_heating_temperature.0 .0.into()))?;
+    service
+        .heating_threshold_temperature
+        .as_mut()
+        .unwrap()
+        .set_min_value(
+            status
+                .meta
+                .target_heating_temperature
+                .0
+                 .1
+                .map(|v| v.into()),
+        )?;
+    service
+        .heating_threshold_temperature
+        .as_mut()
+        .unwrap()
+        .set_max_value(
+            status
+                .meta
+                .target_heating_temperature
+                .0
+                 .2
+                .map(|v| v.into()),
+        )?;
+
+    service
         .cooling_threshold_temperature
         .as_mut()
         .unwrap()
         .set_value(status.target_cooling_temperature.into())
         .await?;
+    service
+        .cooling_threshold_temperature
+        .as_mut()
+        .unwrap()
+        .set_step_value(Some(status.meta.target_cooling_temperature.0 .0.into()))?;
+    service
+        .cooling_threshold_temperature
+        .as_mut()
+        .unwrap()
+        .set_min_value(
+            status
+                .meta
+                .target_cooling_temperature
+                .0
+                 .1
+                .map(|v| v.into()),
+        )?;
+    service
+        .cooling_threshold_temperature
+        .as_mut()
+        .unwrap()
+        .set_max_value(
+            status
+                .meta
+                .target_cooling_temperature
+                .0
+                 .2
+                .map(|v| v.into()),
+        )?;
+
     service
         .rotation_speed
         .as_mut()

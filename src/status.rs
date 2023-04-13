@@ -19,22 +19,22 @@ pub struct DaikinStatus {
     pub automode_wind_speed: Option<AutoModeWindSpeed>,
     pub vertical_wind_direction: Option<VerticalDirection>,
     pub horizontal_wind_direction: Option<HorizontalDirection>,
-    meta: Metadata,
+    pub meta: Metadata,
 }
 
 type Meta = ((f32, Option<f32>, Option<f32>), usize);
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-struct Metadata {
-    power: Meta,
-    mode: Meta,
-    target_cooling_temperature: Meta,
-    target_heating_temperature: Meta,
-    target_automatic_temperature: Meta,
-    wind_speed: Meta,
-    automode_wind_speed: Meta,
-    vertical_wind_direction: Meta,
-    horizontal_wind_direction: Meta,
+pub struct Metadata {
+    pub power: Meta,
+    pub mode: Meta,
+    pub target_cooling_temperature: Meta,
+    pub target_heating_temperature: Meta,
+    pub target_automatic_temperature: Meta,
+    pub wind_speed: Meta,
+    pub automode_wind_speed: Meta,
+    pub vertical_wind_direction: Meta,
+    pub horizontal_wind_direction: Meta,
 }
 
 impl DaikinStatus {
