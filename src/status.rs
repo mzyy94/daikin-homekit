@@ -42,11 +42,11 @@ pub struct DaikinStatus {
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 struct Meta {
-    power: (u8, usize),
-    mode: (u8, usize),
-    target_cooling_temperature: (u8, usize),
-    target_heating_temperature: (u8, usize),
-    target_automatic_temperature: (u8, usize),
+    power: ((f32, Option<f32>, Option<f32>), usize),
+    mode: ((f32, Option<f32>, Option<f32>), usize),
+    target_cooling_temperature: ((f32, Option<f32>, Option<f32>), usize),
+    target_heating_temperature: ((f32, Option<f32>, Option<f32>), usize),
+    target_automatic_temperature: ((f32, Option<f32>, Option<f32>), usize),
 }
 
 impl DaikinStatus {
@@ -62,11 +62,11 @@ impl DaikinStatus {
             target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> f32),
             target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> f32),
             meta: Meta {
-                power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> step_size),
-                mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> step_size),
-                target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> step_size),
-                target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> step_size),
-                target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> step_size),
+                power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> meta_size),
+                mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> meta_size),
+                target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> meta_size),
+                target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> meta_size),
+                target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> meta_size),
             },
         }
     }
@@ -75,19 +75,19 @@ impl DaikinStatus {
         let mut req = DaikinRequest { requests: vec![] };
 
         if let Some(value) = self.power {
-            let pv = PropValue::from(value as f32, self.meta.power.0, self.meta.power.1);
+            let pv = PropValue::from(value as f32, self.meta.power.0 .0, self.meta.power.1);
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = pv);
         };
 
         if let Some(value) = self.mode {
-            let pv = PropValue::from(value as u8 as f32, self.meta.mode.0, self.meta.mode.1);
+            let pv = PropValue::from(value as u8 as f32, self.meta.mode.0 .0, self.meta.mode.1);
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = pv);
         };
 
         if let Some(value) = self.target_cooling_temperature {
             let pv = PropValue::from(
                 value,
-                self.meta.target_cooling_temperature.0,
+                self.meta.target_cooling_temperature.0 .0,
                 self.meta.target_cooling_temperature.1,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = pv);
@@ -96,7 +96,7 @@ impl DaikinStatus {
         if let Some(value) = self.target_heating_temperature {
             let pv = PropValue::from(
                 value,
-                self.meta.target_heating_temperature.0,
+                self.meta.target_heating_temperature.0 .0,
                 self.meta.target_heating_temperature.1,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = pv);
@@ -105,7 +105,7 @@ impl DaikinStatus {
         if let Some(value) = self.target_automatic_temperature {
             let pv = PropValue::from(
                 value,
-                self.meta.target_automatic_temperature.0,
+                self.meta.target_automatic_temperature.0 .0,
                 self.meta.target_automatic_temperature.1,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = pv);

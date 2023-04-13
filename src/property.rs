@@ -21,6 +21,21 @@ pub enum Property {
     },
 }
 
+fn hex2int(hex: &String) -> i32 {
+    let size = hex.len();
+    let mut bytes = vec![0u8; size / 2];
+    hex::decode_to_slice(hex, &mut bytes as &mut [u8]).ok();
+    let mut rdr = Cursor::new(bytes);
+
+    match size {
+        2 => rdr.read_i8().unwrap() as i32,
+        4 => rdr.read_i16::<LittleEndian>().unwrap() as i32,
+        6 => rdr.read_i24::<LittleEndian>().unwrap(),
+        8 => rdr.read_i32::<LittleEndian>().unwrap(),
+        _ => 0,
+    }
+}
+
 impl Property {
     pub fn new(name: &str, value: PropValue) -> Property {
         Property::Item {
@@ -49,10 +64,44 @@ impl Property {
         }
     }
 
-    pub fn step(&self) -> u8 {
+    pub fn step(&self) -> f32 {
         match self {
-            Property::Item { md: Some(md), .. } => md.st,
-            _ => 0,
+            Property::Item { md: Some(md), .. } => {
+                let step_base = f32::from(md.st & 0xf);
+                let exp: i32 = ((md.st & 0xf0) >> 4).into();
+                let step_coefficient = if exp < 8 {
+                    10.0_f32.powi(exp)
+                } else {
+                    10.0_f32.powi(exp - 16)
+                };
+                step_base * step_coefficient
+            }
+            _ => 0.0,
+        }
+    }
+
+    /// Returns step, min, max
+    pub fn meta(&self) -> (f32, Option<f32>, Option<f32>) {
+        match self {
+            Property::Item { md: Some(md), .. } => {
+                let step = self.step();
+                let min = md.mi.as_ref().map(|m| {
+                    if step != 0.0 {
+                        hex2int(m) as f32 * step
+                    } else {
+                        hex2int(m) as f32
+                    }
+                });
+                let max = md.mx.as_ref().map(|m| {
+                    if step != 0.0 {
+                        hex2int(m) as f32 * step
+                    } else {
+                        hex2int(m) as f32
+                    }
+                });
+                (step, min, max)
+            }
+            _ => (0.0, None, None),
         }
     }
 
@@ -74,26 +123,8 @@ impl Property {
                 ..
             } => {
                 if md.pt == "b" && !(md.mi == None && md.mx == None) {
-                    let mut bytes = vec![0u8; pv.len() / 2];
-                    hex::decode_to_slice(pv, &mut bytes as &mut [u8]).ok();
-                    let mut rdr = Cursor::new(bytes);
-
-                    let value: f32 = match pv.len() {
-                        2 => rdr.read_i8().unwrap() as f32,
-                        4 => rdr.read_i16::<LittleEndian>().unwrap() as f32,
-                        6 => rdr.read_i24::<LittleEndian>().unwrap() as f32,
-                        8 => rdr.read_i32::<LittleEndian>().unwrap() as f32,
-                        _ => 0.0,
-                    };
-
-                    let step_base = f32::from(md.st & 0xf);
-                    let exp: i32 = ((md.st & 0xf0) >> 4).into();
-                    let step_coefficient = if exp < 8 {
-                        10.0_f32.powi(exp)
-                    } else {
-                        10.0_f32.powi(exp - 16)
-                    };
-                    let step = step_base * step_coefficient;
+                    let value = hex2int(pv) as f32;
+                    let step = self.step();
                     if step == 0.0 {
                         Some(value)
                     } else {
@@ -155,6 +186,7 @@ impl std::fmt::Debug for Property {
                     .debug_struct("Item")
                     .field("name", pn)
                     .field("pv", &val)
+                    .field("meta", &self.meta())
                     .finish(),
                 None => f
                     .debug_struct("Item")
@@ -189,18 +221,8 @@ pub enum PropValue {
 }
 
 impl PropValue {
-    pub fn from(value: f32, step: u8, size: usize) -> PropValue {
+    pub fn from(value: f32, step: f32, size: usize) -> PropValue {
         let mut wtr = vec![];
-
-        let step_base = f32::from(step & 0xf);
-        let exp: i32 = ((step & 0xf0) >> 4).into();
-        let step_coefficient = if exp < 8 {
-            10.0_f32.powi(exp)
-        } else {
-            10.0_f32.powi(exp - 16)
-        };
-        let step = step_base * step_coefficient;
-
         let value: i32 = if step == 0.0 {
             value as i32
         } else {
@@ -328,7 +350,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", pch: [Item { name: "p_01", pv: 19.0 }] }"#
+            r#"Tree { name: "e_A00D", pch: [Item { name: "p_01", pv: 19.0, meta: (0.5, Some(-9.0), Some(39.0)) }] }"#
         );
     }
 }

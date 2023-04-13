@@ -17,8 +17,8 @@ macro_rules! get_child_prop {
     ({ $vopt:expr }) => {
         $vopt.ok_or(Error::NoProperty)
     };
-    ({ $vopt:expr } -> step_size) => {
-        ($vopt.map(|v| v.step()).unwrap_or_default(), $vopt.map(|v| v.size()).unwrap_or_default())
+    ({ $vopt:expr } -> meta_size) => {
+        ($vopt.map(|v| v.meta()).unwrap_or_default(), $vopt.map(|v| v.size()).unwrap_or_default())
     };
     ({ $vopt:expr } -> f32) => {
         $vopt.and_then(|v| v.get_f32())
@@ -64,7 +64,10 @@ mod tests {
             .expect("Invalid JSON file.");
 
         let p = get_prop!(status."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
-        assert_eq!(format!("{:?}", p), r#"Ok(Item { name: "p_03", pv: 5.6 })"#);
+        assert_eq!(
+            format!("{:?}", p),
+            r#"Ok(Item { name: "p_03", pv: 5.6, meta: (0.1, Some(0.0), Some(25.5)) })"#
+        );
 
         let p = get_prop!(status."/hoge".fuga.piyo);
         assert_eq!(format!("{:?}", p), r#"Err(NoProperty)"#);
