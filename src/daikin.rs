@@ -1,7 +1,7 @@
 use crate::discovery;
 use crate::error::Error;
 use crate::info::DaikinInfo;
-use crate::response::DaikinResponse;
+use crate::response::{DaikinResponse, Response};
 use crate::status::DaikinStatus;
 use futures::prelude::*;
 use retainer::*;
@@ -73,6 +73,16 @@ impl Daikin {
 
                 let body = self.send_request(payload).await?;
                 let res: DaikinResponse = serde_json::from_str(&body)?;
+                let rsc_error: Vec<Response> = res
+                    .responses
+                    .iter()
+                    .filter(|r| r.rsc / 10 != 200)
+                    .map(|r| r.to_owned())
+                    .collect();
+                if rsc_error.len() > 0 {
+                    return Err(Error::RSCError(rsc_error));
+                }
+
                 let status = DaikinStatus::new(res);
 
                 self.cache.insert(1, status, 5000).await;

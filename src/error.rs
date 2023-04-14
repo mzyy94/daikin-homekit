@@ -1,5 +1,7 @@
 use std::{fmt, io, net::AddrParseError, str::Utf8Error};
 
+use crate::response::Response;
+
 #[derive(Debug)]
 /// The Error type
 pub enum Error {
@@ -13,6 +15,8 @@ pub enum Error {
     HTTPError(reqwest::StatusCode),
     /// Serialize, Deserialize failure
     JSONError(serde_json::Error),
+    /// Bad Response Status Code (rsc)
+    RSCError(Vec<Response>),
     /// IPv4 Address parse failure
     AddrParseError(AddrParseError),
     /// Missing Property
@@ -29,6 +33,7 @@ impl fmt::Display for Error {
             Error::RequestError(err) => write!(f, "reqest error: {}", err),
             Error::HTTPError(err) => write!(f, "http responded with non-200 status code: {}", err),
             Error::JSONError(err) => write!(f, "json error: {}", err),
+            Error::RSCError(err) => write!(f, "api responded with non-200x rsc: {:?}", err),
             Error::AddrParseError(err) => write!(f, "parse ip address error: {}", err),
             Error::NoProperty => write!(f, "no property found error"),
             Error::HAPError(err) => write!(f, "hap server error: {}", err),

@@ -8,9 +8,9 @@ pub struct DaikinResponse {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Response {
-    pub fr: String,   // from
-    pub pc: Property, // content
-    pub rsc: u32,     // response code
+    pub fr: String,           // from
+    pub pc: Option<Property>, // content
+    pub rsc: u32,             // response status code
 }
 
 macro_rules! get_child_prop {
@@ -42,7 +42,7 @@ macro_rules! get_child_prop {
 macro_rules! get_prop {
     ($v:tt . $key:literal $($rest:tt)*) => {
         get_child_prop!(
-            { $v.responses.iter().find(|&r| r.fr == $key).map(|r| &r.pc) }  $($rest)*
+            { $v.responses.iter().find(|&r| r.fr == $key).and_then(|r| r.pc.as_ref()) } $($rest)*
         )
     };
 }
