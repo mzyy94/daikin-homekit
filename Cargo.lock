@@ -461,17 +461,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "eui48"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "887418ac5e8d57c2e66e04bdc2fe15f9a5407be20b54a82c86bd0e368b709701"
-dependencies = [
- "regex",
- "rustc-serialize",
- "serde",
-]
-
-[[package]]
 name = "event-listener"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -743,7 +732,7 @@ dependencies = [
 [[package]]
 name = "hap"
 version = "0.1.0-pre.15"
-source = "git+https://github.com/ewilken/hap-rs?tag=v0.1.0-pre.15#b13bf31ed92b4c7cb777e542ee903e8f14071e0b"
+source = "git+https://github.com/ewilken/hap-rs?rev=acf45bdb00e23c81b67b3d5116c113335dc83f16#acf45bdb00e23c81b67b3d5116c113335dc83f16"
 dependencies = [
  "aead",
  "async-trait",
@@ -752,7 +741,6 @@ dependencies = [
  "chacha20poly1305",
  "ed25519-dalek",
  "erased-serde",
- "eui48",
  "futures",
  "get_if_addrs",
  "handlebars",
@@ -760,6 +748,7 @@ dependencies = [
  "hyper",
  "libmdns",
  "log",
+ "macaddr",
  "num",
  "rand 0.7.3",
  "serde",
@@ -1071,6 +1060,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "macaddr"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baee0bbc17ce759db233beb01648088061bf678383130602a298e6998eedb2d8"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -1603,12 +1601,6 @@ dependencies = [
  "log",
  "rand 0.8.5",
 ]
-
-[[package]]
-name = "rustc-serialize"
-version = "0.3.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
 
 [[package]]
 name = "rustix"
