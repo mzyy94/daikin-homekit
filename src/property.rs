@@ -66,41 +66,14 @@ impl Property {
 
     pub fn step(&self) -> f32 {
         match self {
-            Property::Item { md: Some(md), .. } => {
-                let step_base = f32::from(md.st & 0xf);
-                let exp: i32 = ((md.st & 0xf0) >> 4).into();
-                let step_coefficient = if exp < 8 {
-                    10.0_f32.powi(exp)
-                } else {
-                    10.0_f32.powi(exp - 16)
-                };
-                step_base * step_coefficient
-            }
+            Property::Item { md: Some(md), .. } => md.step(),
             _ => 0.0,
         }
     }
 
-    /// Returns step, min, max
     pub fn meta(&self) -> (f32, Option<f32>, Option<f32>) {
         match self {
-            Property::Item { md: Some(md), .. } => {
-                let step = self.step();
-                let min = md.mi.as_ref().map(|m| {
-                    if step != 0.0 {
-                        hex2int(m) as f32 * step
-                    } else {
-                        hex2int(m) as f32
-                    }
-                });
-                let max = md.mx.as_ref().map(|m| {
-                    if step != 0.0 {
-                        hex2int(m) as f32 * step
-                    } else {
-                        hex2int(m) as f32
-                    }
-                });
-                (step, min, max)
-            }
+            Property::Item { md: Some(md), .. } => md.get_tuple(),
             _ => (0.0, None, None),
         }
     }
@@ -246,6 +219,39 @@ pub struct Metadata {
     st: u8, // step
     mi: Option<String>, // min
     mx: Option<String>, // max
+}
+
+impl Metadata {
+    pub fn step(&self) -> f32 {
+        let step_base = f32::from(self.st & 0xf);
+        let exp: i32 = ((self.st & 0xf0) >> 4).into();
+        let step_coefficient = if exp < 8 {
+            10.0_f32.powi(exp)
+        } else {
+            10.0_f32.powi(exp - 16)
+        };
+        step_base * step_coefficient
+    }
+
+    /// Returns step, min, max
+    pub fn get_tuple(&self) -> (f32, Option<f32>, Option<f32>) {
+        let step = self.step();
+        let min = self.mi.as_ref().map(|m| {
+            if step != 0.0 {
+                hex2int(m) as f32 * step
+            } else {
+                hex2int(m) as f32
+            }
+        });
+        let max = self.mx.as_ref().map(|m| {
+            if step != 0.0 {
+                hex2int(m) as f32 * step
+            } else {
+                hex2int(m) as f32
+            }
+        });
+        (step, min, max)
+    }
 }
 
 #[cfg(test)]
