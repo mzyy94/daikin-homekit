@@ -1,6 +1,5 @@
 use clap::Parser;
 use daikin_homekit::daikin::Daikin;
-use daikin_homekit::error::Error;
 use std::net::Ipv4Addr;
 
 #[derive(Parser)]
@@ -16,13 +15,13 @@ struct Cli {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let addr = cli.ip_addr.parse::<Ipv4Addr>()?;
     get_status(addr).await
 }
 
-async fn get_status(ip_addr: Ipv4Addr) -> Result<(), Error> {
+async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     let daikin = Daikin::new(ip_addr);
 
     let info = daikin.get_info().await?;

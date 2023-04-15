@@ -1,7 +1,7 @@
 use crate::status::{
     AutoModeWindSpeed, DaikinStatus, HorizontalDirection, VerticalDirection, WindSpeed,
 };
-use crate::{daikin::Daikin, error::Error, status::Mode};
+use crate::{daikin::Daikin, status::Mode};
 use futures::prelude::*;
 use hap::characteristic::{
     active::ActiveCharacteristic,
@@ -35,7 +35,7 @@ pub fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerS
 pub async fn set_initial_value(
     status: DaikinStatus,
     service: &mut HeaterCoolerService,
-) -> Result<(), Error> {
+) -> anyhow::Result<()> {
     service.active.set_value(status.power.into()).await?;
     service
         .current_heater_cooler_state

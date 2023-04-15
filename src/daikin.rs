@@ -26,16 +26,16 @@ impl Daikin {
         }
     }
 
-    pub async fn discovery(timeout: Duration) -> Result<(Daikin, DaikinInfo), Error> {
+    pub async fn discovery(timeout: Duration) -> anyhow::Result<(Daikin, DaikinInfo)> {
         let mut stream = discovery::discovery(timeout).await?;
         if let Some(item) = stream.next().await {
             item
         } else {
-            Err(Error::Unknown)
+            Err(Error::Unknown.into())
         }
     }
 
-    async fn send_request(&self, payload: Value) -> Result<String, Error> {
+    async fn send_request(&self, payload: Value) -> anyhow::Result<String> {
         let client = reqwest::Client::builder()
             .http1_title_case_headers()
             .timeout(Duration::new(5, 0))
@@ -45,14 +45,14 @@ impl Daikin {
 
         if resp.status() != reqwest::StatusCode::OK {
             dbg!(resp.status());
-            return Err(Error::HTTPError(resp.status()));
+            return Err(Error::HTTPError(resp.status()).into());
         }
 
         let text = resp.text().await?;
         Ok(text)
     }
 
-    pub async fn get_status(&self) -> Result<DaikinStatus, Error> {
+    pub async fn get_status(&self) -> anyhow::Result<DaikinStatus> {
         let status: DaikinStatus = match self.cache.get(&1).await {
             Some(cache) => *cache.value(),
             None => {
@@ -76,7 +76,7 @@ impl Daikin {
                     .map(|r| r.to_owned())
                     .collect();
                 if rsc_error.len() > 0 {
-                    return Err(Error::RSCError(rsc_error));
+                    return Err(Error::RSCError(rsc_error).into());
                 }
 
                 let status: DaikinStatus = res.into();
@@ -89,7 +89,7 @@ impl Daikin {
         Ok(status)
     }
 
-    pub async fn get_info(&self) -> Result<DaikinInfo, Error> {
+    pub async fn get_info(&self) -> anyhow::Result<DaikinInfo> {
         let payload = json!({"requests": [
             {
                 "op": 2,
@@ -108,7 +108,7 @@ impl Daikin {
         Ok(info)
     }
 
-    pub async fn update(&self, status: DaikinStatus) -> Result<(), Error> {
+    pub async fn update(&self, status: DaikinStatus) -> anyhow::Result<()> {
         let request: DaikinRequest = status.into();
         let payload = serde_json::to_value(request)?;
         let _ = self.send_request(payload).await?;

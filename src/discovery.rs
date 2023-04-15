@@ -1,5 +1,4 @@
 use crate::daikin::Daikin;
-use crate::error::Error;
 use crate::info::DaikinInfo;
 use futures::prelude::*;
 use genawaiter::sync::gen;
@@ -49,7 +48,7 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
 
 pub async fn discovery(
     timeout: Duration,
-) -> Result<impl Stream<Item = Result<(Daikin, DaikinInfo), Error>>, Error> {
+) -> anyhow::Result<impl Stream<Item = anyhow::Result<(Daikin, DaikinInfo)>>> {
     let (srcip, dstip) = get_ipaddr();
     let src_addr = format!("{}:30000", srcip);
     let dst_addr = format!("{}:30050", dstip);

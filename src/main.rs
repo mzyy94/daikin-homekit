@@ -1,5 +1,4 @@
 use clap::Parser;
-use daikin_homekit::error::Error;
 use daikin_homekit::{
     characteristic::{set_initial_value, setup_characteristic_callback},
     daikin::Daikin,
@@ -26,7 +25,7 @@ struct Cli {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> anyhow::Result<()> {
     std::env::set_var("RUST_LOG", "hap=info,daikin_homekit=debug");
     env_logger::init();
 
