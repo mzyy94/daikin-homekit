@@ -66,7 +66,7 @@ mod tests {
         let p = get_prop!(status."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Ok(Item { name: "p_03", pv: 5.6, meta: (0.1, Some(0.0), Some(25.5)) })"#
+            r#"Ok(Item { name: "p_03", pv: 56, meta: (0.1, Some(0.0), Some(25.5)) })"#
         );
 
         let p = get_prop!(status."/hoge".fuga.piyo);

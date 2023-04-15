@@ -2,23 +2,45 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Educe)]
 #[serde(untagged)]
+#[educe(Debug)]
 pub enum Property {
     Tree {
+        #[educe(Debug(name = "name"))]
         pn: String, // name
         #[serde(skip_serializing)]
+        #[educe(Debug(ignore))]
         pt: u8, // type
         pch: Vec<Property>, // children
     },
     Item {
+        #[educe(Debug(name = "name"))]
         pn: String, // name
         #[serde(skip_serializing)]
+        #[educe(Debug(ignore))]
         pt: u8, // type
+        #[educe(Debug(method = "propvalue_fmt"))]
         pv: Option<PropValue>, // value
         #[serde(skip_serializing)]
+        #[educe(Debug(method = "meta_fmt", name = "meta"))]
         md: Option<Metadata>, // metadata
     },
+}
+
+fn propvalue_fmt(pv: &Option<PropValue>, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    match pv {
+        Some(PropValue::String(s)) => write!(f, "{:?}", hex2int(s)),
+        Some(PropValue::Integer(i)) => write!(f, "{:?}", i),
+        _ => write!(f, "None"),
+    }
+}
+
+fn meta_fmt(m: &Option<Metadata>, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    match m {
+        Some(m) => write!(f, "{:?}", m.clone().get_tuple()),
+        None => write!(f, "{:?}", ()),
+    }
 }
 
 fn hex2int(hex: &String) -> i32 {
@@ -142,54 +164,12 @@ impl Property {
     }
 }
 
-impl std::fmt::Debug for Property {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Property::Tree { pn, pch, .. } => f
-                .debug_struct("Tree")
-                .field("name", pn)
-                .field("pch", pch)
-                .finish(),
-            Property::Item {
-                pn,
-                pv: Some(PropValue::String(pv)),
-                ..
-            } => match self.get_f32() {
-                Some(val) => f
-                    .debug_struct("Item")
-                    .field("name", pn)
-                    .field("pv", &val)
-                    .field("meta", &self.meta())
-                    .finish(),
-                None => f
-                    .debug_struct("Item")
-                    .field("name", pn)
-                    .field("pv", pv)
-                    .finish(),
-            },
-
-            Property::Item {
-                pn,
-                pv: Some(PropValue::Integer(pv)),
-                ..
-            } => f
-                .debug_struct("Item")
-                .field("name", pn)
-                .field("pv", pv)
-                .finish(),
-            Property::Item { pn, pv, .. } => f
-                .debug_struct("Item")
-                .field("name", pn)
-                .field("pv", pv)
-                .finish(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Educe)]
 #[serde(untagged)]
+#[educe(Debug)]
 pub enum PropValue {
     String(String),
+    #[educe(Debug(named_field = false))]
     Integer(i32),
 }
 
@@ -212,8 +192,10 @@ impl PropValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, Educe)]
+#[educe(Debug(named_field = false, name = false))]
 pub struct Metadata {
+    #[educe(Debug(ignore))]
     pt: String, // type
     #[serde(default)]
     st: u8, // step
@@ -356,7 +338,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", pch: [Item { name: "p_01", pv: 19.0, meta: (0.5, Some(-9.0), Some(39.0)) }] }"#
+            r#"Tree { name: "e_A00D", pch: [Item { name: "p_01", pv: 38, meta: (0.5, Some(-9.0), Some(39.0)) }] }"#
         );
     }
 }

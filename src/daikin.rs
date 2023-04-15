@@ -12,9 +12,11 @@ use std::net::Ipv4Addr;
 use std::sync::Arc;
 use std::time::Duration;
 
-#[derive(Clone)]
+#[derive(Clone, Educe)]
+#[educe(Debug)]
 pub struct Daikin {
     endpoint: String,
+    #[educe(Debug(ignore))]
     cache: Arc<Cache<u8, DaikinStatus>>,
 }
 
@@ -115,13 +117,5 @@ impl Daikin {
         self.cache.insert(1, status, 3000).await;
 
         Ok(())
-    }
-}
-
-impl std::fmt::Debug for Daikin {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("Daikin")
-            .field("endpoint", &self.endpoint)
-            .finish()
     }
 }
