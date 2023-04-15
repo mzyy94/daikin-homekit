@@ -337,6 +337,7 @@ dependencies = [
  "genawaiter",
  "hap",
  "hex",
+ "log",
  "network-interface",
  "reqwest",
  "retainer",

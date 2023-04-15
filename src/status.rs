@@ -1,11 +1,10 @@
 use crate::property::{PropValue, Property};
 use crate::request::{DaikinRequest, Request};
 use crate::response::DaikinResponse;
-use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Number, Value};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct DaikinStatus {
     pub power: Option<u8>,
     pub current_temperature: Option<f32>,
@@ -24,7 +23,7 @@ pub struct DaikinStatus {
 
 type Meta = ((f32, Option<f32>, Option<f32>), usize);
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Metadata {
     pub power: Meta,
     pub mode: Meta,
@@ -37,8 +36,8 @@ pub struct Metadata {
     pub horizontal_wind_direction: Meta,
 }
 
-impl DaikinStatus {
-    pub fn new(response: DaikinResponse) -> Self {
+impl From<DaikinResponse> for DaikinStatus {
+    fn from(response: DaikinResponse) -> Self {
         DaikinStatus {
             power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> u8),
             current_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> f32),
@@ -65,8 +64,10 @@ impl DaikinStatus {
             },
         }
     }
+}
 
-    pub fn build_request(&self) -> DaikinRequest {
+impl Into<DaikinRequest> for DaikinStatus {
+    fn into(self) -> DaikinRequest {
         let mut req = DaikinRequest { requests: vec![] };
 
         if let Some(value) = self.power {
@@ -223,7 +224,7 @@ mod tests {
     fn getter() {
         let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
             .expect("Invalid JSON file.");
-        let status = DaikinStatus::new(res);
+        let status: DaikinStatus = res.into();
 
         assert_eq!(status.power, Some(0));
         assert_eq!(status.current_temperature, Some(20.0));
@@ -249,7 +250,7 @@ mod tests {
     fn setter() {
         let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
             .expect("Invalid JSON file.");
-        let mut status = DaikinStatus::new(res);
+        let mut status: DaikinStatus = res.into();
 
         status.power = Some(1);
         status.mode = Some(Mode::Cooling);
@@ -261,7 +262,7 @@ mod tests {
         status.vertical_wind_direction = Some(VerticalDirection::BottomMost);
         status.horizontal_wind_direction = Some(HorizontalDirection::RightCenter);
 
-        let req = status.build_request();
+        let req: DaikinRequest = status.into();
         let json = serde_json::to_value(&req).unwrap();
         assert_eq!(
             json,
@@ -274,7 +275,7 @@ mod tests {
     fn debug_display() {
         let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
             .expect("Invalid JSON file.");
-        let status = DaikinStatus::new(res);
+        let status: DaikinStatus = res.into();
 
         assert_eq!(
             format!("{:?}", status),

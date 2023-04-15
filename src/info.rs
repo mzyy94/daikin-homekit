@@ -1,11 +1,8 @@
-use crate::response::Response;
+use crate::response::DaikinResponse;
 use byteorder::{BigEndian, ReadBytesExt};
-use serde::Deserialize;
 use std::io::Cursor;
 
-#[derive(Deserialize)]
 pub struct DaikinInfo {
-    responses: Vec<Response>,
     name: Option<String>,
     mac: Option<String>,
     version: Option<String>,
@@ -20,7 +17,6 @@ impl DaikinInfo {
         edid: Option<String>,
     ) -> DaikinInfo {
         DaikinInfo {
-            responses: vec![],
             name,
             mac,
             version,
@@ -29,38 +25,39 @@ impl DaikinInfo {
     }
 
     pub fn name(&self) -> Option<String> {
-        self.name
-            .clone()
-            .or(get_prop!(self."/dsiot/edge.adp_d".name -> str))
+        self.name.clone()
     }
 
     pub fn mac(&self) -> Option<String> {
-        self.mac
-            .clone()
-            .or(get_prop!(self."/dsiot/edge.adp_i".mac -> str))
+        self.mac.clone()
     }
 
     pub fn version(&self) -> Option<String> {
-        self.version
-            .clone()
-            .or(get_prop!(self."/dsiot/edge.adp_i".ver -> str))
-            .map(|v| v.replace("_", "."))
+        self.version.clone().map(|v| v.replace("_", "."))
     }
 
     pub fn edid(&self) -> Option<u64> {
-        self.edid
-            .clone()
-            .or(get_prop!(self."/dsiot/edge.adp_i".edid -> str))
-            .and_then(|s| {
-                let mut bytes = vec![0u8; 8];
-                match hex::decode_to_slice(&s, &mut bytes as &mut [u8]) {
-                    Ok(_) => {}
-                    Err(_) => return None,
-                };
-                let mut rdr = Cursor::new(bytes);
+        self.edid.clone().and_then(|s| {
+            let mut bytes = vec![0u8; 8];
+            match hex::decode_to_slice(&s, &mut bytes as &mut [u8]) {
+                Ok(_) => {}
+                Err(_) => return None,
+            };
+            let mut rdr = Cursor::new(bytes);
 
-                rdr.read_u64::<BigEndian>().ok()
-            })
+            rdr.read_u64::<BigEndian>().ok()
+        })
+    }
+}
+
+impl From<DaikinResponse> for DaikinInfo {
+    fn from(res: DaikinResponse) -> Self {
+        DaikinInfo {
+            name: get_prop!(res."/dsiot/edge.adp_d".name -> str),
+            mac: get_prop!(res."/dsiot/edge.adp_i".mac -> str),
+            version: get_prop!(res."/dsiot/edge.adp_i".ver -> str),
+            edid: get_prop!(res."/dsiot/edge.adp_i".edid -> str),
+        }
     }
 }
 
@@ -81,8 +78,9 @@ mod tests {
 
     #[test]
     fn getter() {
-        let info: DaikinInfo =
+        let res: DaikinResponse =
             serde_json::from_str(include_str!("./fixtures/info.json")).expect("Invalid JSON file.");
+        let info: DaikinInfo = res.into();
 
         assert_eq!(info.name(), Some("display_name".into()));
         assert_eq!(info.mac(), Some("00005E005342".into()));
@@ -92,8 +90,9 @@ mod tests {
 
     #[test]
     fn debug_display() {
-        let info: DaikinInfo =
+        let res: DaikinResponse =
             serde_json::from_str(include_str!("./fixtures/info.json")).expect("Invalid JSON file.");
+        let info: DaikinInfo = res.into();
 
         assert_eq!(
             format!("{:?}", info),

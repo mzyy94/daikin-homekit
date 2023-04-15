@@ -54,6 +54,11 @@ pub async fn discovery(
     let src_addr = format!("{}:30000", srcip);
     let dst_addr = format!("{}:30050", dstip);
 
+    debug!(
+        "discovering daikin device from {} to {}",
+        src_addr, dst_addr
+    );
+
     let socket = UdpSocket::bind(src_addr).await?;
     socket.set_broadcast(true)?;
     let payload = "DAIKIN_UDP/common/basic_info";
@@ -65,10 +70,14 @@ pub async fn discovery(
             let mut buf = [0; 2048];
             let (text, src_addr) =
                 match tokio::time::timeout(timeout, socket.recv_from(&mut buf)).await {
-                    Err(_) => break,
+                    Err(e) => {
+                        warn!("stop discovering");
+                        yield_!(Err(e.into()));
+                        break;
+                    }
                     Ok(res) => match res {
                         Ok((buf_size, _)) if buf_size == 2048 => {
-                            // todo!("log buffer too small");
+                            warn!("UDP buffer too small");
                             continue;
                         }
                         Ok((buf_size, SocketAddr::V4(src_addr))) => {
@@ -101,6 +110,12 @@ pub async fn discovery(
                 item.get("mac").cloned(),
                 item.get("ver").cloned(),
                 item.get("edid").cloned(),
+            );
+
+            info!(
+                "found daikin device at {}: {}",
+                src_addr.ip(),
+                info.name().unwrap_or("Unknown name".into())
             );
 
             yield_!(Ok((daikin, info)));

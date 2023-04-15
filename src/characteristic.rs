@@ -178,25 +178,39 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("active characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("active read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             Ok(status.power)
         }
         .boxed()
     }));
 
     let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: u8, new_val: u8| {
+    char.on_update_async(Some(move |cur: u8, new: u8| {
         let dk = dk.clone();
         async move {
-            println!("active updated from {} to {} (async)", current_val, new_val);
-            if current_val == new_val {
-                println!("- skip");
+            if cur == new {
+                debug!("active updated from {} to {} - skip", cur, new);
                 return Ok(());
             }
-            let mut status = dk.get_status().await.unwrap();
-            status.power = Some(new_val);
-            dk.update(status).await.unwrap();
+            debug!("active updated from {} to {}", cur, new);
+            let mut status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(());
+                }
+            };
+            status.power = Some(new);
+            if let Err(e) = dk.update(status).await {
+                error!("failed to call update {}", e);
+            };
             Ok(())
         }
         .boxed()
@@ -211,8 +225,14 @@ pub fn setup_current_heater_cooler_state(
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("current_heater_cooler_state characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("current_heater_cooler_state read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             match status.mode {
                 Some(Mode::Fan) => Ok(Some(0)),        // Inactive
                 Some(Mode::Dehumidify) => Ok(Some(1)), // Idle
@@ -224,15 +244,12 @@ pub fn setup_current_heater_cooler_state(
         .boxed()
     }));
 
-    let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: u8, new_val: u8| {
-        let dk = dk.clone();
+    char.on_update_async(Some(move |cur: u8, new: u8| {
         async move {
-            println!(
-                "current_heater_cooler_state updated from {} to {} (async)",
-                current_val, new_val
+            debug!(
+                "current_heater_cooler_state updated from {} to {} - no action",
+                cur, new
             );
-            let _ = dk.get_status().await.unwrap();
             Ok(())
         }
         .boxed()
@@ -247,8 +264,14 @@ pub fn setup_target_heater_cooler_state(
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("target_heater_cooler_state characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("target_heater_cooler_state read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             match status.mode {
                 Some(Mode::Auto) => Ok(Some(0)),    // auto
                 Some(Mode::Heating) => Ok(Some(1)), // heating
@@ -260,26 +283,34 @@ pub fn setup_target_heater_cooler_state(
     }));
 
     let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: u8, new_val: u8| {
+    char.on_update_async(Some(move |cur: u8, new: u8| {
         let dk = dk.clone();
         async move {
-            println!(
-                "target_heater_cooler_state updated from {} to {} (async)",
-                current_val, new_val
-            );
-            if current_val == new_val {
-                println!("- skip");
+            if cur == new {
+                debug!(
+                    "target_heater_cooler_state updated from {} to {} - skip",
+                    cur, new
+                );
                 return Ok(());
             }
-            let mut status = dk.get_status().await.unwrap();
-            if let Some(mode) = match new_val {
+            debug!("target_heater_cooler_state updated from {} to {}", cur, new);
+            let mut status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(());
+                }
+            };
+            if let Some(mode) = match new {
                 0 => Some(Mode::Auto),
                 1 => Some(Mode::Heating),
                 2 => Some(Mode::Cooling),
                 _ => None,
             } {
                 status.mode = Some(mode);
-                dk.update(status).await.unwrap();
+                if let Err(e) = dk.update(status).await {
+                    error!("failed to call update {}", e);
+                };
             }
 
             Ok(())
@@ -293,22 +324,25 @@ pub fn setup_current_temperature(daikin: Daikin, char: &mut CurrentTemperatureCh
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("current_temperature characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("current_temperature read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             Ok(status.current_temperature)
         }
         .boxed()
     }));
 
-    let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: f32, new_val: f32| {
-        let dk = dk.clone();
+    char.on_update_async(Some(move |cur: f32, new: f32| {
         async move {
-            println!(
-                "current_temperature updated from {} to {} (async)",
-                current_val, new_val
+            debug!(
+                "current_temperature updated from {} to {} - no action",
+                cur, new
             );
-            let _ = dk.get_status().await.unwrap();
             Ok(())
         }
         .boxed()
@@ -323,28 +357,45 @@ pub fn setup_heating_threshold_temperature(
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("heating_threshold_temperature characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("heating_threshold_temperature read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             Ok(status.target_heating_temperature)
         }
         .boxed()
     }));
 
     let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: f32, new_val: f32| {
+    char.on_update_async(Some(move |cur: f32, new: f32| {
         let dk = dk.clone();
         async move {
-            println!(
-                "heating_threshold_temperature updated from {} to {} (async)",
-                current_val, new_val
-            );
-            if current_val == new_val {
-                println!("- skip");
+            if cur == new {
+                debug!(
+                    "heating_threshold_temperature updated from {} to {} - skip",
+                    cur, new
+                );
                 return Ok(());
             }
-            let mut status = dk.get_status().await.unwrap();
-            status.target_heating_temperature = Some(new_val);
-            dk.update(status).await.unwrap();
+            debug!(
+                "heating_threshold_temperature updated from {} to {}",
+                cur, new
+            );
+            let mut status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(());
+                }
+            };
+            status.target_heating_temperature = Some(new);
+            if let Err(e) = dk.update(status).await {
+                error!("failed to call update {}", e);
+            };
             Ok(())
         }
         .boxed()
@@ -359,28 +410,45 @@ pub fn setup_cooling_threshold_temperature(
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("cooling_threshold_temperature characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("cooling_threshold_temperature read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             Ok(status.target_cooling_temperature)
         }
         .boxed()
     }));
 
     let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: f32, new_val: f32| {
+    char.on_update_async(Some(move |cur: f32, new: f32| {
         let dk = dk.clone();
         async move {
-            println!(
-                "cooling_threshold_temperature updated from {} to {} (async)",
-                current_val, new_val
-            );
-            if current_val == new_val {
-                println!("- skip");
+            if cur == new {
+                debug!(
+                    "cooling_threshold_temperature updated from {} to {} - skip",
+                    cur, new
+                );
                 return Ok(());
             }
-            let mut status = dk.get_status().await.unwrap();
-            status.target_cooling_temperature = Some(new_val);
-            dk.update(status).await.unwrap();
+            debug!(
+                "cooling_threshold_temperature updated from {} to {}",
+                cur, new
+            );
+            let mut status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(());
+                }
+            };
+            status.target_cooling_temperature = Some(new);
+            if let Err(e) = dk.update(status).await {
+                error!("failed to call update {}", e);
+            };
             Ok(())
         }
         .boxed()
@@ -392,8 +460,14 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("rotation_speed characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("rotation_speed read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             let speed = match status.wind_speed {
                 Some(WindSpeed::Silent) => Some(5.0),
                 Some(WindSpeed::Lev1) => Some(10.0),
@@ -411,19 +485,22 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
     }));
 
     let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: f32, new_val: f32| {
+    char.on_update_async(Some(move |cur: f32, new: f32| {
         let dk = dk.clone();
         async move {
-            println!(
-                "rotation_speed updated from {} to {} (async)",
-                current_val, new_val
-            );
-            if current_val == new_val {
-                println!("- skip");
+            if cur == new {
+                debug!("rotation_speed updated from {} to {} - skip", cur, new);
                 return Ok(());
             }
-            let mut status = dk.get_status().await.unwrap();
-            let speed = match new_val as u8 {
+            debug!("rotation_speed updated from {} to {}", cur, new);
+            let mut status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(());
+                }
+            };
+            let speed = match new as u8 {
                 0..=5 => WindSpeed::Silent,
                 6..=20 => WindSpeed::Lev1,
                 21..=35 => WindSpeed::Lev2,
@@ -432,14 +509,16 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
                 76..=90 => WindSpeed::Lev5,
                 _ => WindSpeed::Auto,
             };
-            let auto_speed = if new_val < 50.0 {
+            let auto_speed = if new < 50.0 {
                 AutoModeWindSpeed::Silent
             } else {
                 AutoModeWindSpeed::Auto
             };
             status.wind_speed = Some(speed);
             status.automode_wind_speed = Some(auto_speed);
-            dk.update(status).await.unwrap();
+            if let Err(e) = dk.update(status).await {
+                error!("failed to call update {}", e);
+            };
             Ok(())
         }
         .boxed()
@@ -451,8 +530,14 @@ pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
-            println!("swing_mode characteristic read (async)");
-            let status = dk.get_status().await.unwrap();
+            debug!("swing_mode read");
+            let status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(None);
+                }
+            };
             let mode = match status.vertical_wind_direction {
                 Some(VerticalDirection::Swing) => Some(1),
                 _ => Some(0),
@@ -463,26 +548,31 @@ pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
     }));
 
     let dk = daikin.clone();
-    char.on_update_async(Some(move |current_val: u8, new_val: u8| {
+    char.on_update_async(Some(move |cur: u8, new: u8| {
         let dk = dk.clone();
         async move {
-            println!(
-                "swing_mode updated from {} to {} (async)",
-                current_val, new_val
-            );
-            if current_val == new_val {
-                println!("- skip");
+            if cur == new {
+                debug!("swing_mode updated from {} to {} - skip", cur, new);
                 return Ok(());
             }
-            let mut status = dk.get_status().await.unwrap();
-            if new_val == 0 {
+            debug!("swing_mode updated from {} to {}", cur, new);
+            let mut status = match dk.get_status().await {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("failed to call get_status {}", e);
+                    return Ok(());
+                }
+            };
+            if new == 0 {
                 status.vertical_wind_direction = Some(VerticalDirection::Auto);
                 status.horizontal_wind_direction = Some(HorizontalDirection::Auto);
             } else {
                 status.vertical_wind_direction = Some(VerticalDirection::Swing);
                 status.horizontal_wind_direction = Some(HorizontalDirection::Swing);
             }
-            dk.update(status).await.unwrap();
+            if let Err(e) = dk.update(status).await {
+                error!("failed to call update {}", e);
+            };
             Ok(())
         }
         .boxed()

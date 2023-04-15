@@ -2,6 +2,7 @@ use std::{io, net::AddrParseError, str::Utf8Error};
 
 use crate::response::Response;
 use thiserror::Error;
+use tokio::time::error::Elapsed;
 
 #[derive(Error, Debug)]
 /// The Error type
@@ -33,4 +34,10 @@ pub enum Error {
     /// HAP Server error
     #[error("hap server error: {0}")]
     HAPError(#[from] hap::Error),
+    /// Device discovery timeout error
+    #[error("discovery timeout error")]
+    DiscoveryTimeout(#[from] Elapsed),
+    /// Unknown error
+    #[error("unknown error")]
+    Unknown,
 }

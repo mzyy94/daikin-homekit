@@ -27,6 +27,9 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    std::env::set_var("RUST_LOG", "hap=info,daikin_homekit=debug");
+    env_logger::init();
+
     let cli = Cli::parse();
     let (daikin, info) = match cli.ip_addr {
         Some(ip_addr) => {
@@ -38,7 +41,7 @@ async fn main() -> Result<(), Error> {
         }
         None => {
             let timeout = std::time::Duration::new(3, 0);
-            Daikin::discovery(timeout).await.unwrap()
+            Daikin::discovery(timeout).await?
         }
     };
 
@@ -88,9 +91,6 @@ async fn main() -> Result<(), Error> {
     server.add_accessory(ac).await?;
 
     let handle = server.run_handle();
-
-    std::env::set_var("RUST_LOG", "hap=debug");
-    env_logger::init();
 
     handle.await?;
     Ok(())

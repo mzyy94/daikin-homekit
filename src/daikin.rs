@@ -1,6 +1,7 @@
 use crate::discovery;
 use crate::error::Error;
 use crate::info::DaikinInfo;
+use crate::request::DaikinRequest;
 use crate::response::{DaikinResponse, Response};
 use crate::status::DaikinStatus;
 use futures::prelude::*;
@@ -25,24 +26,19 @@ impl Daikin {
         }
     }
 
-    pub async fn discovery(timeout: Duration) -> Option<(Daikin, DaikinInfo)> {
-        if let Ok(mut stream) = discovery::discovery(timeout).await {
-            if let Some(item) = stream.next().await {
-                match item {
-                    Ok(item) => Some(item),
-                    Err(_) => None,
-                }
-            } else {
-                None
-            }
+    pub async fn discovery(timeout: Duration) -> Result<(Daikin, DaikinInfo), Error> {
+        let mut stream = discovery::discovery(timeout).await?;
+        if let Some(item) = stream.next().await {
+            item
         } else {
-            None
+            Err(Error::Unknown)
         }
     }
 
     async fn send_request(&self, payload: Value) -> Result<String, Error> {
         let client = reqwest::Client::builder()
             .http1_title_case_headers()
+            .timeout(Duration::new(5, 0))
             .build()?;
 
         let resp = client.post(&self.endpoint).json(&payload).send().await?;
@@ -83,7 +79,7 @@ impl Daikin {
                     return Err(Error::RSCError(rsc_error));
                 }
 
-                let status = DaikinStatus::new(res);
+                let status: DaikinStatus = res.into();
 
                 self.cache.insert(1, status, 5000).await;
                 status
@@ -106,13 +102,14 @@ impl Daikin {
         ]});
 
         let body = self.send_request(payload).await?;
-        let res: DaikinInfo = serde_json::from_str(&body)?;
+        let res: DaikinResponse = serde_json::from_str(&body)?;
+        let info: DaikinInfo = res.into();
 
-        Ok(res)
+        Ok(info)
     }
 
     pub async fn update(&self, status: DaikinStatus) -> Result<(), Error> {
-        let request = status.build_request();
+        let request: DaikinRequest = status.into();
         let payload = serde_json::to_value(request)?;
         let _ = self.send_request(payload).await?;
         self.cache.insert(1, status, 3000).await;

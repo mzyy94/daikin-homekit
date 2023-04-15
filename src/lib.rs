@@ -9,3 +9,5 @@ pub mod discovery;
 pub mod error;
 pub mod property;
 pub mod status;
+#[macro_use]
+extern crate log;
