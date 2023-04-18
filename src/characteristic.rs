@@ -77,31 +77,17 @@ pub async fn set_initial_value(
         .heating_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_step_value(Some(status.meta.target_heating_temperature.0 .0.into()))?;
+        .set_step_value(Some(status.meta.target_heating_temperature.step.into()))?;
     service
         .heating_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_min_value(
-            status
-                .meta
-                .target_heating_temperature
-                .0
-                 .1
-                .map(|v| v.into()),
-        )?;
+        .set_min_value(status.meta.target_heating_temperature.min.map(|v| v.into()))?;
     service
         .heating_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_max_value(
-            status
-                .meta
-                .target_heating_temperature
-                .0
-                 .2
-                .map(|v| v.into()),
-        )?;
+        .set_max_value(status.meta.target_heating_temperature.max.map(|v| v.into()))?;
 
     service
         .cooling_threshold_temperature
@@ -113,31 +99,17 @@ pub async fn set_initial_value(
         .cooling_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_step_value(Some(status.meta.target_cooling_temperature.0 .0.into()))?;
+        .set_step_value(Some(status.meta.target_cooling_temperature.step.into()))?;
     service
         .cooling_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_min_value(
-            status
-                .meta
-                .target_cooling_temperature
-                .0
-                 .1
-                .map(|v| v.into()),
-        )?;
+        .set_min_value(status.meta.target_cooling_temperature.min.map(|v| v.into()))?;
     service
         .cooling_threshold_temperature
         .as_mut()
         .unwrap()
-        .set_max_value(
-            status
-                .meta
-                .target_cooling_temperature
-                .0
-                 .2
-                .map(|v| v.into()),
-        )?;
+        .set_max_value(status.meta.target_cooling_temperature.max.map(|v| v.into()))?;
 
     service
         .rotation_speed

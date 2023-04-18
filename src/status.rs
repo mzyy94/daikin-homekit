@@ -21,7 +21,13 @@ pub struct DaikinStatus {
     pub meta: Metadata,
 }
 
-type Meta = ((f32, Option<f32>, Option<f32>), usize);
+#[derive(Clone, Copy, Debug)]
+pub struct Meta {
+    pub step: f32,
+    pub min: Option<f32>,
+    pub max: Option<f32>,
+    pub digits: usize,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct Metadata {
@@ -71,20 +77,24 @@ impl Into<DaikinRequest> for DaikinStatus {
         let mut req = DaikinRequest { requests: vec![] };
 
         if let Some(value) = self.power {
-            let pv = PropValue::from(value as f32, self.meta.power.0 .0, self.meta.power.1);
+            let pv = PropValue::from(value as f32, self.meta.power.step, self.meta.power.digits);
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = pv);
         };
 
         if let Some(value) = self.mode {
-            let pv = PropValue::from(value as u8 as f32, self.meta.mode.0 .0, self.meta.mode.1);
+            let pv = PropValue::from(
+                value as u8 as f32,
+                self.meta.mode.step,
+                self.meta.mode.digits,
+            );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = pv);
         };
 
         if let Some(value) = self.target_cooling_temperature {
             let pv = PropValue::from(
                 value,
-                self.meta.target_cooling_temperature.0 .0,
-                self.meta.target_cooling_temperature.1,
+                self.meta.target_cooling_temperature.step,
+                self.meta.target_cooling_temperature.digits,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = pv);
         };
@@ -92,8 +102,8 @@ impl Into<DaikinRequest> for DaikinStatus {
         if let Some(value) = self.target_heating_temperature {
             let pv = PropValue::from(
                 value,
-                self.meta.target_heating_temperature.0 .0,
-                self.meta.target_heating_temperature.1,
+                self.meta.target_heating_temperature.step,
+                self.meta.target_heating_temperature.digits,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = pv);
         };
@@ -101,8 +111,8 @@ impl Into<DaikinRequest> for DaikinStatus {
         if let Some(value) = self.target_automatic_temperature {
             let pv = PropValue::from(
                 value,
-                self.meta.target_automatic_temperature.0 .0,
-                self.meta.target_automatic_temperature.1,
+                self.meta.target_automatic_temperature.step,
+                self.meta.target_automatic_temperature.digits,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = pv);
         };
@@ -110,8 +120,8 @@ impl Into<DaikinRequest> for DaikinStatus {
         if let Some(value) = self.wind_speed {
             let pv = PropValue::from(
                 value as u8 as f32,
-                self.meta.wind_speed.0 .0,
-                self.meta.wind_speed.1,
+                self.meta.wind_speed.step,
+                self.meta.wind_speed.digits,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 = pv)
         };
@@ -119,8 +129,8 @@ impl Into<DaikinRequest> for DaikinStatus {
         if let Some(value) = self.automode_wind_speed {
             let pv = PropValue::from(
                 value as u8 as f32,
-                self.meta.automode_wind_speed.0 .0,
-                self.meta.automode_wind_speed.1,
+                self.meta.automode_wind_speed.step,
+                self.meta.automode_wind_speed.digits,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 = pv)
         };
@@ -128,8 +138,8 @@ impl Into<DaikinRequest> for DaikinStatus {
         if let Some(value) = self.vertical_wind_direction {
             let pv = PropValue::from(
                 value as u8 as f32,
-                self.meta.vertical_wind_direction.0 .0,
-                self.meta.vertical_wind_direction.1,
+                self.meta.vertical_wind_direction.step,
+                self.meta.vertical_wind_direction.digits,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 = pv)
         };
@@ -137,8 +147,8 @@ impl Into<DaikinRequest> for DaikinStatus {
         if let Some(value) = self.horizontal_wind_direction {
             let pv = PropValue::from(
                 value as u8 as f32,
-                self.meta.horizontal_wind_direction.0 .0,
-                self.meta.horizontal_wind_direction.1,
+                self.meta.horizontal_wind_direction.step,
+                self.meta.horizontal_wind_direction.digits,
             );
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 = pv)
         };
@@ -279,7 +289,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", status),
-            r#"DaikinStatus { power: Some(0), current_temperature: Some(20.0), current_humidity: Some(50.0), current_outside_temperature: Some(19.0), mode: Some(Cooling), target_cooling_temperature: Some(24.5), target_heating_temperature: Some(25.0), target_automatic_temperature: Some(0.0), wind_speed: Some(Auto), automode_wind_speed: Some(Auto), vertical_wind_direction: Some(Auto), horizontal_wind_direction: Some(Auto), meta: Metadata { power: ((1.0, Some(0.0), Some(1.0)), 2), mode: ((0.0, None, Some(47.0)), 4), target_cooling_temperature: ((0.5, Some(18.0), Some(32.0)), 2), target_heating_temperature: ((0.5, Some(14.0), Some(30.0)), 2), target_automatic_temperature: ((0.5, Some(-5.0), Some(5.0)), 2), wind_speed: ((0.0, None, Some(3320.0)), 4), automode_wind_speed: ((0.0, None, Some(3072.0)), 4), vertical_wind_direction: ((0.0, None, Some(8486975.0)), 8), horizontal_wind_direction: ((0.0, None, Some(98813.0)), 6) } }"#
+            r#"DaikinStatus { power: Some(0), current_temperature: Some(20.0), current_humidity: Some(50.0), current_outside_temperature: Some(19.0), mode: Some(Cooling), target_cooling_temperature: Some(24.5), target_heating_temperature: Some(25.0), target_automatic_temperature: Some(0.0), wind_speed: Some(Auto), automode_wind_speed: Some(Auto), vertical_wind_direction: Some(Auto), horizontal_wind_direction: Some(Auto), meta: Metadata { power: Meta { step: 1.0, min: Some(0.0), max: Some(1.0), digits: 2 }, mode: Meta { step: 0.0, min: None, max: Some(47.0), digits: 4 }, target_cooling_temperature: Meta { step: 0.5, min: Some(18.0), max: Some(32.0), digits: 2 }, target_heating_temperature: Meta { step: 0.5, min: Some(14.0), max: Some(30.0), digits: 2 }, target_automatic_temperature: Meta { step: 0.5, min: Some(-5.0), max: Some(5.0), digits: 2 }, wind_speed: Meta { step: 0.0, min: None, max: Some(3320.0), digits: 4 }, automode_wind_speed: Meta { step: 0.0, min: None, max: Some(3072.0), digits: 4 }, vertical_wind_direction: Meta { step: 0.0, min: None, max: Some(8486975.0), digits: 8 }, horizontal_wind_direction: Meta { step: 0.0, min: None, max: Some(98813.0), digits: 6 } } }"#
         );
     }
 }

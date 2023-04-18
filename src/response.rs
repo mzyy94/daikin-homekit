@@ -17,8 +17,11 @@ macro_rules! get_child_prop {
     ({ $vopt:expr }) => {
         $vopt.ok_or(Error::NoProperty)
     };
-    ({ $vopt:expr } -> meta_size) => {
-        ($vopt.map(|v| v.meta()).unwrap_or_default(), $vopt.map(|v| v.size()).unwrap_or_default())
+    ({ $vopt:expr } -> meta_size) => {{
+        let (step, min, max) = $vopt.map(|v| v.meta()).unwrap_or_default();
+        let digits = $vopt.map(|v| v.size()).unwrap_or_default();
+        Meta {step, min, max, digits}
+    }
     };
     ({ $vopt:expr } -> f32) => {
         $vopt.and_then(|v| v.get_f32())
