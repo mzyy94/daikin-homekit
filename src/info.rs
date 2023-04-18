@@ -33,13 +33,13 @@ impl DaikinInfo {
     }
 
     pub fn version(&self) -> Option<String> {
-        self.version.clone().map(|v| v.replace("_", "."))
+        self.version.clone().map(|v| v.replace('_', "."))
     }
 
     pub fn edid(&self) -> Option<u64> {
         self.edid.clone().and_then(|s| {
             let mut bytes = vec![0u8; 8];
-            match hex::decode_to_slice(&s, &mut bytes as &mut [u8]) {
+            match hex::decode_to_slice(s, &mut bytes as &mut [u8]) {
                 Ok(_) => {}
                 Err(_) => return None,
             };

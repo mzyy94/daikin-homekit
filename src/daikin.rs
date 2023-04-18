@@ -77,7 +77,7 @@ impl Daikin {
                     .filter(|r| r.rsc / 10 != 200)
                     .map(|r| r.to_owned())
                     .collect();
-                if rsc_error.len() > 0 {
+                if !rsc_error.is_empty() {
                     return Err(Error::RSCError(rsc_error).into());
                 }
 

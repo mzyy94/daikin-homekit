@@ -25,7 +25,7 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
         .iter()
         .filter(|ni| {
             ni.mac_addr != Some("00:00:00:00:00:00".into())
-                && ni.mac_addr != None
+                && ni.mac_addr.is_some()
                 && ni.addr.iter().filter(|a| a.ip().is_ipv4()).count() > 0
         })
         .collect();
@@ -62,7 +62,7 @@ pub async fn discovery(
     socket.set_broadcast(true)?;
     let payload = "DAIKIN_UDP/common/basic_info";
 
-    socket.send_to(&payload.as_bytes(), dst_addr).await?;
+    socket.send_to(payload.as_bytes(), dst_addr).await?;
 
     Ok(gen!({
         loop {

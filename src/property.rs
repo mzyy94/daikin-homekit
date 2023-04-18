@@ -117,7 +117,7 @@ impl Property {
                 md: Some(md),
                 ..
             } => {
-                if md.pt == "b" && !(md.mi == None && md.mx == None) {
+                if md.pt == "b" && !(md.mi.is_none() && md.mx.is_none()) {
                     let value = hex2int(pv) as f32;
                     let step = self.step();
                     if step == 0.0 {
@@ -153,7 +153,7 @@ impl Property {
             } => {
                 if md.pt == "s" {
                     Some(String::from(pv))
-                } else if md.pt == "b" && md.st == 0 && md.mi == None && md.mx == None {
+                } else if md.pt == "b" && md.st == 0 && md.mi.is_none() && md.mx.is_none() {
                     todo!() // decode hex string
                 } else {
                     None

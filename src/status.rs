@@ -72,6 +72,7 @@ impl From<DaikinResponse> for DaikinStatus {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<DaikinRequest> for DaikinStatus {
     fn into(self) -> DaikinRequest {
         let mut req = DaikinRequest { requests: vec![] };
@@ -232,7 +233,7 @@ mod tests {
         status.horizontal_wind_direction = Some(HorizontalDirection::RightCenter);
 
         let req: DaikinRequest = status.into();
-        let json = serde_json::to_value(&req).unwrap();
+        let json = serde_json::to_value(req).unwrap();
         assert_eq!(
             json,
             serde_json::from_str::<serde_json::Value>(include_str!("./fixtures/update.json"))

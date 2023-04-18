@@ -59,7 +59,7 @@ fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerServi
         setup_rotation_speed(daikin.clone(), char);
     }
     if let Some(char) = service.swing_mode.as_mut() {
-        setup_swing_mode(daikin.clone(), char);
+        setup_swing_mode(daikin, char);
     }
 }
 
@@ -169,7 +169,7 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
         .boxed()
     }));
 
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_update_async(Some(move |cur: u8, new: u8| {
         let dk = dk.clone();
         async move {
@@ -187,7 +187,7 @@ pub fn setup_current_heater_cooler_state(
     daikin: Daikin,
     char: &mut CurrentHeaterCoolerStateCharacteristic,
 ) {
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
@@ -214,7 +214,7 @@ pub fn setup_target_heater_cooler_state(
         .boxed()
     }));
 
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_update_async(Some(move |cur: u8, new: u8| {
         let dk = dk.clone();
         async move {
@@ -237,7 +237,7 @@ pub fn setup_target_heater_cooler_state(
 }
 
 pub fn setup_current_temperature(daikin: Daikin, char: &mut CurrentTemperatureCharacteristic) {
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_read_async(Some(move || {
         let dk = dk.clone();
         async move {
@@ -264,7 +264,7 @@ pub fn setup_heating_threshold_temperature(
         .boxed()
     }));
 
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_update_async(Some(move |cur: f32, new: f32| {
         let dk = dk.clone();
         async move {
@@ -293,7 +293,7 @@ pub fn setup_cooling_threshold_temperature(
         .boxed()
     }));
 
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_update_async(Some(move |cur: f32, new: f32| {
         let dk = dk.clone();
         async move {
@@ -320,7 +320,7 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
         .boxed()
     }));
 
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_update_async(Some(move |cur: f32, new: f32| {
         let dk = dk.clone();
         async move {
@@ -365,7 +365,7 @@ pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
         .boxed()
     }));
 
-    let dk = daikin.clone();
+    let dk = daikin;
     char.on_update_async(Some(move |cur: u8, new: u8| {
         let dk = dk.clone();
         async move {
