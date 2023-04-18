@@ -1,8 +1,5 @@
 use clap::Parser;
-use daikin_homekit::{
-    characteristic::{set_initial_value, setup_characteristic_callback},
-    daikin::Daikin,
-};
+use daikin_homekit::{characteristic::setup_characteristic, daikin::Daikin};
 use std::{net::Ipv4Addr, str::FromStr};
 
 use hap::{
@@ -78,13 +75,7 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    ac.heater_cooler.lock_physical_controls = None;
-    ac.heater_cooler.name = None;
-    ac.heater_cooler.temperature_display_units = None;
-
-    let status = daikin.get_status().await?;
-    set_initial_value(status, &mut ac.heater_cooler).await?;
-    setup_characteristic_callback(daikin, &mut ac.heater_cooler);
+    setup_characteristic(daikin, &mut ac.heater_cooler).await?;
 
     let server = IpServer::new(config, storage).await?;
     server.add_accessory(ac).await?;

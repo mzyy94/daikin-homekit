@@ -16,7 +16,33 @@ use hap::characteristic::{
 use hap::service::heater_cooler::HeaterCoolerService;
 use serde_json::json;
 
-pub fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerService) {
+pub async fn setup_characteristic(
+    daikin: Daikin,
+    service: &mut HeaterCoolerService,
+) -> anyhow::Result<()> {
+    let status = daikin.get_status().await?;
+
+    if status.wind_speed.is_none() || status.meta.wind_speed.max.map(|v| v as u32) != Some(0x0cf8) {
+        info!("wind_speed is not compatible. remove rotation_speed characteristic");
+        service.rotation_speed = None;
+    }
+
+    if status.vertical_wind_direction.is_none()
+        || status.meta.vertical_wind_direction.max.map(|v| v as u32) != Some(0x0081803f)
+    {
+        info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
+        service.swing_mode = None;
+    }
+
+    service.lock_physical_controls = None;
+    service.name = None;
+    service.temperature_display_units = None;
+
+    setup_characteristic_callback(daikin, service);
+    set_initial_value(status, service).await
+}
+
+fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerService) {
     setup_active(daikin.clone(), &mut service.active);
     setup_current_heater_cooler_state(daikin.clone(), &mut service.current_heater_cooler_state);
     setup_target_heater_cooler_state(daikin.clone(), &mut service.target_heater_cooler_state);
@@ -29,11 +55,15 @@ pub fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerS
         daikin.clone(),
         service.cooling_threshold_temperature.as_mut().unwrap(),
     );
-    setup_rotation_speed(daikin.clone(), service.rotation_speed.as_mut().unwrap());
-    setup_swing_mode(daikin.clone(), service.swing_mode.as_mut().unwrap());
+    if let Some(char) = service.rotation_speed.as_mut() {
+        setup_rotation_speed(daikin.clone(), char);
+    }
+    if let Some(char) = service.swing_mode.as_mut() {
+        setup_swing_mode(daikin.clone(), char);
+    }
 }
 
-pub async fn set_initial_value(
+async fn set_initial_value(
     status: DaikinStatus,
     service: &mut HeaterCoolerService,
 ) -> anyhow::Result<()> {
