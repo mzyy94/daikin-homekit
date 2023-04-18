@@ -30,6 +30,7 @@ pub struct Meta {
 #[derive(Clone, Copy, Debug)]
 pub struct Metadata {
     pub power: Meta,
+    pub current_temperature: Meta,
     pub mode: Meta,
     pub target_cooling_temperature: Meta,
     pub target_heating_temperature: Meta,
@@ -57,6 +58,7 @@ impl From<DaikinResponse> for DaikinStatus {
             horizontal_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 .into()),
             meta: Metadata {
                 power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> Meta),
+                current_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> Meta),
                 mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> Meta),
                 target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> Meta),
                 target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> Meta),
@@ -246,7 +248,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", status),
-            r#"DaikinStatus { power: Some(0), current_temperature: Some(20.0), current_humidity: Some(50.0), current_outside_temperature: Some(19.0), mode: Some(Cooling), target_cooling_temperature: Some(24.5), target_heating_temperature: Some(25.0), target_automatic_temperature: Some(0.0), wind_speed: Some(Auto), automode_wind_speed: Some(Auto), vertical_wind_direction: Some(Auto), horizontal_wind_direction: Some(Auto), meta: Metadata { power: Meta { step: 1.0, min: Some(0.0), max: Some(1.0), digits: 2 }, mode: Meta { step: 0.0, min: None, max: Some(47.0), digits: 4 }, target_cooling_temperature: Meta { step: 0.5, min: Some(18.0), max: Some(32.0), digits: 2 }, target_heating_temperature: Meta { step: 0.5, min: Some(14.0), max: Some(30.0), digits: 2 }, target_automatic_temperature: Meta { step: 0.5, min: Some(-5.0), max: Some(5.0), digits: 2 }, wind_speed: Meta { step: 0.0, min: None, max: Some(3320.0), digits: 4 }, automode_wind_speed: Meta { step: 0.0, min: None, max: Some(3072.0), digits: 4 }, vertical_wind_direction: Meta { step: 0.0, min: None, max: Some(8486975.0), digits: 8 }, horizontal_wind_direction: Meta { step: 0.0, min: None, max: Some(98813.0), digits: 6 } } }"#
+            r#"DaikinStatus { power: Some(0), current_temperature: Some(20.0), current_humidity: Some(50.0), current_outside_temperature: Some(19.0), mode: Some(Cooling), target_cooling_temperature: Some(24.5), target_heating_temperature: Some(25.0), target_automatic_temperature: Some(0.0), wind_speed: Some(Auto), automode_wind_speed: Some(Auto), vertical_wind_direction: Some(Auto), horizontal_wind_direction: Some(Auto), meta: Metadata { power: Meta { step: 1.0, min: Some(0.0), max: Some(1.0), digits: 2 }, current_temperature: Meta { step: 1.0, min: Some(-9.0), max: Some(39.0), digits: 2 }, mode: Meta { step: 0.0, min: None, max: Some(47.0), digits: 4 }, target_cooling_temperature: Meta { step: 0.5, min: Some(18.0), max: Some(32.0), digits: 2 }, target_heating_temperature: Meta { step: 0.5, min: Some(14.0), max: Some(30.0), digits: 2 }, target_automatic_temperature: Meta { step: 0.5, min: Some(-5.0), max: Some(5.0), digits: 2 }, wind_speed: Meta { step: 0.0, min: None, max: Some(3320.0), digits: 4 }, automode_wind_speed: Meta { step: 0.0, min: None, max: Some(3072.0), digits: 4 }, vertical_wind_direction: Meta { step: 0.0, min: None, max: Some(8486975.0), digits: 8 }, horizontal_wind_direction: Meta { step: 0.0, min: None, max: Some(98813.0), digits: 6 } } }"#
         );
     }
 }
