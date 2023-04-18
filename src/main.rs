@@ -1,5 +1,6 @@
 use clap::Parser;
 use daikin_homekit::{characteristic::setup_characteristic, daikin::Daikin};
+use log::{info, warn};
 use std::{net::Ipv4Addr, str::FromStr};
 
 use hap::{
@@ -12,7 +13,7 @@ use hap::{
 #[derive(Parser)]
 #[clap(
     author = "mzyy94",
-    version = "v0.0.1",
+    version = "v0.1.0",
     about = "Control Daikin AC via HomeKit"
 )]
 struct Cli {
@@ -23,7 +24,9 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    std::env::set_var("RUST_LOG", "hap=info,daikin_homekit=debug");
+    if cfg!(debug_assertions) {
+        std::env::set_var("RUST_LOG", "hap=info,daikin_homekit=debug");
+    }
     env_logger::init();
 
     let cli = Cli::parse();
@@ -53,7 +56,19 @@ async fn main() -> anyhow::Result<()> {
         },
     )?;
 
-    let mut storage = FileStorage::current_dir().await?;
+    let mut storage = {
+        if cfg!(debug_assertions) {
+            FileStorage::current_dir().await?
+        } else if let Some(mut config_dir) = dirs::config_dir() {
+            config_dir.push("daikin-homekit");
+            FileStorage::new(&config_dir).await?
+        } else {
+            warn!("could not detect config directory. falling back to current dir");
+            FileStorage::current_dir().await?
+        }
+    };
+
+    info!("config file location: {:?}", storage);
 
     let config = match storage.load_config().await {
         Ok(mut config) => {
