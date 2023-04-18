@@ -236,17 +236,6 @@ impl Metadata {
     }
 }
 
-macro_rules! propvalue {
-    ($v:tt . $key:ident) => {
-        $v.$key
-            .map(|v| PropValue::from(v as f32, $v.meta.$key.step, $v.meta.$key.digits))
-    };
-    ($v:tt . $key:ident as u8) => {
-        $v.$key
-            .map(|v| PropValue::from(v as u8 as f32, $v.meta.$key.step, $v.meta.$key.digits))
-    };
-}
-
 #[cfg(test)]
 mod tests {
     use serde_json::json;

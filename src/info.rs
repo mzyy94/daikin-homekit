@@ -53,10 +53,10 @@ impl DaikinInfo {
 impl From<DaikinResponse> for DaikinInfo {
     fn from(res: DaikinResponse) -> Self {
         DaikinInfo {
-            name: get_prop!(res."/dsiot/edge.adp_d".name -> str),
-            mac: get_prop!(res."/dsiot/edge.adp_i".mac -> str),
-            version: get_prop!(res."/dsiot/edge.adp_i".ver -> str),
-            edid: get_prop!(res."/dsiot/edge.adp_i".edid -> str),
+            name: get_prop!(res."/dsiot/edge.adp_d".name .to_string()),
+            mac: get_prop!(res."/dsiot/edge.adp_i".mac .to_string()),
+            version: get_prop!(res."/dsiot/edge.adp_i".ver .to_string()),
+            edid: get_prop!(res."/dsiot/edge.adp_i".edid .to_string()),
         }
     }
 }
