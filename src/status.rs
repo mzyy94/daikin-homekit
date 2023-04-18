@@ -76,80 +76,39 @@ impl Into<DaikinRequest> for DaikinStatus {
     fn into(self) -> DaikinRequest {
         let mut req = DaikinRequest { requests: vec![] };
 
-        if let Some(value) = self.power {
-            let pv = PropValue::from(value as f32, self.meta.power.step, self.meta.power.digits);
+        if let Some(pv) = propvalue!(self.power) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = pv);
         };
 
-        if let Some(value) = self.mode {
-            let pv = PropValue::from(
-                value as u8 as f32,
-                self.meta.mode.step,
-                self.meta.mode.digits,
-            );
+        if let Some(pv) = propvalue!(self.mode as u8) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = pv);
         };
 
-        if let Some(value) = self.target_cooling_temperature {
-            let pv = PropValue::from(
-                value,
-                self.meta.target_cooling_temperature.step,
-                self.meta.target_cooling_temperature.digits,
-            );
+        if let Some(pv) = propvalue!(self.target_cooling_temperature) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = pv);
         };
 
-        if let Some(value) = self.target_heating_temperature {
-            let pv = PropValue::from(
-                value,
-                self.meta.target_heating_temperature.step,
-                self.meta.target_heating_temperature.digits,
-            );
+        if let Some(pv) = propvalue!(self.target_heating_temperature) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = pv);
         };
 
-        if let Some(value) = self.target_automatic_temperature {
-            let pv = PropValue::from(
-                value,
-                self.meta.target_automatic_temperature.step,
-                self.meta.target_automatic_temperature.digits,
-            );
+        if let Some(pv) = propvalue!(self.target_automatic_temperature) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = pv);
         };
 
-        if let Some(value) = self.wind_speed {
-            let pv = PropValue::from(
-                value as u8 as f32,
-                self.meta.wind_speed.step,
-                self.meta.wind_speed.digits,
-            );
+        if let Some(pv) = propvalue!(self.wind_speed as u8) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 = pv)
         };
 
-        if let Some(value) = self.automode_wind_speed {
-            let pv = PropValue::from(
-                value as u8 as f32,
-                self.meta.automode_wind_speed.step,
-                self.meta.automode_wind_speed.digits,
-            );
+        if let Some(pv) = propvalue!(self.automode_wind_speed as u8) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 = pv)
         };
 
-        if let Some(value) = self.vertical_wind_direction {
-            let pv = PropValue::from(
-                value as u8 as f32,
-                self.meta.vertical_wind_direction.step,
-                self.meta.vertical_wind_direction.digits,
-            );
+        if let Some(pv) = propvalue!(self.vertical_wind_direction as u8) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 = pv)
         };
 
-        if let Some(value) = self.horizontal_wind_direction {
-            let pv = PropValue::from(
-                value as u8 as f32,
-                self.meta.horizontal_wind_direction.step,
-                self.meta.horizontal_wind_direction.digits,
-            );
+        if let Some(pv) = propvalue!(self.horizontal_wind_direction as u8) {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 = pv)
         };
 

@@ -7,6 +7,7 @@ pub mod request;
 pub mod characteristic;
 pub mod discovery;
 pub mod error;
+#[macro_use]
 pub mod property;
 pub mod status;
 #[macro_use]
