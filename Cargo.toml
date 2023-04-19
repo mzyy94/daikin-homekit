@@ -2,13 +2,19 @@
 name = "daikin-homekit"
 version = "0.1.0"
 edition = "2021"
+authors = ["mzyy94"]
+rust-version = "1.69"
+description = "Control Daikin Air Conditioner via HomeKit"
+repository = "https://github.com/mzyy94/daikin-homekit/"
+license = "GPL-3.0"
+keywords = ["daikin", "homekit"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.70"
 byteorder = "1.4.3"
-clap = { version = "4.2.1", features = ["derive"] }
+clap = { version = "4.2.1", features = ["derive", "cargo"] }
 dirs = "5.0.0"
 educe = { version = "0.4.21", default-features = false, features = ["Debug"] }
 env_logger = "0.10.0"

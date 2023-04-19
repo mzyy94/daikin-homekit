@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{crate_authors, crate_description, crate_name, crate_version, Parser};
 use daikin_homekit::{characteristic::setup_characteristic, daikin::Daikin};
 use log::{info, warn};
 use std::{net::Ipv4Addr, str::FromStr};
@@ -12,9 +12,10 @@ use hap::{
 
 #[derive(Parser)]
 #[clap(
-    author = "mzyy94",
-    version = "v0.1.0",
-    about = "Control Daikin AC via HomeKit"
+    name = crate_name!(),
+    author = crate_authors!(),
+    version = crate_version!(),
+    about = crate_description!(),
 )]
 struct Cli {
     /// IPv4 address of Daikin AC
@@ -78,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Err(_) => {
             let config = Config {
-                pin: Pin::new([1, 1, 1, 2, 2, 3, 3, 3])?,
+                pin: Pin::new([2, 0, 2, 3, 0, 4, 2, 0])?,
                 name: info.name().unwrap_or("Daikin AC".into()),
                 device_id: MacAddress::from_str(&info.mac().unwrap_or("000000000000".into()))
                     .unwrap(),
