@@ -1,0 +1,30 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - uses: Swatinem/rust-cache@v2
+    - uses: giraffate/clippy-action@v1
+      with:
+        reporter: 'github-pr-review'
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
