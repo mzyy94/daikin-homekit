@@ -2,7 +2,7 @@ Daikin HomeKit
 ---
 
 <a href="https://github.com/mzyy94/daikin-homekit/releases"><img src="https://img.shields.io/github/release/mzyy94/daikin-homekit.svg" alt="Latest Release"></a>
-<a href="https://github.com/mzyy94/daikin-homekit/actions"><img src="https://github.com/mzyy94/daikin-homekit/workflows/build/badge.svg" alt="Build Status"></a>
+<a href="https://github.com/mzyy94/daikin-homekit/actions"><img src="https://github.com/mzyy94/daikin-homekit/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
 
 Control Daikin Air Conditioner via HomeKit. Compatible with new Daikin API. ([Legacy API] is not supported.)
 
@@ -54,7 +54,7 @@ It has been tested on [Daikin risora] which has built-in Wi-Fi modules and an IR
 
 [Daikin risora]: https://www.ac.daikin.co.jp/kabekake/products/sx_series
 
-![remote](/docs/remote.png)
+<img alt="risora ir remote display" src="/docs/remote.png" width="540">
 
 To check compatibility, run a command below.
 
