@@ -21,7 +21,7 @@ env_logger = "0.10.0"
 form_urlencoded = "1.1.0"
 futures = "0.3.28"
 genawaiter = { version = "0.99.1", features = ["futures03"] }
-hap = { git = "https://github.com/ewilken/hap-rs", version = "0.1.0-pre.15", rev = "acf45bdb00e23c81b67b3d5116c113335dc83f16" }
+hap = { git = "https://github.com/mzyy94/hap-rs", version = "0.1.0-pre.15", branch = "patch-verify" }
 hex = "0.4.3"
 log = "0.4.17"
 network-interface = "1.0.0"
