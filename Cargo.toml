@@ -1,9 +1,9 @@
 [package]
 name = "daikin-homekit"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["mzyy94"]
-rust-version = "1.68"
+rust-version = "1.71"
 description = "Control Daikin Air Conditioner via HomeKit"
 repository = "https://github.com/mzyy94/daikin-homekit/"
 license = "GPL-3.0"
