@@ -12,23 +12,24 @@ keywords = ["daikin", "homekit"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.70"
+anyhow = "1.0.72"
 byteorder = "1.4.3"
-clap = { version = "4.2.1", features = ["derive", "cargo"] }
-dirs = "5.0.0"
-educe = { version = "0.4.21", default-features = false, features = ["Debug"] }
+clap = { version = "4.3.21", features = ["derive", "cargo"] }
+dirs = "5.0.1"
+educe = { version = "0.4.22", default-features = false, features = ["Debug"] }
 env_logger = "0.10.0"
-form_urlencoded = "1.1.0"
+form_urlencoded = "1.2.0"
 futures = "0.3.28"
 genawaiter = { version = "0.99.1", features = ["futures03"] }
 hap = { git = "https://github.com/mzyy94/hap-rs", version = "0.1.0-pre.15", branch = "patch-verify" }
 hex = "0.4.3"
-log = "0.4.17"
+log = "0.4.20"
 network-interface = "1.0.0"
-reqwest = { version = "0.11.16", features = ["json"] }
+openssl = "0.10.56"
+reqwest = { version = "0.11.18", features = ["json"] }
 retainer = "0.3.0"
-serde = { version = "1.0.159", features = ["derive"] }
-serde_json = "1.0.95"
-serde_repr = "0.1.12"
-thiserror = "1.0.40"
-tokio = { version = "1.27.0", features = ["full"] }
+serde = { version = "1.0.183", features = ["derive"] }
+serde_json = "1.0.104"
+serde_repr = "0.1.16"
+thiserror = "1.0.44"
+tokio = { version = "1.31.0", features = ["full"] }
