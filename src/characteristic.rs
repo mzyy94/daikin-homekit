@@ -128,13 +128,13 @@ fn windspeed_mapping(wind_speed: Option<WindSpeed>) -> Option<f32> {
     }
 }
 
-fn current_mode_mapping(mode: Option<Mode>) -> Option<u8> {
+fn current_mode_mapping(mode: Option<Mode>) -> u8 {
     match mode {
-        Some(Mode::Fan) => Some(0),        // Inactive,
-        Some(Mode::Dehumidify) => Some(1), // Idle
-        Some(Mode::Heating) => Some(2),    // Heating
-        Some(Mode::Cooling) => Some(3),    // Cooling
-        _ => None,
+        Some(Mode::Fan) => 0,        // Inactive,
+        Some(Mode::Dehumidify) => 1, // Idle
+        Some(Mode::Heating) => 2,    // Heating
+        Some(Mode::Cooling) => 3,    // Cooling
+        _ => 0,                      // FIXME: Auto mode
     }
 }
 
@@ -193,7 +193,7 @@ pub fn setup_current_heater_cooler_state(
         async move {
             debug!("current_heater_cooler_state read");
             let status = dk.get_status().await?;
-            Ok(current_mode_mapping(status.mode))
+            Ok(Some(current_mode_mapping(status.mode)))
         }
         .boxed()
     }));
