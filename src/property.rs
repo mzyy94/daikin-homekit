@@ -2,45 +2,23 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
-#[derive(Serialize, Deserialize, Clone, Educe)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
-#[educe(Debug)]
 pub enum Property {
     Tree {
-        #[educe(Debug(name = "name"))]
         pn: String, // name
         #[serde(skip_serializing)]
-        #[educe(Debug(ignore))]
         pt: u8, // type
         pch: Vec<Property>, // children
     },
     Item {
-        #[educe(Debug(name = "name"))]
         pn: String, // name
         #[serde(skip_serializing)]
-        #[educe(Debug(ignore))]
         pt: u8, // type
-        #[educe(Debug(method = "propvalue_fmt"))]
         pv: Option<PropValue>, // value
         #[serde(skip_serializing)]
-        #[educe(Debug(method = "meta_fmt", name = "meta"))]
         md: Option<Metadata>, // metadata
     },
-}
-
-fn propvalue_fmt(pv: &Option<PropValue>, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    match pv {
-        Some(PropValue::String(s)) => write!(f, "{:?}", hex2int(s)),
-        Some(PropValue::Integer(i)) => write!(f, "{:?}", i),
-        _ => write!(f, "None"),
-    }
-}
-
-fn meta_fmt(m: &Option<Metadata>, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    match m {
-        Some(m) => write!(f, "{:?}", m.clone().get_tuple()),
-        None => write!(f, "{:?}", ()),
-    }
 }
 
 fn hex2int(hex: &String) -> i32 {
@@ -164,13 +142,20 @@ impl Property {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Educe)]
+#[derive(Serialize, Deserialize, PartialEq, Clone)]
 #[serde(untagged)]
-#[educe(Debug)]
 pub enum PropValue {
     String(String),
-    #[educe(Debug(named_field = false))]
     Integer(i32),
+}
+
+impl std::fmt::Debug for PropValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PropValue::String(s) => write!(f, "{:?}", hex2int(s)),
+            PropValue::Integer(i) => write!(f, "{:?}", i),
+        }
+    }
 }
 
 impl PropValue {
@@ -192,15 +177,19 @@ impl PropValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Educe)]
-#[educe(Debug(named_field = false, name = false))]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Metadata {
-    #[educe(Debug(ignore))]
     pt: String, // type
     #[serde(default)]
     st: u8, // step
     mi: Option<String>, // min
     mx: Option<String>, // max
+}
+
+impl std::fmt::Debug for Metadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.get_tuple())
+    }
 }
 
 impl Metadata {
