@@ -879,7 +879,7 @@ dependencies = [
 [[package]]
 name = "hap"
 version = "0.1.0-pre.15"
-source = "git+https://github.com/suzuke/hap-rs#81c325ea9a23f729adac933358687363ed16d953"
+source = "git+https://github.com/mzyy94/hap-rs?branch=patch-verify#760daf9fdee63ec4e2567d0434720a5c30409202"
 dependencies = [
  "aead",
  "async-trait",
