@@ -1,6 +1,6 @@
 [package]
 name = "daikin-homekit"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2021"
 authors = ["mzyy94"]
 rust-version = "1.86"
