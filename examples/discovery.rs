@@ -1,9 +1,24 @@
 use daikin_homekit::daikin::Daikin;
+use futures::{pin_mut, prelude::*};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let timeout = std::time::Duration::new(3, 0);
-    let found = Daikin::discovery(timeout).await;
-    println!("{:?}", found);
+    let stream = Daikin::discovery(timeout).await?;
+    pin_mut!(stream);
+    while let Some(item) = stream.next().await {
+        match item {
+            Ok(found) => {
+                println!("Discovered Daikin device: {:?}", found);
+            }
+            Err(e) => {
+                if let Some(elapsed) = e.downcast_ref::<tokio::time::error::Elapsed>() {
+                    println!("Discovery finished: {}", elapsed);
+                } else {
+                    println!("Error during discovery: {}", e);
+                }
+            }
+        }
+    }
     Ok(())
 }

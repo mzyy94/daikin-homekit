@@ -1,5 +1,6 @@
 use clap::{crate_authors, crate_description, crate_name, crate_version, Parser};
 use daikin_homekit::{characteristic::setup_characteristic, daikin::Daikin};
+use futures::{pin_mut, prelude::*};
 use log::{info, warn};
 use std::{net::Ipv4Addr, str::FromStr};
 
@@ -41,7 +42,12 @@ async fn main() -> anyhow::Result<()> {
         }
         None => {
             let timeout = std::time::Duration::new(3, 0);
-            Daikin::discovery(timeout).await?
+            let stream = Daikin::discovery(timeout).await?;
+            pin_mut!(stream);
+            stream
+                .next()
+                .await
+                .ok_or(daikin_homekit::error::Error::Unknown)??
         }
     };
 

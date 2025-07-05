@@ -69,12 +69,12 @@ pub async fn discovery(
             let (text, src_addr) =
                 match tokio::time::timeout(timeout, socket.recv_from(&mut buf)).await {
                     Err(e) => {
-                        warn!("stop discovering");
+                        info!("stop discovering");
                         yield Err(e.into());
                         break;
                     }
                     Ok(res) => match res {
-                        Ok((buf_size, _)) if buf_size == 2048 => {
+                        Ok((2048, _)) => {
                             warn!("UDP buffer too small");
                             continue;
                         }
@@ -102,7 +102,7 @@ pub async fn discovery(
                     .into_owned()
                     .collect();
 
-            let daikin = Daikin::new(src_addr.ip().clone());
+            let daikin = Daikin::new(*src_addr.ip());
             let info = DaikinInfo::new(
                 item.get("name").cloned(),
                 item.get("mac").cloned(),
