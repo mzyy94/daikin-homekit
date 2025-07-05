@@ -178,6 +178,9 @@ pub enum PropValue {
     String(String),
     Integer(i32),
     Null,
+    StringList(Vec<String>),
+    IntegerList(Vec<i32>),
+    Object(serde_json::Value),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -189,6 +192,12 @@ pub enum Metadata {
     String,
     #[serde(rename = "b")]
     Binary(Binary),
+    #[serde(rename = "o")]
+    Object,
+    #[serde(rename = "l<s>")]
+    StringList,
+    #[serde(rename = "l<i>")]
+    IntegerList,
     Undefined,
 }
 
