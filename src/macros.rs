@@ -55,7 +55,7 @@ macro_rules! set_prop {
                     None => {
                         let req = crate::request::Request {
                             op: 3,
-                            pc: crate::property::Property::new_tree("dgc_status".into()),
+                            pc: crate::property::Property::new_tree("dgc_status"),
                             to: $path.into(),
                         };
                         $root.requests.push(req);

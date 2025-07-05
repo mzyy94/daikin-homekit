@@ -1,7 +1,8 @@
+use crate::property::BinaryEnum;
 use crate::status::{
     AutoModeWindSpeed, DaikinStatus, HorizontalDirection, VerticalDirection, WindSpeed,
 };
-use crate::{daikin::Daikin, status::Mode};
+use crate::{daikin::Daikin, property::Binary, property::Metadata, status::Mode};
 use futures::prelude::*;
 use hap::characteristic::{
     active::ActiveCharacteristic,
@@ -23,14 +24,17 @@ pub async fn setup_characteristic(
     let status = daikin.get_status().await?;
 
     if status.wind_speed.get_enum().is_none()
-        || status.wind_speed.meta().2.map(|v| v as u32) != Some(0x0cf8)
+        || matches!(
+            status.clone().wind_speed.metadata,
+            Metadata::Binary(Binary::Enum(BinaryEnum{max})) if max != "F80C"
+        )
     {
         info!("wind_speed is not compatible. remove rotation_speed characteristic");
         service.rotation_speed = None;
     }
 
     if status.vertical_wind_direction.get_enum().is_none()
-        || status.vertical_wind_direction.meta().2.map(|v| v as u32) != Some(0x0081803f)
+        || matches!( status.clone().vertical_wind_direction.metadata, Metadata::Binary(Binary::Enum(BinaryEnum{max})) if max != "3F808100")
     {
         info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
         service.swing_mode = None;
@@ -89,17 +93,21 @@ async fn set_initial_value(
     if let Some(char) = service.heating_threshold_temperature.as_mut() {
         char.set_value(status.target_heating_temperature.get_f32().into())
             .await?;
-        char.set_step_value(Some(status.target_heating_temperature.meta().0.into()))?;
-        char.set_min_value(status.target_heating_temperature.meta().1.map(|v| v.into()))?;
-        char.set_max_value(status.target_heating_temperature.meta().2.map(|v| v.into()))?;
+        if let Metadata::Binary(Binary::Step(step)) = status.target_heating_temperature.metadata {
+            char.set_step_value(Some(step.step().into()))?;
+            char.set_min_value(Some(step.range().start().clone().into()))?;
+            char.set_max_value(Some(step.range().end().clone().into()))?;
+        }
     }
 
     if let Some(char) = service.cooling_threshold_temperature.as_mut() {
         char.set_value(status.target_cooling_temperature.get_f32().into())
             .await?;
-        char.set_step_value(Some(status.target_cooling_temperature.meta().0.into()))?;
-        char.set_min_value(status.target_cooling_temperature.meta().1.map(|v| v.into()))?;
-        char.set_max_value(status.target_cooling_temperature.meta().2.map(|v| v.into()))?;
+        if let Metadata::Binary(Binary::Step(step)) = status.target_cooling_temperature.metadata {
+            char.set_step_value(Some(step.step().into()))?;
+            char.set_min_value(Some(step.range().start().clone().into()))?;
+            char.set_max_value(Some(step.range().end().clone().into()))?;
+        }
     }
 
     if let Some(char) = service.rotation_speed.as_mut() {

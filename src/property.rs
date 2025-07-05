@@ -47,15 +47,6 @@ fn hex2int(hex: &String) -> i32 {
 }
 
 impl Property {
-    pub fn new(name: &str, value: PropValue) -> Property {
-        Property::Node(Item {
-            name: name.to_string(),
-            value,
-            metadata: Metadata::Undefined,
-            phantom: std::marker::PhantomData,
-        })
-    }
-
     pub fn new_tree(name: &str) -> Property {
         Property::Tree {
             name: name.to_string(),
@@ -75,34 +66,6 @@ impl Property {
 }
 
 impl<T: Sized + DeserializeOwned> Item<T> {
-    pub fn meta(&self) -> (f32, Option<f32>, Option<f32>) {
-        match self {
-            Item {
-                metadata: Metadata::Binary(Binary::Step(step)),
-                ..
-            } => (
-                step.step(),
-                Some(*step.range().start()),
-                Some(*step.range().end()),
-            ),
-            Item {
-                metadata: Metadata::Binary(Binary::Enum(enum_)),
-                ..
-            } => (0.0, Some(f32::NAN), Some(hex2int(&enum_.max) as f32)),
-            _ => (0.0, None, None),
-        }
-    }
-
-    pub fn size(&self) -> usize {
-        match self {
-            Item {
-                value: PropValue::String(str),
-                ..
-            } => str.len(),
-            _ => 0,
-        }
-    }
-
     pub fn get_f32(&self) -> Option<f32> {
         match self {
             Item {
@@ -120,11 +83,11 @@ impl<T: Sized + DeserializeOwned> Item<T> {
 
     pub fn set_f32(&mut self, value: f32) {
         if let Item {
-            metadata: Metadata::Binary(Binary::Step(step)),
+            metadata: Metadata::Binary(Binary::Step(..)),
             ..
         } = self
         {
-            self.value = PropValue::from(value, step.step(), step.max.len());
+            self.value = PropValue::from(value, self.metadata.clone());
         }
     }
 
@@ -156,11 +119,11 @@ impl<T: Sized + DeserializeOwned> Item<T> {
 
     pub fn set_enum(&mut self, value: u8) {
         if let Item {
-            metadata: Metadata::Binary(Binary::Enum(en)),
+            metadata: Metadata::Binary(Binary::Enum(..)),
             ..
         } = self
         {
-            self.value = PropValue::from(value as f32, 0.0, en.max.len());
+            self.value = PropValue::from(value as f32, self.metadata.clone());
         }
     }
 
@@ -193,18 +156,24 @@ pub enum PropValue {
 }
 
 impl PropValue {
-    pub fn from(value: f32, step: f32, size: usize) -> PropValue {
-        if value.is_nan() || !(2..=8).contains(&size) {
-            return PropValue::Null;
+    pub fn from(value: f32, meta: Metadata) -> PropValue {
+        match meta {
+            Metadata::Integer => PropValue::Integer(value as i32),
+            Metadata::String => PropValue::String(value.to_string()),
+            Metadata::Binary(Binary::Step(step)) => {
+                let mut wtr = vec![];
+                wtr.write_int::<LittleEndian>((value / step.step()) as i64, step.max.len() / 2)
+                    .unwrap();
+                PropValue::String(hex::encode(wtr))
+            }
+            Metadata::Binary(Binary::Enum(enum_)) => {
+                let mut wtr = vec![];
+                wtr.write_int::<LittleEndian>(value as i64, enum_.max.len() / 2)
+                    .unwrap();
+                PropValue::String(hex::encode(wtr))
+            }
+            _ => PropValue::Null,
         }
-        let mut wtr = vec![];
-        let value = if step == 0.0 {
-            value as i64
-        } else {
-            (value / step) as i64
-        };
-        wtr.write_int::<LittleEndian>(value, size / 2).unwrap();
-        PropValue::String(hex::encode(wtr))
     }
 }
 
@@ -347,8 +316,8 @@ mod tests {
                 "mx": "4E00"
             }
         });
-        let p: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
-        let pv = PropValue::from(p.get_f32().unwrap(), p.meta().0, p.size());
+        let item: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
+        let pv = PropValue::from(item.get_f32().unwrap(), item.metadata.clone());
         let expect = PropValue::String("2600".into());
 
         assert_eq!(pv, expect);
