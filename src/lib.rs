@@ -3,7 +3,6 @@ pub mod daikin;
 pub mod macros;
 pub mod characteristic;
 pub mod discovery;
-pub mod error;
 pub mod info;
 pub mod property;
 pub mod request;

@@ -1,6 +1,5 @@
 use clap::Parser;
 use daikin_homekit::daikin::Daikin;
-use daikin_homekit::error::Error;
 use daikin_homekit::property::{Binary, Item, Metadata};
 use std::net::Ipv4Addr;
 
@@ -33,10 +32,6 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         Err(error) => {
             if let Some(e) = error.downcast_ref::<reqwest::Error>() {
                 println!("❌ API endpoint: Server not found. - {}", e);
-                return Ok(());
-            }
-            if let Some(e) = error.downcast_ref::<Error>() {
-                println!("❌ API endpoint: HTTP Request failed. - {}", e);
                 return Ok(());
             }
             if let Some(e) = error.downcast_ref::<serde_json::Error>() {
