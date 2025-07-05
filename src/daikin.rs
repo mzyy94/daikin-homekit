@@ -1,7 +1,6 @@
-use crate::error::Error;
 use crate::info::DaikinInfo;
 use crate::request::DaikinRequest;
-use crate::response::{DaikinResponse, Response};
+use crate::response::DaikinResponse;
 use crate::status::DaikinStatus;
 use retainer::*;
 use serde_json::json;
@@ -37,12 +36,7 @@ impl Daikin {
             .build()?;
 
         let resp = client.post(&self.endpoint).json(&payload).send().await?;
-
-        if resp.status() != reqwest::StatusCode::OK {
-            dbg!(resp.status());
-            return Err(Error::HTTPError(resp.status()).into());
-        }
-
+        let resp = resp.error_for_status()?;
         let text = resp.text().await?;
         Ok(text)
     }
@@ -64,16 +58,6 @@ impl Daikin {
 
                 let body = self.send_request(payload).await?;
                 let res: DaikinResponse = serde_json::from_str(&body)?;
-                let rsc_error: Vec<Response> = res
-                    .responses
-                    .iter()
-                    .filter(|r| r.status_code / 10 != 200)
-                    .map(|r| r.to_owned())
-                    .collect();
-                if !rsc_error.is_empty() {
-                    return Err(Error::RSCError(rsc_error).into());
-                }
-
                 let status: DaikinStatus = res.into();
 
                 self.cache.insert(1, status.clone(), 5000).await;

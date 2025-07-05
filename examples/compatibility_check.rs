@@ -59,16 +59,6 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
                 println!("❌ Request API: Server not found. - {}", e);
                 return Ok(());
             }
-            if let Some(e) = error.downcast_ref::<Error>() {
-                match e {
-                    Error::RSCError(e) => {
-                        println!("✅ Request API: available");
-                        println!("❌ Status API: unavailable - {:?}", e);
-                    }
-                    _ => println!("❌ Request API: HTTP Request failed. - {}", e),
-                };
-                return Ok(());
-            }
             if let Some(e) = error.downcast_ref::<serde_json::Error>() {
                 println!("❌ Request API: Invalid response. - {}", e);
                 return Ok(());
