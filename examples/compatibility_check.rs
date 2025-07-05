@@ -81,13 +81,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     println!("✅ Request API: available");
     println!("✅ Status API: available");
     match status.power.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Step(step)),
             ..
-        }) => {
+        } => {
             println!(
                 "ℹ️  Power Status: {:?} ({:?}) / {}",
-                status.power.unwrap().get_f32(),
+                status.power.get_f32(),
                 step.range(),
                 step.step()
             );
@@ -98,13 +98,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match status.current_temperature.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Step(step)),
             ..
-        }) => {
+        } => {
             println!(
                 "ℹ️  Current temperature: {:?} ({:?}) / {}",
-                status.current_temperature.unwrap().get_f32(),
+                status.current_temperature.get_f32(),
                 step.range(),
                 step.step()
             );
@@ -115,15 +115,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match status.mode.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Enum(en)),
             ..
-        }) if en.max == "2F00" => {
-            println!(
-                "ℹ️  Mode: {:?} [{}]",
-                status.mode.unwrap().get_enum(),
-                en.max
-            );
+        } if en.max == "2F00" => {
+            println!("ℹ️  Mode: {:?} [{}]", status.mode.get_enum(), en.max);
         }
         v => {
             println!("❌ Mode: {v:?} - invalid data");
@@ -131,13 +127,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match status.target_cooling_temperature.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Step(step)),
             ..
-        }) => {
+        } => {
             println!(
                 "ℹ️  Target Cooling Temperature: {:?} ({:?}) / {:?}",
-                status.target_cooling_temperature.unwrap().get_f32(),
+                status.target_cooling_temperature.get_f32(),
                 step.range(),
                 step.step()
             );
@@ -148,13 +144,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match status.target_heating_temperature.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Step(step)),
             ..
-        }) => {
+        } => {
             println!(
                 "ℹ️  Target Heating Temperature: {:?} ({:?}) / {:?}",
-                status.target_heating_temperature.unwrap().get_f32(),
+                status.target_heating_temperature.get_f32(),
                 step.range(),
                 step.step()
             );
@@ -168,13 +164,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     let mut warn = false;
 
     match status.wind_speed.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Enum(en)),
             ..
-        }) if en.max == "F80C" => {
+        } if en.max == "F80C" => {
             println!(
                 "ℹ️  Wind Speed: {:?} [{}]",
-                status.wind_speed.unwrap().get_enum(),
+                status.wind_speed.get_enum(),
                 en.max
             );
         }
@@ -184,13 +180,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match status.vertical_wind_direction.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Enum(e)),
             ..
-        }) if e.max == "3F808100" => {
+        } if e.max == "3F808100" => {
             println!(
                 "ℹ️  Vertical Wind Direction: {:?} [{}]",
-                status.vertical_wind_direction.unwrap().get_enum(),
+                status.vertical_wind_direction.get_enum(),
                 e.max
             );
         }
@@ -200,13 +196,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match status.horizontal_wind_direction.clone() {
-        Some(Item {
+        Item {
             metadata: Metadata::Binary(Binary::Enum(e)),
             ..
-        }) if e.max == "FD8101" => {
+        } if e.max == "FD8101" => {
             println!(
                 "ℹ️  Horizontal Wind Direction: {:?} [{}]",
-                status.horizontal_wind_direction.unwrap().get_enum(),
+                status.horizontal_wind_direction.get_enum(),
                 e.max
             );
         }

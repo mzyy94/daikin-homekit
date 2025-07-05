@@ -66,14 +66,19 @@ macro_rules! get_child_prop {
     ({ $popt:expr }) => {
         match $popt {
             Some(crate::property::Property::Node( item )) => {
-                Some(crate::property::Item {
+                crate::property::Item {
                     name: item.name.clone(),
                     value: item.value.clone(),
                     metadata: item.metadata.clone(),
                     phantom: std::marker::PhantomData,
-                })
+                }
             },
-            _ => None,
+            _ => crate::property::Item {
+                name: String::new(),
+                value: crate::property::PropValue::Null,
+                metadata: crate::property::Metadata::Undefined,
+                phantom: std::marker::PhantomData,
+            }
         }
     };
     ({ $popt:expr } .to_string()) => {{
