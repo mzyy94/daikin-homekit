@@ -28,17 +28,17 @@ pub enum Property {
 
 fn hex2int(hex: &String) -> i32 {
     let size = hex.len();
+    if size > 8 {
+        return 0;
+    }
     let mut bytes = vec![0u8; size / 2];
     hex::decode_to_slice(hex, &mut bytes as &mut [u8]).ok();
     let mut rdr = Cursor::new(bytes);
 
-    match size {
-        2 => rdr.read_i8().unwrap() as i32,
-        4 => rdr.read_i16::<LittleEndian>().unwrap() as i32,
-        6 => rdr.read_i24::<LittleEndian>().unwrap(),
-        8 => rdr.read_i32::<LittleEndian>().unwrap(),
-        _ => 0,
-    }
+    rdr.read_int::<LittleEndian>(size / 2)
+        .unwrap()
+        .try_into()
+        .unwrap_or(0)
 }
 
 impl Property {
@@ -154,7 +154,7 @@ impl Property {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 #[serde(untagged)]
 pub enum PropValue {
     String(String),
@@ -162,31 +162,18 @@ pub enum PropValue {
     Null,
 }
 
-impl std::fmt::Debug for PropValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PropValue::String(s) => write!(f, "{:?}", hex2int(s)),
-            PropValue::Integer(i) => write!(f, "{:?}", i),
-            PropValue::Null => write!(f, "null"),
-        }
-    }
-}
-
 impl PropValue {
     pub fn from(value: f32, step: f32, size: usize) -> PropValue {
+        if value.is_nan() || size > 8 || size < 2 {
+            return PropValue::Null;
+        }
         let mut wtr = vec![];
-        let value: i32 = if step == 0.0 {
-            value as i32
+        let value = if step == 0.0 {
+            value as i64
         } else {
-            (value / step) as i32
+            (value / step) as i64
         };
-        match size {
-            2 => wtr.write_i8(value as i8).unwrap(),
-            4 => wtr.write_i16::<LittleEndian>(value as i16).unwrap(),
-            6 => wtr.write_i24::<LittleEndian>(value).unwrap(),
-            8 => wtr.write_i32::<LittleEndian>(value).unwrap(),
-            _ => {}
-        };
+        wtr.write_int::<LittleEndian>(value, size / 2).unwrap();
         PropValue::String(hex::encode(wtr))
     }
 }
@@ -348,7 +335,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: 38, metadata: Binary(Step(BinaryStep { step: 245, min: "EEFF", max: "4E00" })) }] }"#
+            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: String("2600"), metadata: Binary(Step(BinaryStep { step: 245, min: "EEFF", max: "4E00" })) }] }"#
         );
     }
 }

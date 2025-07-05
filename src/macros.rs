@@ -132,7 +132,7 @@ mod tests {
         let p = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Ok(Item { name: "p_03", type_: 3, value: 56, metadata: Binary(Step(BinaryStep { step: 241, min: "0000", max: "FF00" })) })"#
+            r#"Ok(Item { name: "p_03", type_: 3, value: String("3800"), metadata: Binary(Step(BinaryStep { step: 241, min: "0000", max: "FF00" })) })"#
         );
 
         let p = get_prop!(res."/hoge".fuga.piyo);
@@ -159,9 +159,9 @@ mod tests {
         let status: DaikinStatus = res.into();
 
         let pv = propvalue!(status.target_heating_temperature);
-        assert_eq!(format!("{:?}", pv), r#"Some(50)"#);
+        assert_eq!(format!("{:?}", pv), r#"Some(String("32"))"#);
 
         let pv = propvalue!(status.mode as u8);
-        assert_eq!(format!("{:?}", pv), r#"Some(2)"#);
+        assert_eq!(format!("{:?}", pv), r#"Some(String("0200"))"#);
     }
 }
