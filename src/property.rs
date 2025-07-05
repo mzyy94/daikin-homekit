@@ -46,7 +46,7 @@ impl Property {
             name: name.to_string(),
             type_: 2,
             value: value,
-            metadata: Metadata::default(),
+            metadata: Metadata::Integer {},
         }
     }
 
@@ -98,8 +98,8 @@ impl Property {
                 value: PropValue::String(pv),
                 metadata: md,
                 ..
-            } => {
-                if md.type_ == "b" && !(md.min.is_none() && md.max.is_none()) {
+            } => match md {
+                Metadata::Binary { min, max, .. } if !(min.is_none() && max.is_none()) => {
                     let value = hex2int(pv) as f32;
                     let step = self.step();
                     if step == 0.0 {
@@ -107,16 +107,15 @@ impl Property {
                     } else {
                         Some(value * step)
                     }
-                } else {
-                    None
                 }
-            }
+                _ => None,
+            },
             Property::Item {
                 value: PropValue::Integer(pv),
                 metadata: md,
                 ..
             } => {
-                if md.type_ == "i" {
+                if matches!(md, Metadata::Integer {}) {
                     Some(*pv as f32)
                 } else {
                     None
@@ -133,9 +132,16 @@ impl Property {
                 metadata: md,
                 ..
             } => {
-                if md.type_ == "s" {
+                if matches!(md, Metadata::String {}) {
                     Some(String::from(pv))
-                } else if md.type_ == "b" && md.step == 0 && md.min.is_none() && md.max.is_none() {
+                } else if matches!(
+                    md,
+                    Metadata::Binary {
+                        step: 0,
+                        min: None,
+                        max: None
+                    }
+                ) {
                     todo!() // decode hex string
                 } else {
                     None
@@ -183,16 +189,22 @@ impl PropValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Default)]
-pub struct Metadata {
-    #[serde(rename = "pt")]
-    type_: String,
-    #[serde(default, rename = "st")]
-    step: u8,
-    #[serde(rename = "mi")]
-    min: Option<String>,
-    #[serde(rename = "mx")]
-    max: Option<String>,
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(tag = "pt")]
+pub enum Metadata {
+    #[serde(rename = "i")]
+    Integer {},
+    #[serde(rename = "s")]
+    String {},
+    #[serde(rename = "b")]
+    Binary {
+        #[serde(rename = "st")]
+        step: u8,
+        #[serde(rename = "mi")]
+        min: Option<String>,
+        #[serde(rename = "mx")]
+        max: Option<String>,
+    },
 }
 
 impl std::fmt::Debug for Metadata {
@@ -203,8 +215,11 @@ impl std::fmt::Debug for Metadata {
 
 impl Metadata {
     pub fn step(&self) -> f32 {
-        let step_base = f32::from(self.step & 0xf);
-        let exp: i32 = ((self.step & 0xf0) >> 4).into();
+        let Metadata::Binary { step, .. } = self else {
+            return 0.0;
+        };
+        let step_base = f32::from(step & 0xf);
+        let exp: i32 = ((step & 0xf0) >> 4).into();
         let step_coefficient = if exp < 8 {
             10.0_f32.powi(exp)
         } else {
@@ -215,15 +230,18 @@ impl Metadata {
 
     /// Returns step, min, max
     pub fn get_tuple(&self) -> (f32, Option<f32>, Option<f32>) {
+        let Metadata::Binary { min, max, .. } = self else {
+            return (0.0, None, None);
+        };
         let step = self.step();
-        let min = self.min.as_ref().map(|m| {
+        let min = min.as_ref().map(|m| {
             if step != 0.0 {
                 hex2int(m) as f32 * step
             } else {
                 hex2int(m) as f32
             }
         });
-        let max = self.max.as_ref().map(|m| {
+        let max = max.as_ref().map(|m| {
             if step != 0.0 {
                 hex2int(m) as f32 * step
             } else {
