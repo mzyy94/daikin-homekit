@@ -69,6 +69,12 @@ pub enum Mode {
     Unknown = 255,
 }
 
+impl Into<f32> for Mode {
+    fn into(self) -> f32 {
+        self as u8 as f32
+    }
+}
+
 #[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum WindSpeed {
@@ -83,6 +89,12 @@ pub enum WindSpeed {
     Unknown = 0xFF,
 }
 
+impl Into<f32> for WindSpeed {
+    fn into(self) -> f32 {
+        self as u8 as f32
+    }
+}
+
 #[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum AutoModeWindSpeed {
@@ -90,6 +102,12 @@ pub enum AutoModeWindSpeed {
     Auto = 0x0A,
 
     Unknown = 0xFF,
+}
+
+impl Into<f32> for AutoModeWindSpeed {
+    fn into(self) -> f32 {
+        self as u8 as f32
+    }
 }
 
 #[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
@@ -109,6 +127,12 @@ pub enum VerticalDirection {
     Unknown = 0xFF,
 }
 
+impl Into<f32> for VerticalDirection {
+    fn into(self) -> f32 {
+        self as u8 as f32
+    }
+}
+
 #[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum HorizontalDirection {
@@ -124,6 +148,12 @@ pub enum HorizontalDirection {
     Auto = 0x10,
 
     Unknown = 0xFF,
+}
+
+impl Into<f32> for HorizontalDirection {
+    fn into(self) -> f32 {
+        self as u8 as f32
+    }
 }
 
 #[cfg(test)]
@@ -165,21 +195,21 @@ mod tests {
             .expect("Invalid JSON file.");
         let mut status: DaikinStatus = res.into();
 
-        status.power.set_f32(1.0);
-        status.mode.set_enum(Mode::Cooling as u8);
-        status.target_cooling_temperature.set_f32(24.5);
-        status.target_heating_temperature.set_f32(25.0);
-        status.target_automatic_temperature.set_f32(0.0);
+        status.power.set_value(1.0);
+        status.mode.set_value(Mode::Cooling);
+        status.target_cooling_temperature.set_value(24.5);
+        status.target_heating_temperature.set_value(25.0);
+        status.target_automatic_temperature.set_value(0.0);
         status
             .automode_wind_speed
-            .set_enum(AutoModeWindSpeed::Silent as u8);
-        status.wind_speed.set_enum(WindSpeed::Lev4 as u8);
+            .set_value(AutoModeWindSpeed::Silent);
+        status.wind_speed.set_value(WindSpeed::Lev4);
         status
             .vertical_wind_direction
-            .set_enum(VerticalDirection::BottomMost as u8);
+            .set_value(VerticalDirection::BottomMost);
         status
             .horizontal_wind_direction
-            .set_enum(HorizontalDirection::RightCenter as u8);
+            .set_value(HorizontalDirection::RightCenter);
 
         let req: DaikinRequest = status.into();
         let json = serde_json::to_value(req).unwrap();

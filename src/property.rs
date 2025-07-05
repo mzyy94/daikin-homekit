@@ -18,7 +18,7 @@ pub enum Property {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Item<T: Sized + DeserializeOwned = f32> {
+pub struct Item<T: Sized + DeserializeOwned + Into<f32> = f32> {
     #[serde(rename = "pn")]
     pub name: String,
     // #[serde(skip_serializing, rename = "pt")]
@@ -65,7 +65,7 @@ impl Property {
     }
 }
 
-impl<T: Sized + DeserializeOwned> Item<T> {
+impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
     pub fn get_f32(&self) -> Option<f32> {
         match self {
             Item {
@@ -81,13 +81,26 @@ impl<T: Sized + DeserializeOwned> Item<T> {
         }
     }
 
-    pub fn set_f32(&mut self, value: f32) {
-        if let Item {
-            metadata: Metadata::Binary(Binary::Step(..)),
-            ..
-        } = self
-        {
-            self.value = PropValue::from(value, self.metadata.clone());
+    pub fn set_value(&mut self, value: T) {
+        match &self.metadata {
+            Metadata::Integer => self.value = PropValue::Integer(value.into() as i32),
+            Metadata::String => todo!(), // self.value = PropValue::String(value.to_string()),
+            Metadata::Binary(Binary::Step(step)) => {
+                let mut wtr = vec![];
+                wtr.write_int::<LittleEndian>(
+                    (value.into() / step.step()) as i64,
+                    step.max.len() / 2,
+                )
+                .unwrap();
+                self.value = PropValue::String(hex::encode(wtr));
+            }
+            Metadata::Binary(Binary::Enum(enum_)) => {
+                let mut wtr = vec![];
+                wtr.write_int::<LittleEndian>(value.into() as i64, enum_.max.len() / 2)
+                    .unwrap();
+                self.value = PropValue::String(hex::encode(wtr));
+            }
+            _ => self.value = PropValue::Null,
         }
     }
 
@@ -117,16 +130,6 @@ impl<T: Sized + DeserializeOwned> Item<T> {
         }
     }
 
-    pub fn set_enum(&mut self, value: u8) {
-        if let Item {
-            metadata: Metadata::Binary(Binary::Enum(..)),
-            ..
-        } = self
-        {
-            self.value = PropValue::from(value as f32, self.metadata.clone());
-        }
-    }
-
     pub fn get_string(&self) -> Option<String> {
         match self {
             Item {
@@ -153,28 +156,6 @@ pub enum PropValue {
     String(String),
     Integer(i32),
     Null,
-}
-
-impl PropValue {
-    pub fn from(value: f32, meta: Metadata) -> PropValue {
-        match meta {
-            Metadata::Integer => PropValue::Integer(value as i32),
-            Metadata::String => PropValue::String(value.to_string()),
-            Metadata::Binary(Binary::Step(step)) => {
-                let mut wtr = vec![];
-                wtr.write_int::<LittleEndian>((value / step.step()) as i64, step.max.len() / 2)
-                    .unwrap();
-                PropValue::String(hex::encode(wtr))
-            }
-            Metadata::Binary(Binary::Enum(enum_)) => {
-                let mut wtr = vec![];
-                wtr.write_int::<LittleEndian>(value as i64, enum_.max.len() / 2)
-                    .unwrap();
-                PropValue::String(hex::encode(wtr))
-            }
-            _ => PropValue::Null,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -317,7 +298,7 @@ mod tests {
             }
         });
         let item: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
-        let pv = PropValue::from(item.get_f32().unwrap(), item.metadata.clone());
+        let pv = item.value;
         let expect = PropValue::String("2600".into());
 
         assert_eq!(pv, expect);

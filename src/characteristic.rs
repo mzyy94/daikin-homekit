@@ -192,7 +192,7 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
         async move {
             update_assert_ne!("active", cur, new);
             let mut status = dk.get_status().await?;
-            status.power.set_f32(new as f32);
+            status.power.set_value(new as f32);
             dk.update(status).await?;
             Ok(())
         }
@@ -243,7 +243,7 @@ pub fn setup_target_heater_cooler_state(
                 2 => Some(Mode::Cooling),
                 _ => None,
             } {
-                status.mode.set_enum(mode as u8);
+                status.mode.set_value(mode);
                 dk.update(status).await?;
             }
 
@@ -287,7 +287,7 @@ pub fn setup_heating_threshold_temperature(
         async move {
             update_assert_ne!("heating_threshold_temperature", cur, new);
             let mut status = dk.get_status().await?;
-            status.target_heating_temperature.set_f32(new);
+            status.target_heating_temperature.set_value(new);
             dk.update(status).await?;
             Ok(())
         }
@@ -316,7 +316,7 @@ pub fn setup_cooling_threshold_temperature(
         async move {
             update_assert_ne!("cooling_threshold_temperature", cur, new);
             let mut status = dk.get_status().await?;
-            status.target_cooling_temperature.set_f32(new);
+            status.target_cooling_temperature.set_value(new);
             dk.update(status).await?;
             Ok(())
         }
@@ -357,8 +357,8 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
             } else {
                 AutoModeWindSpeed::Auto
             };
-            status.wind_speed.set_enum(speed as u8);
-            status.automode_wind_speed.set_enum(auto_speed as u8);
+            status.wind_speed.set_value(speed);
+            status.automode_wind_speed.set_value(auto_speed);
             dk.update(status).await?;
             Ok(())
         }
@@ -391,17 +391,17 @@ pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
             if new == 0 {
                 status
                     .vertical_wind_direction
-                    .set_enum(VerticalDirection::Auto as u8);
+                    .set_value(VerticalDirection::Auto);
                 status
                     .horizontal_wind_direction
-                    .set_enum(HorizontalDirection::Auto as u8);
+                    .set_value(HorizontalDirection::Auto);
             } else {
                 status
                     .vertical_wind_direction
-                    .set_enum(VerticalDirection::Swing as u8);
+                    .set_value(VerticalDirection::Swing);
                 status
                     .horizontal_wind_direction
-                    .set_enum(HorizontalDirection::Swing as u8);
+                    .set_value(HorizontalDirection::Swing);
             }
             dk.update(status).await?;
             Ok(())
