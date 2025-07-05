@@ -8,7 +8,10 @@ pub struct DaikinResponse {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Response {
-    pub fr: String,           // from
-    pub pc: Option<Property>, // content
-    pub rsc: u32,             // response status code
+    #[serde(rename = "fr")]
+    pub from: String,
+    #[serde(rename = "pc")]
+    pub content: Option<Property>,
+    #[serde(rename = "rsc")]
+    pub status_code: u32, // response status code
 }

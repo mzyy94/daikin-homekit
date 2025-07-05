@@ -78,7 +78,7 @@ impl Daikin {
                 let rsc_error: Vec<Response> = res
                     .responses
                     .iter()
-                    .filter(|r| r.rsc / 10 != 200)
+                    .filter(|r| r.status_code / 10 != 200)
                     .map(|r| r.to_owned())
                     .collect();
                 if !rsc_error.is_empty() {

@@ -1,16 +1,16 @@
 macro_rules! set_child_prop {
     ( $p:tt . $name:ident = $propval:tt) => {
         match $p {
-            crate::property::Property::Tree{ref mut pch, ..} => {
-                let found = pch.iter_mut().find(|p| match p {
-                    crate::property::Property::Tree { pn, .. } => pn == stringify!($name),
-                    crate::property::Property::Item { pn, .. } => pn == stringify!($name),
+            crate::property::Property::Tree{ref mut children, ..} => {
+                let found = children.iter_mut().find(|p| match p {
+                    crate::property::Property::Tree { name, .. } => name == stringify!($name),
+                    crate::property::Property::Item { name, .. } => name == stringify!($name),
                 });
-                if let Some(crate::property::Property::Item { ref mut pv, .. }) = found {
-                    *pv = Some($propval);
+                if let Some(crate::property::Property::Item { ref mut value, .. }) = found {
+                    *value = Some($propval);
                 } else {
                     let pp = crate::property::Property::new(stringify!($name), $propval);
-                    pch.push(pp);
+                    children.push(pp);
                 }
 
             }
@@ -21,17 +21,17 @@ macro_rules! set_child_prop {
         set_child_prop!(
             {
                 match $p {
-                    crate::property::Property::Tree{ref mut pch, ..} => {
-                        let found = pch.iter_mut().find(|p| match p {
-                            crate::property::Property::Tree { pn, .. } => pn == stringify!($name),
-                            crate::property::Property::Item { pn, .. } => pn == stringify!($name),
+                    crate::property::Property::Tree{ref mut children, ..} => {
+                        let found = children.iter_mut().find(|p| match p {
+                            crate::property::Property::Tree { name, .. } => name == stringify!($name),
+                            crate::property::Property::Item { name, .. } => name == stringify!($name),
                         });
                         if let Some(p) = found {
                             p
                         } else {
                             let pp = crate::property::Property::new_tree(stringify!($name));
-                            pch.push(pp);
-                            pch.iter_mut().last().unwrap()
+                            children.push(pp);
+                            children.iter_mut().last().unwrap()
                         }
                     },
                     _ => unreachable!(),
@@ -91,7 +91,7 @@ macro_rules! get_child_prop {
 macro_rules! get_prop {
     ($root:tt . $path:literal $($rest:tt)*) => {
         get_child_prop!(
-            { $root.responses.iter().find(|&r| r.fr == $path).and_then(|r| r.pc.as_ref()) } $($rest)*
+            { $root.responses.iter().find(|&r| r.from == $path).and_then(|r| r.content.as_ref()) } $($rest)*
         )
     };
 }
@@ -132,7 +132,7 @@ mod tests {
         let p = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Ok(Item { pn: "p_03", pt: 3, pv: Some(56), md: Some((0.1, Some(0.0), Some(25.5))) })"#
+            r#"Ok(Item { name: "p_03", type_: 3, value: Some(56), metadata: Some((0.1, Some(0.0), Some(25.5))) })"#
         );
 
         let p = get_prop!(res."/hoge".fuga.piyo);
