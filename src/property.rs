@@ -46,7 +46,7 @@ impl Property {
         Property::Item {
             name: name.to_string(),
             value: value,
-            metadata: Metadata::Integer {},
+            metadata: Metadata::Undefined,
         }
     }
 
@@ -180,11 +180,12 @@ impl PropValue {
 #[serde(tag = "pt")]
 pub enum Metadata {
     #[serde(rename = "i")]
-    Integer {},
+    Integer,
     #[serde(rename = "s")]
-    String {},
+    String,
     #[serde(rename = "b")]
     Binary(Binary),
+    Undefined,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
