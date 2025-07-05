@@ -21,7 +21,7 @@ pub enum Property {
         #[serde(rename = "pv")]
         value: Option<PropValue>,
         #[serde(skip_serializing, rename = "md")]
-        metadata: Option<Metadata>,
+        metadata: Metadata,
     },
 }
 
@@ -46,7 +46,7 @@ impl Property {
             name: name.to_string(),
             type_: 2,
             value: Some(value),
-            metadata: None,
+            metadata: Metadata::default(),
         }
     }
 
@@ -70,18 +70,14 @@ impl Property {
 
     pub fn step(&self) -> f32 {
         match self {
-            Property::Item {
-                metadata: Some(md), ..
-            } => md.step(),
+            Property::Item { metadata: md, .. } => md.step(),
             _ => 0.0,
         }
     }
 
     pub fn meta(&self) -> (f32, Option<f32>, Option<f32>) {
         match self {
-            Property::Item {
-                metadata: Some(md), ..
-            } => md.get_tuple(),
+            Property::Item { metadata: md, .. } => md.get_tuple(),
             _ => (0.0, None, None),
         }
     }
@@ -100,7 +96,7 @@ impl Property {
         match self {
             Property::Item {
                 value: Some(PropValue::String(pv)),
-                metadata: Some(md),
+                metadata: md,
                 ..
             } => {
                 if md.type_ == "b" && !(md.min.is_none() && md.max.is_none()) {
@@ -117,7 +113,7 @@ impl Property {
             }
             Property::Item {
                 value: Some(PropValue::Integer(pv)),
-                metadata: Some(md),
+                metadata: md,
                 ..
             } => {
                 if md.type_ == "i" {
@@ -134,7 +130,7 @@ impl Property {
         match self {
             Property::Item {
                 value: Some(PropValue::String(pv)),
-                metadata: Some(md),
+                metadata: md,
                 ..
             } => {
                 if md.type_ == "s" {
@@ -185,7 +181,7 @@ impl PropValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Metadata {
     #[serde(rename = "pt")]
     type_: String,
@@ -338,7 +334,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: Some(38), metadata: Some((0.5, Some(-9.0), Some(39.0))) }] }"#
+            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: Some(38), metadata: (0.5, Some(-9.0), Some(39.0)) }] }"#
         );
     }
 }
