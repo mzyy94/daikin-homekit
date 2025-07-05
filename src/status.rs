@@ -69,9 +69,9 @@ pub enum Mode {
     Unknown = 255,
 }
 
-impl Into<f32> for Mode {
-    fn into(self) -> f32 {
-        self as u8 as f32
+impl From<Mode> for f32 {
+    fn from(val: Mode) -> Self {
+        val as u8 as f32
     }
 }
 
@@ -89,9 +89,9 @@ pub enum WindSpeed {
     Unknown = 0xFF,
 }
 
-impl Into<f32> for WindSpeed {
-    fn into(self) -> f32 {
-        self as u8 as f32
+impl From<WindSpeed> for f32 {
+    fn from(val: WindSpeed) -> Self {
+        val as u8 as f32
     }
 }
 
@@ -104,9 +104,9 @@ pub enum AutoModeWindSpeed {
     Unknown = 0xFF,
 }
 
-impl Into<f32> for AutoModeWindSpeed {
-    fn into(self) -> f32 {
-        self as u8 as f32
+impl From<AutoModeWindSpeed> for f32 {
+    fn from(val: AutoModeWindSpeed) -> Self {
+        val as u8 as f32
     }
 }
 
@@ -127,9 +127,9 @@ pub enum VerticalDirection {
     Unknown = 0xFF,
 }
 
-impl Into<f32> for VerticalDirection {
-    fn into(self) -> f32 {
-        self as u8 as f32
+impl From<VerticalDirection> for f32 {
+    fn from(val: VerticalDirection) -> Self {
+        val as u8 as f32
     }
 }
 
@@ -150,9 +150,9 @@ pub enum HorizontalDirection {
     Unknown = 0xFF,
 }
 
-impl Into<f32> for HorizontalDirection {
-    fn into(self) -> f32 {
-        self as u8 as f32
+impl From<HorizontalDirection> for f32 {
+    fn from(val: HorizontalDirection) -> Self {
+        val as u8 as f32
     }
 }
 

@@ -94,8 +94,8 @@ async fn set_initial_value(
             .await?;
         if let Metadata::Binary(Binary::Step(step)) = status.target_heating_temperature.metadata {
             char.set_step_value(Some(step.step().into()))?;
-            char.set_min_value(Some(step.range().start().clone().into()))?;
-            char.set_max_value(Some(step.range().end().clone().into()))?;
+            char.set_min_value(Some((*step.range().start()).into()))?;
+            char.set_max_value(Some((*step.range().end()).into()))?;
         }
     }
 
@@ -104,8 +104,8 @@ async fn set_initial_value(
             .await?;
         if let Metadata::Binary(Binary::Step(step)) = status.target_cooling_temperature.metadata {
             char.set_step_value(Some(step.step().into()))?;
-            char.set_min_value(Some(step.range().start().clone().into()))?;
-            char.set_max_value(Some(step.range().end().clone().into()))?;
+            char.set_min_value(Some((*step.range().start()).into()))?;
+            char.set_max_value(Some((*step.range().end()).into()))?;
         }
     }
 
