@@ -48,9 +48,9 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     };
     println!("✅ API endpoint: available");
-    println!("ℹ️  Device name: {}", info.name().unwrap_or_default());
-    println!("ℹ️  Device mac: {}", info.mac().unwrap_or_default());
-    println!("ℹ️  Device version: {}", info.version().unwrap_or_default());
+    println!("ℹ️  Device name: {}", info.name);
+    println!("ℹ️  Device mac: {}", info.mac);
+    println!("ℹ️  Device version: {}", info.version);
 
     let status = match daikin.get_status().await {
         Ok(s) => s,

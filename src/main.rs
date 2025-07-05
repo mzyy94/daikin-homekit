@@ -116,14 +116,13 @@ async fn main() -> anyhow::Result<()> {
     let server = IpServer::new(config, storage).await?;
     server.add_accessory(bridge).await?;
 
-    let mut index = 2u64;
     for (daikin, info) in &devices {
         let mut ac = HeaterCoolerAccessory::new(
-            info.edid().unwrap_or(index),
+            info.edid,
             AccessoryInformation {
-                name: info.name().unwrap_or("Unknown name".into()),
+                name: info.name.clone(),
                 manufacturer: "Daikin Industries, Ltd.".into(),
-                serial_number: info.mac().unwrap_or("000000000000".into()),
+                serial_number: info.mac.clone(),
                 // WARNING: DO NOT COMMENT OUT BELOW
                 // firmware_revision: info.version(),
                 ..Default::default()
@@ -131,7 +130,6 @@ async fn main() -> anyhow::Result<()> {
         )?;
         setup_characteristic(daikin.clone(), &mut ac.heater_cooler).await?;
         server.add_accessory(ac).await?;
-        index += 1;
     }
 
     let handle = server.run_handle();

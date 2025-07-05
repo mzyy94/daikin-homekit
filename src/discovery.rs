@@ -3,7 +3,6 @@ use crate::info::DaikinInfo;
 use async_stream::try_stream;
 use futures::prelude::*;
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
-use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str;
 use std::time::Duration;
@@ -83,23 +82,14 @@ pub async fn discovery(
                 }
             };
 
-            let item: HashMap<String, String> =
-                form_urlencoded::parse(text.replace(",", "&").as_bytes())
-                    .into_owned()
-                    .collect();
 
             let daikin = Daikin::new(*src_addr.ip());
-            let info = DaikinInfo::new(
-                item.get("name").cloned(),
-                item.get("mac").cloned(),
-                item.get("ver").cloned(),
-                item.get("edid").cloned(),
-            );
+            let info = serde_qs::from_str::<DaikinInfo>(&text.replace(",", "&")).unwrap();
 
             info!(
                 "found daikin device at {}: {}",
                 src_addr.ip(),
-                info.name().unwrap_or("Unknown name".into())
+                info.name
             );
 
             yield (daikin, info);
