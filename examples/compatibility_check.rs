@@ -124,12 +124,12 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         Some(v) => {
             if let Meta {
                 step: _,
-                min: None,
+                min: Some(min),
                 max: Some(max),
                 digits: _,
             } = status.meta.mode
             {
-                if max as u32 == 0x002f {
+                if min.is_nan() && max as u32 == 0x002f {
                     println!("ℹ️  Mode: {:?} [0x{:04x}]", v, max as u32);
                 } else {
                     println!(
@@ -195,12 +195,12 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         Some(v) => {
             if let Meta {
                 step: _,
-                min: None,
+                min: Some(min),
                 max: Some(max),
                 digits: _,
             } = status.meta.wind_speed
             {
-                if max as u32 == 0x0cf8 {
+                if min.is_nan() && max as u32 == 0x0cf8 {
                     println!("ℹ️  Wind Speed: {:?} [0x{:04x}]", v, max as u32);
                 } else {
                     println!(
@@ -223,13 +223,16 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         Some(v) => {
             if let Meta {
                 step: _,
-                min: None,
+                min: Some(min),
                 max: Some(max),
                 digits: _,
             } = status.meta.vertical_wind_direction
             {
-                if max as u32 == 0x0081803f {
-                    println!("ℹ️  Vertical Wind Direction: {:?} [0x{:08x}]", v, max as u32);
+                if min.is_nan() && max as u32 == 0x0081803f {
+                    println!(
+                        "ℹ️  Vertical Wind Direction: {:?} [0x{:08x}]",
+                        v, max as u32
+                    );
                 } else {
                     println!(
                         "⚠️  Vertical Wind Direction: {:?} [0x{:08x}] - invalid metadata",
@@ -251,12 +254,12 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         Some(v) => {
             if let Meta {
                 step: _,
-                min: None,
+                min: Some(min),
                 max: Some(max),
                 digits: _,
             } = status.meta.horizontal_wind_direction
             {
-                if max as u32 == 0x0181fd {
+                if min.is_nan() && max as u32 == 0x0181fd {
                     println!(
                         "ℹ️  Horizontal Wind Direction: {:?} [0x{:06x}]",
                         v, max as u32

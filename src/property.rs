@@ -1,6 +1,7 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use core::f32;
 use serde::{Deserialize, Serialize};
-use std::io::Cursor;
+use std::{io::Cursor, ops::RangeInclusive};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
@@ -71,9 +72,13 @@ impl Property {
     pub fn meta(&self) -> (f32, Option<f32>, Option<f32>) {
         match self {
             Property::Item {
-                metadata: Metadata::Binary(binary),
+                metadata: Metadata::Binary(Binary::Step(step)),
                 ..
-            } => (binary.step(), binary.min(), binary.max()),
+            } => (
+                step.step(),
+                Some(*step.range().start()),
+                Some(*step.range().end()),
+            ),
             _ => (0.0, None, None),
         }
     }
@@ -95,9 +100,9 @@ impl Property {
                 metadata: md,
                 ..
             } => match md {
-                Metadata::Binary(binary) if matches!(binary, Binary::Step { .. }) => {
+                Metadata::Binary(Binary::Step(step)) => {
                     let value = hex2int(pv) as f32;
-                    let step = binary.step();
+                    let step = step.step();
                     if step == 0.0 {
                         Some(value)
                     } else {
@@ -189,61 +194,38 @@ pub enum Metadata {
     Binary(Binary),
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 #[serde(untagged)]
 pub enum Binary {
-    Step {
-        #[serde(rename = "st")]
-        step: u8,
-        #[serde(rename = "mi")]
-        min: Option<String>,
-        #[serde(rename = "mx")]
-        max: String,
-    },
+    Step(BinaryStep),
     String {},
 }
 
-impl Binary {
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct BinaryStep {
+    #[serde(rename = "st")]
+    pub step: u8,
+    #[serde(rename = "mi")]
+    pub min: String,
+    #[serde(rename = "mx")]
+    pub max: String,
+}
+
+impl BinaryStep {
     pub fn step(&self) -> f32 {
-        let Binary::Step { step, .. } = self else {
-            return 0.0;
-        };
+        let step = self.step;
         let step_base = f32::from(step & 0xf);
         let exp: i8 = (step & 0xf0) as i8 >> 4;
         let step_coefficient = 10.0_f32.powi(exp as i32);
         step_base * step_coefficient
     }
 
-    pub fn min(&self) -> Option<f32> {
-        let Binary::Step { min, .. } = self else {
-            return None;
-        };
-        let step = self.step();
-        min.as_ref().map(|m| {
-            if step != 0.0 {
-                hex2int(m) as f32 * step
-            } else {
-                hex2int(m) as f32
-            }
-        })
-    }
-
-    pub fn max(&self) -> Option<f32> {
-        let Binary::Step { max, .. } = self else {
-            return None;
-        };
-        let step = self.step();
-        if step != 0.0 {
-            Some(hex2int(max) as f32 * step)
-        } else {
-            Some(hex2int(max) as f32)
-        }
-    }
-}
-
-impl std::fmt::Debug for Binary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", (self.step(), self.min(), self.max()))
+    pub fn range(&self) -> RangeInclusive<f32> {
+        let BinaryStep { min, max, step } = self;
+        let step = if *step == 0 { 1.0 } else { self.step() };
+        let min_value = Some(hex2int(min) as f32 * step);
+        let max_value = Some(hex2int(max) as f32 * step);
+        RangeInclusive::new(min_value.unwrap_or(f32::NAN), max_value.unwrap_or(f32::NAN))
     }
 }
 
@@ -349,7 +331,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: 38, metadata: Binary((0.5, Some(-9.0), Some(39.0))) }] }"#
+            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: 38, metadata: Binary(Step(BinaryStep { step: 245, min: "EEFF", max: "4E00" })) }] }"#
         );
     }
 }
