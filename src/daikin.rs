@@ -60,7 +60,7 @@ impl Daikin {
 
     pub async fn get_status(&self) -> anyhow::Result<DaikinStatus> {
         let status: DaikinStatus = match self.cache.get(&1).await {
-            Some(cache) => *cache.value(),
+            Some(cache) => cache.value().clone(),
             None => {
                 let payload = json!({"requests": [
                     {
@@ -87,7 +87,7 @@ impl Daikin {
 
                 let status: DaikinStatus = res.into();
 
-                self.cache.insert(1, status, 5000).await;
+                self.cache.insert(1, status.clone(), 5000).await;
                 status
             }
         };
@@ -115,7 +115,7 @@ impl Daikin {
     }
 
     pub async fn update(&self, status: DaikinStatus) -> anyhow::Result<()> {
-        let request: DaikinRequest = status.into();
+        let request: DaikinRequest = status.clone().into();
         let payload = serde_json::to_value(request)?;
         let _ = self.send_request(payload).await?;
         self.cache.insert(1, status, 3000).await;

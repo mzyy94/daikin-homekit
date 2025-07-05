@@ -66,28 +66,22 @@ macro_rules! get_child_prop {
     ({ $popt:expr }) => {
         $popt.ok_or(crate::error::Error::NoProperty)
     };
-    ({ $popt:expr } -> Meta) => {{
-        let Some(crate::property::Property::Node( item )) = $popt else {
-            panic!("Expected a Property::Node, but got something else.");
-            // return crate::status::Meta {step: 0.0, min: 0.0, max: 0.0, digits: 0};
-        };
-        let (step, min, max) = item.meta();
-        let digits = item.size();
-        crate::status::Meta {step, min, max, digits}
-    }
+    ({ $popt:expr } as $ty:ty) => {
+        match $popt {
+            Some(crate::property::Property::Node( item )) => {
+                item.get_f32().map(|v| (v as $ty, item.metadata.clone()))
+            },
+            _ => None,
+        }
     };
-    ({ $popt:expr } as $ty:ty) => {{
-        let Some(crate::property::Property::Node( item )) = $popt else {
-            panic!("Expected a Property::Node, but got something else.");
-        };
-        item.get_f32().map(|v| v as $ty)
-    }};
-    ({ $popt:expr } .into()) => {{
-        let Some(crate::property::Property::Node( item )) = $popt else {
-            panic!("Expected a Property::Node, but got something else.");
-        };
-        serde_json::from_value(item.get_f32().map(|v| serde_json::Value::Number(serde_json::Number::from(v as u8))).unwrap_or_default()).unwrap_or_default()
-    }};
+    ({ $popt:expr } .into()) => {
+        match $popt {
+            Some(crate::property::Property::Node( item )) => {
+                serde_json::from_value(item.get_f32().map(|v| serde_json::Value::Number(serde_json::Number::from(v as u8))).unwrap_or_default()).map(|v| (v, item.metadata.clone())).ok()
+            },
+            _ => None,
+        }
+    };
     ({ $popt:expr } .to_string()) => {{
         let Some(crate::property::Property::Node( item )) = $popt else {
             panic!("Expected a Property::Node, but got something else.");
@@ -110,23 +104,27 @@ macro_rules! get_prop {
 }
 
 macro_rules! propvalue {
+    ($dkst:tt . $name:ident as $ty:ty) => {{
+        match $dkst.$name {
+            Some((v, crate::property::Metadata::Binary(crate::property::Binary::Step(step)))) => {
+                Some(crate::property::PropValue::from(
+                    v as $ty as f32,
+                    step.step(),
+                    step.max.len(),
+                ))
+            }
+            Some((v, crate::property::Metadata::Binary(crate::property::Binary::Enum(en)))) => {
+                Some(crate::property::PropValue::from(
+                    v as $ty as f32,
+                    0.0,
+                    en.max.len(),
+                ))
+            }
+            _ => None,
+        }
+    }};
     ($dkst:tt . $name:ident) => {
-        $dkst.$name.map(|v| {
-            crate::property::PropValue::from(
-                v as f32,
-                $dkst.meta.$name.step,
-                $dkst.meta.$name.digits,
-            )
-        })
-    };
-    ($dkst:tt . $name:ident as $ty:ty) => {
-        $dkst.$name.map(|v| {
-            crate::property::PropValue::from(
-                v as $ty as f32,
-                $dkst.meta.$name.step,
-                $dkst.meta.$name.digits,
-            )
-        })
+        propvalue!($dkst.$name as f32)
     };
 }
 

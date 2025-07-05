@@ -1,7 +1,7 @@
 use clap::Parser;
 use daikin_homekit::daikin::Daikin;
 use daikin_homekit::error::Error;
-use daikin_homekit::status::Meta;
+use daikin_homekit::property::{Binary, Metadata};
 use std::net::Ipv4Addr;
 
 #[derive(Parser)]
@@ -81,110 +81,63 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     println!("✅ Request API: available");
     println!("✅ Status API: available");
     match status.power {
-        Some(v) => {
-            if let Meta {
-                step,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.power
-            {
-                println!("ℹ️  Power Status: {v:?} ({min:?} .. {max:?}) / {step:?}");
-            } else {
-                println!("❌  Power Status: {v:?} - invalid metadata");
-                return Ok(());
-            }
+        Some((v, Metadata::Binary(Binary::Step(step)))) => {
+            println!(
+                "ℹ️  Power Status: {v} ({:?}) / {}",
+                step.range(),
+                step.step()
+            );
         }
-        None => {
-            println!("❌ Power Status: unavailable.");
+        v => {
+            println!("❌ Power Status: {v:?} - invalid data");
             return Ok(());
         }
     }
     match status.current_temperature {
-        Some(v) => {
-            if let Meta {
-                step,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.current_temperature
-            {
-                println!("ℹ️  Current temperature: {v:?} ({min:?} .. {max:?}) / {step:?}");
-            } else {
-                println!("❌  Current temperature: {v:?} - invalid metadata");
-                return Ok(());
-            }
+        Some((v, Metadata::Binary(Binary::Step(step)))) => {
+            println!(
+                "ℹ️  Current temperature: {v} ({:?}) / {}",
+                step.range(),
+                step.step()
+            );
         }
-        None => {
-            println!("❌ Current temperature: unavailable.");
+        v => {
+            println!("❌ Current temperature: {v:?} - invalid data");
             return Ok(());
         }
     }
     match status.mode {
-        Some(v) => {
-            if let Meta {
-                step: _,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.mode
-            {
-                if min.is_nan() && max as u32 == 0x002f {
-                    println!("ℹ️  Mode: {:?} [0x{:04x}]", v, max as u32);
-                } else {
-                    println!(
-                        "❌  Mode: {:?} [0x{:04x}] - invalid metadata",
-                        v, max as u32
-                    );
-                    return Ok(());
-                }
-            } else {
-                println!("❌  Mode: {v:?} - invalid metadata");
-                return Ok(());
-            }
+        Some((v, Metadata::Binary(Binary::Enum(en)))) if en.max == "2F00" => {
+            println!("ℹ️  Mode: {:?} [{}]", v, en.max);
         }
-        None => {
-            println!("❌ Mode: unavailable.");
+        v => {
+            println!("❌ Mode: {v:?} - invalid data");
             return Ok(());
         }
     }
     match status.target_cooling_temperature {
-        Some(v) => {
-            if let Meta {
-                step,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.target_cooling_temperature
-            {
-                println!("ℹ️  Target Cooling Temperature: {v:?} ({min:?} .. {max:?}) / {step:?}");
-            } else {
-                println!("❌  Target Cooling Temperature: {v:?} - invalid metadata");
-                return Ok(());
-            }
+        Some((v, Metadata::Binary(Binary::Step(step)))) => {
+            println!(
+                "ℹ️  Target Cooling Temperature: {v:?} ({:?}) / {:?}",
+                step.range(),
+                step.step()
+            );
         }
-        None => {
-            println!("❌ Target Cooling Temperature: unavailable.");
+        v => {
+            println!("❌ Target Cooling Temperature: {v:?} - invalid data");
             return Ok(());
         }
     }
     match status.target_heating_temperature {
-        Some(v) => {
-            if let Meta {
-                step,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.target_heating_temperature
-            {
-                println!("ℹ️  Target Heating Temperature: {v:?} ({min:?} .. {max:?}) / {step:?}");
-            } else {
-                println!("❌  Target Heating Temperature: {v:?} - invalid metadata");
-                return Ok(());
-            }
+        Some((v, Metadata::Binary(Binary::Step(step)))) => {
+            println!(
+                "ℹ️  Target Heating Temperature: {v:?} ({:?}) / {:?}",
+                step.range(),
+                step.step()
+            );
         }
-        None => {
-            println!("❌ Target Heating Temperature: unavailable.");
+        v => {
+            println!("❌ Target Heating Temperature: {v:?} - invalid data");
             return Ok(());
         }
     }
@@ -192,92 +145,29 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     let mut warn = false;
 
     match status.wind_speed {
-        Some(v) => {
-            if let Meta {
-                step: _,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.wind_speed
-            {
-                if min.is_nan() && max as u32 == 0x0cf8 {
-                    println!("ℹ️  Wind Speed: {:?} [0x{:04x}]", v, max as u32);
-                } else {
-                    println!(
-                        "⚠️  Wind Speed: {:?} [0x{:04x}] - invalid metadata",
-                        v, max as u32
-                    );
-                    warn = true;
-                }
-            } else {
-                println!("⚠️  Wind Speed: {v:?} - invalid metadata");
-                warn = true;
-            }
+        Some((v, Metadata::Binary(Binary::Enum(en)))) if en.max == "F80C" => {
+            println!("ℹ️  Wind Speed: {:?} [{}]", v, en.max);
         }
-        None => {
-            println!("⚠️  Wind Speed: unavailable.");
+        v => {
+            println!("⚠️  Wind Speed: {v:?} - invalid data");
             warn = true;
         }
     }
     match status.vertical_wind_direction {
-        Some(v) => {
-            if let Meta {
-                step: _,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.vertical_wind_direction
-            {
-                if min.is_nan() && max as u32 == 0x0081803f {
-                    println!(
-                        "ℹ️  Vertical Wind Direction: {:?} [0x{:08x}]",
-                        v, max as u32
-                    );
-                } else {
-                    println!(
-                        "⚠️  Vertical Wind Direction: {:?} [0x{:08x}] - invalid metadata",
-                        v, max as u32
-                    );
-                    warn = true;
-                }
-            } else {
-                println!("⚠️  Vertical Wind Direction: {v:?} - invalid metadata");
-                warn = true;
-            }
+        Some((v, Metadata::Binary(Binary::Enum(e)))) if e.max == "3F808100" => {
+            println!("ℹ️  Vertical Wind Direction: {:?} [{}]", v, e.max);
         }
-        None => {
-            println!("⚠️  Vertical Wind Direction: unavailable.");
+        v => {
+            println!("⚠️  Vertical Wind Direction: {v:?} - invalid data");
             warn = true;
         }
     }
     match status.horizontal_wind_direction {
-        Some(v) => {
-            if let Meta {
-                step: _,
-                min: Some(min),
-                max: Some(max),
-                digits: _,
-            } = status.meta.horizontal_wind_direction
-            {
-                if min.is_nan() && max as u32 == 0x0181fd {
-                    println!(
-                        "ℹ️  Horizontal Wind Direction: {:?} [0x{:06x}]",
-                        v, max as u32
-                    );
-                } else {
-                    println!(
-                        "⚠️  Horizontal Wind Direction: {:?} [0x{:06x}] - invalid metadata",
-                        v, max as u32
-                    );
-                    warn = true;
-                }
-            } else {
-                println!("⚠️  Horizontal Wind Direction: {v:?} - invalid metadata");
-                warn = true;
-            }
+        Some((v, Metadata::Binary(Binary::Enum(e)))) if e.max == "FD8101" => {
+            println!("ℹ️  Horizontal Wind Direction: {:?} [{}]", v, e.max);
         }
-        None => {
-            println!("⚠️  Horizontal Wind Direction: unavailable.");
+        v => {
+            println!("⚠️  Horizontal Wind Direction: {v:?} - invalid data");
             warn = true;
         }
     }

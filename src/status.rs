@@ -2,43 +2,20 @@ use crate::request::DaikinRequest;
 use crate::response::DaikinResponse;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct DaikinStatus {
-    pub power: Option<u8>,
-    pub current_temperature: Option<f32>,
-    pub current_humidity: Option<f32>,
-    pub current_outside_temperature: Option<f32>,
-    pub mode: Option<Mode>,
-    pub target_cooling_temperature: Option<f32>,
-    pub target_heating_temperature: Option<f32>,
-    pub target_automatic_temperature: Option<f32>,
-    pub wind_speed: Option<WindSpeed>,
-    pub automode_wind_speed: Option<AutoModeWindSpeed>,
-    pub vertical_wind_direction: Option<VerticalDirection>,
-    pub horizontal_wind_direction: Option<HorizontalDirection>,
-    pub meta: Metadata,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Meta {
-    pub step: f32,
-    pub min: Option<f32>,
-    pub max: Option<f32>,
-    pub digits: usize,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Metadata {
-    pub power: Meta,
-    pub current_temperature: Meta,
-    pub mode: Meta,
-    pub target_cooling_temperature: Meta,
-    pub target_heating_temperature: Meta,
-    pub target_automatic_temperature: Meta,
-    pub wind_speed: Meta,
-    pub automode_wind_speed: Meta,
-    pub vertical_wind_direction: Meta,
-    pub horizontal_wind_direction: Meta,
+    pub power: Option<(u8, crate::property::Metadata)>,
+    pub current_temperature: Option<(f32, crate::property::Metadata)>,
+    pub current_humidity: Option<(f32, crate::property::Metadata)>,
+    pub current_outside_temperature: Option<(f32, crate::property::Metadata)>,
+    pub mode: Option<(Mode, crate::property::Metadata)>,
+    pub target_cooling_temperature: Option<(f32, crate::property::Metadata)>,
+    pub target_heating_temperature: Option<(f32, crate::property::Metadata)>,
+    pub target_automatic_temperature: Option<(f32, crate::property::Metadata)>,
+    pub wind_speed: Option<(WindSpeed, crate::property::Metadata)>,
+    pub automode_wind_speed: Option<(AutoModeWindSpeed, crate::property::Metadata)>,
+    pub vertical_wind_direction: Option<(VerticalDirection, crate::property::Metadata)>,
+    pub horizontal_wind_direction: Option<(HorizontalDirection, crate::property::Metadata)>,
 }
 
 impl From<DaikinResponse> for DaikinStatus {
@@ -56,18 +33,6 @@ impl From<DaikinResponse> for DaikinStatus {
             automode_wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 .into()),
             vertical_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 .into()),
             horizontal_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 .into()),
-            meta: Metadata {
-                power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 -> Meta),
-                current_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 -> Meta),
-                mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 -> Meta),
-                target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 -> Meta),
-                target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 -> Meta),
-                target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F -> Meta),
-                wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 -> Meta),
-                automode_wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 -> Meta),
-                vertical_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 -> Meta),
-                horizontal_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 -> Meta),
-            },
         }
     }
 }
@@ -117,7 +82,7 @@ impl Into<DaikinRequest> for DaikinStatus {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum Mode {
     Fan = 0,
@@ -129,7 +94,7 @@ pub enum Mode {
     Unknown = 255,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum WindSpeed {
     Silent = 0x0B,
@@ -143,7 +108,7 @@ pub enum WindSpeed {
     Unknown = 0xFF,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum AutoModeWindSpeed {
     Silent = 0x0B,
@@ -152,7 +117,7 @@ pub enum AutoModeWindSpeed {
     Unknown = 0xFF,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum VerticalDirection {
     TopMost = 0x01,
@@ -169,7 +134,7 @@ pub enum VerticalDirection {
     Unknown = 0xFF,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
 #[repr(u8)]
 pub enum HorizontalDirection {
     LeftMost = 0x02,
