@@ -50,7 +50,7 @@ impl Property {
     pub fn new(name: &str, value: PropValue) -> Property {
         Property::Node(Item {
             name: name.to_string(),
-            value: value,
+            value,
             metadata: Metadata::Undefined,
             phantom: std::marker::PhantomData,
         })
@@ -132,7 +132,7 @@ impl<T: Sized + DeserializeOwned> Item<T> {
         match self {
             Item {
                 value: PropValue::Integer(pv),
-                metadata: Metadata::Integer {},
+                metadata: Metadata::Integer,
                 ..
             } => Some(*pv),
             _ => None,
@@ -171,7 +171,7 @@ impl<T: Sized + DeserializeOwned> Item<T> {
                 metadata: md,
                 ..
             } => {
-                if matches!(md, Metadata::String {}) {
+                if matches!(md, Metadata::String) {
                     Some(String::from(pv))
                 } else if matches!(md, Metadata::Binary(Binary::String { .. })) {
                     todo!() // decode hex string
@@ -194,7 +194,7 @@ pub enum PropValue {
 
 impl PropValue {
     pub fn from(value: f32, step: f32, size: usize) -> PropValue {
-        if value.is_nan() || size > 8 || size < 2 {
+        if value.is_nan() || !(2..=8).contains(&size) {
             return PropValue::Null;
         }
         let mut wtr = vec![];
