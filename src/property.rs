@@ -1,5 +1,5 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -73,7 +73,7 @@ impl Property {
             Property::Item {
                 metadata: Metadata::Binary(binary),
                 ..
-            } => binary.get_tuple(),
+            } => (binary.step(), binary.min(), binary.max()),
             _ => (0.0, None, None),
         }
     }
@@ -95,9 +95,10 @@ impl Property {
                 metadata: md,
                 ..
             } => match md {
-                Metadata::Binary(Binary::Step { step, .. }) => {
+                Metadata::Binary(binary) if matches!(binary, Binary::Step { .. }) => {
                     let value = hex2int(pv) as f32;
-                    if *step == 0.0 {
+                    let step = binary.step();
+                    if step == 0.0 {
                         Some(value)
                     } else {
                         Some(value * step)
@@ -192,8 +193,8 @@ pub enum Metadata {
 #[serde(untagged)]
 pub enum Binary {
     Step {
-        #[serde(rename = "st", deserialize_with = "step_from_u8")]
-        step: f32,
+        #[serde(rename = "st")]
+        step: u8,
         #[serde(rename = "mi")]
         min: Option<String>,
         #[serde(rename = "mx")]
@@ -202,42 +203,47 @@ pub enum Binary {
     String {},
 }
 
-fn step_from_u8<'de, D>(deserializer: D) -> Result<f32, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let step = u8::deserialize(deserializer)?;
-    let step_base = f32::from(step & 0xf);
-    let exp: i8 = (step & 0xf0) as i8 >> 4;
-    let step_coefficient = 10.0_f32.powi(exp as i32);
-    Ok(step_base * step_coefficient)
-}
-
-impl std::fmt::Debug for Binary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.get_tuple())
-    }
-}
-
 impl Binary {
-    /// Returns step, min, max
-    pub fn get_tuple(&self) -> (f32, Option<f32>, Option<f32>) {
-        let Binary::Step { min, max, step } = self else {
-            return (0.0, None, None);
+    pub fn step(&self) -> f32 {
+        let Binary::Step { step, .. } = self else {
+            return 0.0;
         };
-        let min = min.as_ref().map(|m| {
-            if *step != 0.0 {
+        let step_base = f32::from(step & 0xf);
+        let exp: i8 = (step & 0xf0) as i8 >> 4;
+        let step_coefficient = 10.0_f32.powi(exp as i32);
+        step_base * step_coefficient
+    }
+
+    pub fn min(&self) -> Option<f32> {
+        let Binary::Step { min, .. } = self else {
+            return None;
+        };
+        let step = self.step();
+        min.as_ref().map(|m| {
+            if step != 0.0 {
                 hex2int(m) as f32 * step
             } else {
                 hex2int(m) as f32
             }
-        });
-        let max = if *step != 0.0 {
-            hex2int(max) as f32 * step
-        } else {
-            hex2int(max) as f32
+        })
+    }
+
+    pub fn max(&self) -> Option<f32> {
+        let Binary::Step { max, .. } = self else {
+            return None;
         };
-        (*step, min, Some(max))
+        let step = self.step();
+        if step != 0.0 {
+            Some(hex2int(max) as f32 * step)
+        } else {
+            Some(hex2int(max) as f32)
+        }
+    }
+}
+
+impl std::fmt::Debug for Binary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", (self.step(), self.min(), self.max()))
     }
 }
 
