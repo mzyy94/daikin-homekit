@@ -327,7 +327,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", pch: [Item { name: "p_01", pv: 38, meta: (0.5, Some(-9.0), Some(39.0)) }] }"#
+            r#"Tree { pn: "e_A00D", pt: 1, pch: [Item { pn: "p_01", pt: 3, pv: Some(38), md: Some((0.5, Some(-9.0), Some(39.0))) }] }"#
         );
     }
 }
