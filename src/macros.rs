@@ -4,9 +4,9 @@ macro_rules! set_child_prop {
             crate::property::Property::Tree{ref mut children, ..} => {
                 let found = children.iter_mut().find(|p| match p {
                     crate::property::Property::Tree { name, .. } => name == stringify!($name),
-                    crate::property::Property::Item { name, .. } => name == stringify!($name),
+                    crate::property::Property::Node(crate::property::Item { name, .. }) => name == stringify!($name),
                 });
-                if let Some(crate::property::Property::Item { ref mut value, .. }) = found {
+                if let Some(crate::property::Property::Node(crate::property::Item { ref mut value, .. })) = found {
                     *value = $propval;
                 } else {
                     let pp = crate::property::Property::new(stringify!($name), $propval);
@@ -24,7 +24,7 @@ macro_rules! set_child_prop {
                     crate::property::Property::Tree{ref mut children, ..} => {
                         let found = children.iter_mut().find(|p| match p {
                             crate::property::Property::Tree { name, .. } => name == stringify!($name),
-                            crate::property::Property::Item { name, .. } => name == stringify!($name),
+                            crate::property::Property::Node(crate::property::Item { name, .. }) => name == stringify!($name),
                         });
                         if let Some(p) = found {
                             p
@@ -67,20 +67,33 @@ macro_rules! get_child_prop {
         $popt.ok_or(crate::error::Error::NoProperty)
     };
     ({ $popt:expr } -> Meta) => {{
-        let (step, min, max) = $popt.map(|p| p.meta()).unwrap_or_default();
-        let digits = $popt.map(|p| p.size()).unwrap_or_default();
+        let Some(crate::property::Property::Node( item )) = $popt else {
+            panic!("Expected a Property::Node, but got something else.");
+            // return crate::status::Meta {step: 0.0, min: 0.0, max: 0.0, digits: 0};
+        };
+        let (step, min, max) = item.meta();
+        let digits = item.size();
         crate::status::Meta {step, min, max, digits}
     }
     };
-    ({ $popt:expr } as $ty:ty) => {
-        $popt.and_then(|p| p.get_f32()).map(|v| v as $ty)
-    };
-    ({ $popt:expr } .into()) => {
-        serde_json::from_value($popt.and_then(|p| p.get_f32()).map(|v| serde_json::Value::Number(serde_json::Number::from(v as u8))).unwrap_or_default()).unwrap_or_default()
-    };
-    ({ $popt:expr } .to_string()) => {
-        $popt.and_then(|p| p.get_string())
-    };
+    ({ $popt:expr } as $ty:ty) => {{
+        let Some(crate::property::Property::Node( item )) = $popt else {
+            panic!("Expected a Property::Node, but got something else.");
+        };
+        item.get_f32().map(|v| v as $ty)
+    }};
+    ({ $popt:expr } .into()) => {{
+        let Some(crate::property::Property::Node( item )) = $popt else {
+            panic!("Expected a Property::Node, but got something else.");
+        };
+        serde_json::from_value(item.get_f32().map(|v| serde_json::Value::Number(serde_json::Number::from(v as u8))).unwrap_or_default()).unwrap_or_default()
+    }};
+    ({ $popt:expr } .to_string()) => {{
+        let Some(crate::property::Property::Node( item )) = $popt else {
+            panic!("Expected a Property::Node, but got something else.");
+        };
+        item.get_string()
+    }};
     ({ $popt:expr } . $name:ident $($rest:tt)*) => {
         get_child_prop!(
             { $popt.and_then(|p| p.find(stringify!($name))) } $($rest)*
@@ -132,7 +145,7 @@ mod tests {
         let p = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Ok(Item { name: "p_03", value: String("3800"), metadata: Binary(Step(BinaryStep { step: 241, min: "0000", max: "FF00" })) })"#
+            r#"Ok(crate::property::Item { name: "p_03", value: String("3800"), metadata: Binary(Step(BinaryStep { step: 241, min: "0000", max: "FF00" })) })"#
         );
 
         let p = get_prop!(res."/hoge".fuga.piyo);

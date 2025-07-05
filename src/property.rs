@@ -14,16 +14,19 @@ pub enum Property {
         #[serde(rename = "pch")]
         children: Vec<Property>,
     },
-    Item {
-        #[serde(rename = "pn")]
-        name: String,
-        // #[serde(skip_serializing, rename = "pt")]
-        // type_: u8, // 2, 3
-        #[serde(rename = "pv")]
-        value: PropValue,
-        #[serde(skip_serializing, rename = "md")]
-        metadata: Metadata,
-    },
+    Node(Item),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Item {
+    #[serde(rename = "pn")]
+    pub name: String,
+    // #[serde(skip_serializing, rename = "pt")]
+    // type_: u8, // 2, 3
+    #[serde(rename = "pv")]
+    pub value: PropValue,
+    #[serde(skip_serializing, rename = "md")]
+    pub metadata: Metadata,
 }
 
 fn hex2int(hex: &String) -> i32 {
@@ -43,11 +46,11 @@ fn hex2int(hex: &String) -> i32 {
 
 impl Property {
     pub fn new(name: &str, value: PropValue) -> Property {
-        Property::Item {
+        Property::Node(Item {
             name: name.to_string(),
             value: value,
             metadata: Metadata::Undefined,
-        }
+        })
     }
 
     pub fn new_tree(name: &str) -> Property {
@@ -61,15 +64,17 @@ impl Property {
         match self {
             Property::Tree { children, .. } => children.iter().find(|p| match p {
                 Property::Tree { name: n, .. } => name == n,
-                Property::Item { name: n, .. } => name == n,
+                Property::Node(Item { name: n, .. }) => name == n,
             }),
             _ => None,
         }
     }
+}
 
+impl Item {
     pub fn meta(&self) -> (f32, Option<f32>, Option<f32>) {
         match self {
-            Property::Item {
+            Item {
                 metadata: Metadata::Binary(Binary::Step(step)),
                 ..
             } => (
@@ -77,7 +82,7 @@ impl Property {
                 Some(*step.range().start()),
                 Some(*step.range().end()),
             ),
-            Property::Item {
+            Item {
                 metadata: Metadata::Binary(Binary::Enum(enum_)),
                 ..
             } => (0.0, Some(f32::NAN), Some(hex2int(&enum_.max) as f32)),
@@ -87,7 +92,7 @@ impl Property {
 
     pub fn size(&self) -> usize {
         match self {
-            Property::Item {
+            Item {
                 value: PropValue::String(str),
                 ..
             } => str.len(),
@@ -97,7 +102,7 @@ impl Property {
 
     pub fn get_f32(&self) -> Option<f32> {
         match self {
-            Property::Item {
+            Item {
                 value: PropValue::String(pv),
                 metadata: md,
                 ..
@@ -117,7 +122,7 @@ impl Property {
                 }
                 _ => None,
             },
-            Property::Item {
+            Item {
                 value: PropValue::Integer(pv),
                 metadata: md,
                 ..
@@ -134,7 +139,7 @@ impl Property {
 
     pub fn get_string(&self) -> Option<String> {
         match self {
-            Property::Item {
+            Item {
                 value: PropValue::String(pv),
                 metadata: md,
                 ..
