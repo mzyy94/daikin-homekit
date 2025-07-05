@@ -121,13 +121,13 @@ mod tests {
         let p: Item = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Item { name: "p_03", value: String("3800"), metadata: Binary(Step(BinaryStep { range: 0.0..=25.5, step: 0.1 })), phantom: PhantomData<fn() -> f32> }"#
+            r#"Item { name: "p_03", value: 5.6, metadata: Binary(Step(BinaryStep { range: 0.0..=25.5, step: 0.1 })) }"#
         );
 
         let p: Item = get_prop!(res."/hoge".fuga.piyo);
         assert_eq!(
             format!("{:?}", p),
-            r#"Item { name: "", value: Null, metadata: Undefined, phantom: PhantomData<fn() -> f32> }"#
+            r#"Item { name: "", value: Null, metadata: Undefined }"#
         );
     }
 

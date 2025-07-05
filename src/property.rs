@@ -17,7 +17,7 @@ pub enum Property {
     Node(Item),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Item<T: Sized + DeserializeOwned + Into<f32> = f32> {
     #[serde(rename = "pn")]
     pub name: String,
@@ -29,6 +29,24 @@ pub struct Item<T: Sized + DeserializeOwned + Into<f32> = f32> {
     pub metadata: Metadata,
     #[serde(skip)]
     pub phantom: std::marker::PhantomData<fn() -> T>,
+}
+
+impl<T: Sized + DeserializeOwned + Into<f32>> std::fmt::Debug for Item<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Item {{ name: {:?}, ", self.name)?;
+        match self.metadata {
+            Metadata::Binary(Binary::Step(..)) => {
+                write!(f, "value: {:?}", self.get_f32().unwrap())
+            }
+            Metadata::Binary(Binary::String { .. }) => {
+                write!(f, "value: {:?}", self.get_string())
+            }
+            _ => {
+                write!(f, "value: {:?}", self.value)
+            }
+        }?;
+        write!(f, ", metadata: {:?} }}", self.metadata)
+    }
 }
 
 fn hex2int(hex: &String) -> i32 {
@@ -138,9 +156,13 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
                 ..
             } => {
                 if matches!(md, Metadata::String) {
-                    Some(String::from(pv))
+                    Some(pv.clone())
                 } else if matches!(md, Metadata::Binary(Binary::String { .. })) {
-                    todo!() // decode hex string
+                    hex::decode(pv)
+                        .ok()
+                        .and_then(|bytes| String::from_utf8(bytes).ok())
+                        .map(|s| s.chars().rev().collect())
+                        .map(|s: String| s.trim_end_matches('\0').to_string())
                 } else {
                     None
                 }
@@ -322,7 +344,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", children: [Node(Item { name: "p_01", value: String("2600"), metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })), phantom: PhantomData<fn() -> f32> })] }"#
+            r#"Tree { name: "e_A00D", children: [Node(Item { name: "p_01", value: 19.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })) })] }"#
         );
     }
 }
