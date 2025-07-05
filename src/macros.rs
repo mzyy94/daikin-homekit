@@ -1,5 +1,5 @@
 macro_rules! set_child_prop {
-    ( $p:tt . $name:ident = $propval:tt) => {
+    ( $p:tt . $name:ident = $item:expr) => {
         match $p {
             crate::property::Property::Tree{ref mut children, ..} => {
                 let found = children.iter_mut().find(|p| match p {
@@ -7,9 +7,14 @@ macro_rules! set_child_prop {
                     crate::property::Property::Node(crate::property::Item { name, .. }) => name == stringify!($name),
                 });
                 if let Some(crate::property::Property::Node(crate::property::Item { ref mut value, .. })) = found {
-                    *value = $propval;
+                    *value = $item.value;
                 } else {
-                    let pp = crate::property::Property::new(stringify!($name), $propval);
+                    let pp = crate::property::Property::Node(crate::property::Item {
+                        name: $item.name.to_string(),
+                        value: $item.value,
+                        metadata: crate::property::Metadata::Undefined,
+                        phantom: std::marker::PhantomData,
+                    });
                     children.push(pp);
                 }
 
@@ -130,8 +135,13 @@ mod tests {
     fn set_prop() {
         let mut req = DaikinRequest { requests: vec![] };
 
-        let pv = PropValue::String("3800".into());
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03 = pv);
+        let item: Item<f32> = Item {
+            name: "p_03".into(),
+            value: PropValue::String("3800".into()),
+            metadata: crate::property::Metadata::Undefined,
+            phantom: std::marker::PhantomData,
+        };
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03 = item);
 
         assert_eq!(
             serde_json::to_string(&req).unwrap(),

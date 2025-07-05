@@ -43,41 +43,15 @@ impl Into<DaikinRequest> for DaikinStatus {
     fn into(self) -> DaikinRequest {
         let mut req = DaikinRequest { requests: vec![] };
 
-        if let Item { value: pv, .. } = self.power {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = pv);
-        };
-
-        if let Item { value: pv, .. } = self.mode {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = pv);
-        };
-
-        if let Item { value: pv, .. } = self.target_cooling_temperature {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = pv);
-        };
-
-        if let Item { value: pv, .. } = self.target_heating_temperature {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = pv);
-        };
-
-        if let Item { value: pv, .. } = self.target_automatic_temperature {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = pv);
-        };
-
-        if let Item { value: pv, .. } = self.wind_speed {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 = pv);
-        };
-
-        if let Item { value: pv, .. } = self.automode_wind_speed {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 = pv);
-        };
-
-        if let Item { value: pv, .. } = self.vertical_wind_direction {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 = pv);
-        };
-
-        if let Item { value: pv, .. } = self.horizontal_wind_direction {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 = pv);
-        };
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = self.power);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = self.mode);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = self.target_cooling_temperature);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = self.target_heating_temperature);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = self.target_automatic_temperature);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 = self.wind_speed);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 = self.automode_wind_speed);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 = self.vertical_wind_direction);
+        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 = self.horizontal_wind_direction);
 
         req
     }
