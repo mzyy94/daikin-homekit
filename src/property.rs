@@ -99,7 +99,7 @@ impl Property {
                 metadata: md,
                 ..
             } => match md {
-                Metadata::Binary { min, max, .. } if !(min.is_none() && max.is_none()) => {
+                Metadata::Binary(Binary::Step { .. }) => {
                     let value = hex2int(pv) as f32;
                     let step = self.step();
                     if step == 0.0 {
@@ -134,14 +134,7 @@ impl Property {
             } => {
                 if matches!(md, Metadata::String {}) {
                     Some(String::from(pv))
-                } else if matches!(
-                    md,
-                    Metadata::Binary {
-                        step: 0,
-                        min: None,
-                        max: None
-                    }
-                ) {
+                } else if matches!(md, Metadata::Binary(Binary::String { .. })) {
                     todo!() // decode hex string
                 } else {
                     None
@@ -197,14 +190,21 @@ pub enum Metadata {
     #[serde(rename = "s")]
     String {},
     #[serde(rename = "b")]
-    Binary {
+    Binary(Binary),
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum Binary {
+    Step {
         #[serde(rename = "st")]
         step: u8,
         #[serde(rename = "mi")]
         min: Option<String>,
         #[serde(rename = "mx")]
-        max: Option<String>,
+        max: String,
     },
+    String {},
 }
 
 impl std::fmt::Debug for Metadata {
@@ -215,7 +215,7 @@ impl std::fmt::Debug for Metadata {
 
 impl Metadata {
     pub fn step(&self) -> f32 {
-        let Metadata::Binary { step, .. } = self else {
+        let Metadata::Binary(Binary::Step { step, .. }) = self else {
             return 0.0;
         };
         let step_base = f32::from(step & 0xf);
@@ -230,7 +230,7 @@ impl Metadata {
 
     /// Returns step, min, max
     pub fn get_tuple(&self) -> (f32, Option<f32>, Option<f32>) {
-        let Metadata::Binary { min, max, .. } = self else {
+        let Metadata::Binary(Binary::Step { min, max, .. }) = self else {
             return (0.0, None, None);
         };
         let step = self.step();
@@ -241,14 +241,12 @@ impl Metadata {
                 hex2int(m) as f32
             }
         });
-        let max = max.as_ref().map(|m| {
-            if step != 0.0 {
-                hex2int(m) as f32 * step
-            } else {
-                hex2int(m) as f32
-            }
-        });
-        (step, min, max)
+        let max = if step != 0.0 {
+            hex2int(max) as f32 * step
+        } else {
+            hex2int(max) as f32
+        };
+        (step, min, Some(max))
     }
 }
 
