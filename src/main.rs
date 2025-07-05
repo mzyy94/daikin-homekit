@@ -5,7 +5,10 @@ use log::{info, warn};
 use std::{net::Ipv4Addr, str::FromStr};
 
 use hap::{
-    accessory::{heater_cooler::HeaterCoolerAccessory, AccessoryCategory, AccessoryInformation},
+    accessory::{
+        bridge::BridgeAccessory, heater_cooler::HeaterCoolerAccessory, AccessoryCategory,
+        AccessoryInformation,
+    },
     server::{IpServer, Server},
     storage::{FileStorage, Storage},
     Config, MacAddress, Pin,
@@ -51,14 +54,13 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let mut ac = HeaterCoolerAccessory::new(
+    let bridge = BridgeAccessory::new(
         1,
         AccessoryInformation {
-            name: info.name().unwrap_or("Unknown name".into()),
-            manufacturer: "Daikin Industries, Ltd.".into(),
-            serial_number: info.mac().unwrap_or("000000000000".into()),
-            // WARNING: DO NOT COMMENT OUT BELOW
-            // firmware_revision: info.version(),
+            name: "Daikin Bridge".into(),
+            manufacturer: crate_authors!().into(),
+            model: crate_name!().into(),
+            serial_number: "000000000000".into(),
             ..Default::default()
         },
     )?;
@@ -86,7 +88,7 @@ async fn main() -> anyhow::Result<()> {
         Err(_) => {
             let config = Config {
                 pin: Pin::new([2, 0, 2, 3, 0, 4, 2, 0])?,
-                name: info.name().unwrap_or("Daikin AC".into()),
+                name: "Daikin Bridge".into(),
                 device_id: MacAddress::from_str(&info.mac().unwrap_or("000000000000".into()))
                     .unwrap(),
                 category: AccessoryCategory::AirConditioner,
@@ -97,9 +99,21 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    setup_characteristic(daikin, &mut ac.heater_cooler).await?;
-
     let server = IpServer::new(config, storage).await?;
+    server.add_accessory(bridge).await?;
+
+    let mut ac = HeaterCoolerAccessory::new(
+        info.edid().unwrap_or(2),
+        AccessoryInformation {
+            name: info.name().unwrap_or("Unknown name".into()),
+            manufacturer: "Daikin Industries, Ltd.".into(),
+            serial_number: info.mac().unwrap_or("000000000000".into()),
+            // WARNING: DO NOT COMMENT OUT BELOW
+            // firmware_revision: info.version(),
+            ..Default::default()
+        },
+    )?;
+    setup_characteristic(daikin, &mut ac.heater_cooler).await?;
     server.add_accessory(ac).await?;
 
     let handle = server.run_handle();
