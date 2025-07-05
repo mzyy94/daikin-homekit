@@ -9,16 +9,16 @@ pub enum Property {
     Tree {
         #[serde(rename = "pn")]
         name: String,
-        #[serde(skip_serializing, rename = "pt")]
-        type_: u8,
+        // #[serde(skip_serializing, rename = "pt")]
+        // type_: u8, // 1
         #[serde(rename = "pch")]
         children: Vec<Property>,
     },
     Item {
         #[serde(rename = "pn")]
         name: String,
-        #[serde(skip_serializing, rename = "pt")]
-        type_: u8,
+        // #[serde(skip_serializing, rename = "pt")]
+        // type_: u8, // 2, 3
         #[serde(rename = "pv")]
         value: PropValue,
         #[serde(skip_serializing, rename = "md")]
@@ -45,7 +45,6 @@ impl Property {
     pub fn new(name: &str, value: PropValue) -> Property {
         Property::Item {
             name: name.to_string(),
-            type_: 2,
             value: value,
             metadata: Metadata::Integer {},
         }
@@ -54,7 +53,6 @@ impl Property {
     pub fn new_tree(name: &str) -> Property {
         Property::Tree {
             name: name.to_string(),
-            type_: 3,
             children: vec![],
         }
     }
@@ -335,7 +333,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: String("2600"), metadata: Binary(Step(BinaryStep { step: 245, min: "EEFF", max: "4E00" })) }] }"#
+            r#"Tree { name: "e_A00D", children: [Item { name: "p_01", value: String("2600"), metadata: Binary(Step(BinaryStep { step: 245, min: "EEFF", max: "4E00" })) }] }"#
         );
     }
 }
