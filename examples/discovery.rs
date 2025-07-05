@@ -2,7 +2,7 @@ use daikin_homekit::discovery::discovery;
 use futures::{pin_mut, prelude::*};
 
 #[tokio::main]
-async fn main() -> () {
+async fn main() {
     let timeout = std::time::Duration::new(3, 0);
     let stream = discovery(timeout).await;
     pin_mut!(stream);
