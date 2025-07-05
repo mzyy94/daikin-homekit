@@ -1,9 +1,9 @@
-use clap::{crate_authors, crate_description, crate_name, crate_version, Parser};
+use clap::{crate_authors, crate_name, Parser};
 use daikin_homekit::{
     characteristic::setup_characteristic, daikin::Daikin, discovery::discovery, info::DaikinInfo,
 };
-use futures::{pin_mut, prelude::*};
-use log::{info, warn};
+use futures::prelude::*;
+use log::{error, info, warn};
 use std::net::Ipv4Addr;
 
 use hap::{
@@ -17,16 +17,17 @@ use hap::{
 };
 
 #[derive(Parser)]
-#[clap(
-    name = crate_name!(),
-    author = crate_authors!(),
-    version = crate_version!(),
-    about = crate_description!(),
-)]
+#[command(name = crate_name!(), author, version, about)]
 struct Cli {
     /// IPv4 address of Daikin AC
-    #[arg(value_name = "ip_address")]
-    ip_addrs: Vec<String>,
+    #[arg(value_name = "ip_address", exclusive = true)]
+    ip_addrs: Vec<Ipv4Addr>,
+    /// Discovery timeout in milliseconds
+    #[arg(long, default_value = "3000")]
+    timeout: u64,
+    /// Expected number of devices to discover
+    #[arg(long, default_value = "128", hide_default_value = true)]
+    count: usize,
 }
 
 #[tokio::main]
@@ -43,8 +44,7 @@ async fn main() -> anyhow::Result<()> {
 
         stream::iter(cli.ip_addrs)
             .then(|ip| async move {
-                let ip_addr = ip.parse::<Ipv4Addr>()?;
-                let daikin = Daikin::new(ip_addr);
+                let daikin = Daikin::new(ip);
                 let info = daikin.get_info().await?;
                 anyhow::Ok((daikin, info))
             })
@@ -52,16 +52,23 @@ async fn main() -> anyhow::Result<()> {
             .await?
     } else {
         warn!("No IP address provided. Discovering Daikin devices on the local network...");
-        let timeout = std::time::Duration::new(3, 0);
+        let timeout = std::time::Duration::from_millis(cli.timeout);
         let stream = discovery(timeout).await;
-        pin_mut!(stream);
-        stream.try_collect::<Vec<_>>().await?
+        let devices = stream.take(cli.count).try_collect::<Vec<_>>().await?;
+        if devices.is_empty() {
+            error!("No Daikin devices found.");
+            return Ok(());
+        }
+        if cli.count != 128 && devices.len() < cli.count {
+            error!(
+                "Found only {} devices, but requested {}.",
+                devices.len(),
+                cli.count
+            );
+            return Ok(());
+        }
+        devices
     };
-
-    if devices.is_empty() {
-        warn!("No Daikin devices found. Exiting.");
-        return Ok(());
-    }
 
     let bridge = BridgeAccessory::new(
         1,
