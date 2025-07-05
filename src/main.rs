@@ -1,4 +1,4 @@
-use clap::{crate_authors, crate_name, Parser};
+use clap::{crate_authors, crate_name, crate_version, Parser};
 use daikin_homekit::{
     characteristic::setup_characteristic, daikin::Daikin, discovery::discovery, info::DaikinInfo,
 };
@@ -70,17 +70,6 @@ async fn main() -> anyhow::Result<()> {
         devices
     };
 
-    let bridge = BridgeAccessory::new(
-        1,
-        AccessoryInformation {
-            name: "Daikin Bridge".into(),
-            manufacturer: crate_authors!().into(),
-            model: crate_name!().into(),
-            serial_number: "000000000000".into(),
-            ..Default::default()
-        },
-    )?;
-
     let mut storage = {
         if cfg!(debug_assertions) {
             FileStorage::current_dir().await?
@@ -112,6 +101,18 @@ async fn main() -> anyhow::Result<()> {
             config
         }
     };
+
+    let bridge = BridgeAccessory::new(
+        1,
+        AccessoryInformation {
+            name: "Daikin Bridge".into(),
+            manufacturer: crate_authors!().into(),
+            model: crate_name!().into(),
+            serial_number: config.device_id.to_string(),
+            firmware_revision: Some(crate_version!().into()),
+            ..Default::default()
+        },
+    )?;
 
     let server = IpServer::new(config, storage).await?;
     server.add_accessory(bridge).await?;
