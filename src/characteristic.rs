@@ -1,4 +1,3 @@
-use crate::property::BinaryEnum;
 use crate::status::{
     AutoModeWindSpeed, DaikinStatus, HorizontalDirection, VerticalDirection, WindSpeed,
 };
@@ -26,7 +25,7 @@ pub async fn setup_characteristic(
     if status.wind_speed.get_enum().is_none()
         || matches!(
             status.clone().wind_speed.metadata,
-            Metadata::Binary(Binary::Enum(BinaryEnum{max})) if max != "F80C"
+            Metadata::Binary(Binary::Enum { max }) if max != "F80C"
         )
     {
         info!("wind_speed is not compatible. remove rotation_speed characteristic");
@@ -34,7 +33,7 @@ pub async fn setup_characteristic(
     }
 
     if status.vertical_wind_direction.get_enum().is_none()
-        || matches!( status.clone().vertical_wind_direction.metadata, Metadata::Binary(Binary::Enum(BinaryEnum{max})) if max != "3F808100")
+        || matches!( status.clone().vertical_wind_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
     {
         info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
         service.swing_mode = None;

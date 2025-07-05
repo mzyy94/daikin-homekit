@@ -116,10 +116,10 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     }
     match status.mode.clone() {
         Item {
-            metadata: Metadata::Binary(Binary::Enum(en)),
+            metadata: Metadata::Binary(Binary::Enum { max }),
             ..
-        } if en.max == "2F00" => {
-            println!("ℹ️  Mode: {:?} [{}]", status.mode.get_enum(), en.max);
+        } if max == "2F00" => {
+            println!("ℹ️  Mode: {:?} [{}]", status.mode.get_enum(), max);
         }
         v => {
             println!("❌ Mode: {v:?} - invalid data");
@@ -165,13 +165,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
 
     match status.wind_speed.clone() {
         Item {
-            metadata: Metadata::Binary(Binary::Enum(en)),
+            metadata: Metadata::Binary(Binary::Enum { max }),
             ..
-        } if en.max == "F80C" => {
+        } if max == "F80C" => {
             println!(
                 "ℹ️  Wind Speed: {:?} [{}]",
                 status.wind_speed.get_enum(),
-                en.max
+                max
             );
         }
         v => {
@@ -181,13 +181,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     }
     match status.vertical_wind_direction.clone() {
         Item {
-            metadata: Metadata::Binary(Binary::Enum(e)),
+            metadata: Metadata::Binary(Binary::Enum { max }),
             ..
-        } if e.max == "3F808100" => {
+        } if max == "3F808100" => {
             println!(
                 "ℹ️  Vertical Wind Direction: {:?} [{}]",
                 status.vertical_wind_direction.get_enum(),
-                e.max
+                max
             );
         }
         v => {
@@ -197,13 +197,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     }
     match status.horizontal_wind_direction.clone() {
         Item {
-            metadata: Metadata::Binary(Binary::Enum(e)),
+            metadata: Metadata::Binary(Binary::Enum { max }),
             ..
-        } if e.max == "FD8101" => {
+        } if max == "FD8101" => {
             println!(
                 "ℹ️  Horizontal Wind Direction: {:?} [{}]",
                 status.horizontal_wind_direction.get_enum(),
-                e.max
+                max
             );
         }
         v => {

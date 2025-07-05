@@ -94,9 +94,9 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
                 .unwrap();
                 self.value = PropValue::String(hex::encode(wtr));
             }
-            Metadata::Binary(Binary::Enum(enum_)) => {
+            Metadata::Binary(Binary::Enum { max }) => {
                 let mut wtr = vec![];
-                wtr.write_int::<LittleEndian>(value.into() as i64, enum_.max.len() / 2)
+                wtr.write_int::<LittleEndian>(value.into() as i64, max.len() / 2)
                     .unwrap();
                 self.value = PropValue::String(hex::encode(wtr));
             }
@@ -119,7 +119,7 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
         match self {
             Item {
                 value: PropValue::String(pv),
-                metadata: Metadata::Binary(Binary::Enum(..)),
+                metadata: Metadata::Binary(Binary::Enum { .. }),
                 ..
             } => {
                 let value = hex2int(pv);
@@ -174,7 +174,10 @@ pub enum Metadata {
 #[serde(untagged)]
 pub enum Binary {
     Step(BinaryStep),
-    Enum(BinaryEnum),
+    Enum {
+        #[serde(rename = "mx")]
+        max: String,
+    },
     String {},
 }
 
@@ -215,14 +218,6 @@ impl std::fmt::Debug for BinaryStep {
             self.step(),
         )
     }
-}
-
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
-pub struct BinaryEnum {
-    // #[serde(rename = "st")]
-    // step: u8, // 0
-    #[serde(rename = "mx")]
-    pub max: String,
 }
 
 #[cfg(test)]
