@@ -79,6 +79,10 @@ impl Property {
                 Some(*step.range().start()),
                 Some(*step.range().end()),
             ),
+            Property::Item {
+                metadata: Metadata::Binary(Binary::Enum(enum_)),
+                ..
+            } => (0.0, Some(f32::NAN), Some(hex2int(&enum_.max) as f32)),
             _ => (0.0, None, None),
         }
     }
@@ -108,6 +112,10 @@ impl Property {
                     } else {
                         Some(value * step)
                     }
+                }
+                Metadata::Binary(Binary::Enum(..)) => {
+                    let value = hex2int(pv) as f32;
+                    Some(value)
                 }
                 _ => None,
             },
@@ -198,6 +206,7 @@ pub enum Metadata {
 #[serde(untagged)]
 pub enum Binary {
     Step(BinaryStep),
+    Enum(BinaryEnum),
     String {},
 }
 
@@ -223,10 +232,18 @@ impl BinaryStep {
     pub fn range(&self) -> RangeInclusive<f32> {
         let BinaryStep { min, max, step } = self;
         let step = if *step == 0 { 1.0 } else { self.step() };
-        let min_value = Some(hex2int(min) as f32 * step);
-        let max_value = Some(hex2int(max) as f32 * step);
-        RangeInclusive::new(min_value.unwrap_or(f32::NAN), max_value.unwrap_or(f32::NAN))
+        let min_value = hex2int(min) as f32 * step;
+        let max_value = hex2int(max) as f32 * step;
+        RangeInclusive::new(min_value, max_value)
     }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct BinaryEnum {
+    // #[serde(rename = "st")]
+    // step: u8, // 0
+    #[serde(rename = "mx")]
+    pub max: String,
 }
 
 #[cfg(test)]
