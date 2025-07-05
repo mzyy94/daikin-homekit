@@ -4,7 +4,7 @@ use crate::info::DaikinInfo;
 use crate::request::DaikinRequest;
 use crate::response::{DaikinResponse, Response};
 use crate::status::DaikinStatus;
-use futures::prelude::*;
+use futures::{pin_mut, prelude::*};
 use retainer::*;
 use serde_json::json;
 use serde_json::value::Value;
@@ -33,7 +33,8 @@ impl Daikin {
     }
 
     pub async fn discovery(timeout: Duration) -> anyhow::Result<(Daikin, DaikinInfo)> {
-        let mut stream = discovery::discovery(timeout).await?;
+        let stream = discovery::discovery(timeout).await?;
+        pin_mut!(stream);
         if let Some(item) = stream.next().await {
             item
         } else {

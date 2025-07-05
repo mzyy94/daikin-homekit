@@ -1,8 +1,7 @@
 use crate::daikin::Daikin;
 use crate::info::DaikinInfo;
+use async_stream::stream;
 use futures::prelude::*;
-use genawaiter::sync::gen;
-use genawaiter::yield_;
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -64,14 +63,14 @@ pub async fn discovery(
 
     socket.send_to(payload.as_bytes(), dst_addr).await?;
 
-    Ok(gen!({
+    Ok(stream!({
         loop {
             let mut buf = [0; 2048];
             let (text, src_addr) =
                 match tokio::time::timeout(timeout, socket.recv_from(&mut buf)).await {
                     Err(e) => {
                         warn!("stop discovering");
-                        yield_!(Err(e.into()));
+                        yield Err(e.into());
                         break;
                     }
                     Ok(res) => match res {
@@ -83,7 +82,7 @@ pub async fn discovery(
                             match str::from_utf8(&buf[..buf_size]) {
                                 Ok(val) => (val, src_addr),
                                 Err(e) => {
-                                    yield_!(Err(e.into()));
+                                    yield Err(e.into());
                                     continue;
                                 }
                             }
@@ -92,7 +91,7 @@ pub async fn discovery(
                             continue;
                         }
                         Err(e) => {
-                            yield_!(Err(e.into()));
+                            yield Err(e.into());
                             continue;
                         }
                     },
@@ -117,7 +116,7 @@ pub async fn discovery(
                 info.name().unwrap_or("Unknown name".into())
             );
 
-            yield_!(Ok((daikin, info)));
+            yield Ok((daikin, info));
         }
     }))
 }
