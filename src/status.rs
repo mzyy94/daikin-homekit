@@ -162,22 +162,25 @@ mod tests {
             .expect("Invalid JSON file.");
         let status: DaikinStatus = res.into();
 
-        assert_eq!(status.power, Some(0));
-        assert_eq!(status.current_temperature, Some(20.0));
-        assert_eq!(status.current_humidity, Some(50.0));
-        assert_eq!(status.current_outside_temperature, Some(19.0));
-        assert_eq!(status.mode, Some(Mode::Cooling));
-        assert_eq!(status.target_cooling_temperature, Some(24.5));
-        assert_eq!(status.target_heating_temperature, Some(25.0));
-        assert_eq!(status.target_automatic_temperature, Some(0.0));
-        assert_eq!(status.wind_speed, Some(WindSpeed::Auto));
-        assert_eq!(status.automode_wind_speed, Some(AutoModeWindSpeed::Auto));
+        assert_eq!(status.power.get_f32(), Some(0.0));
+        assert_eq!(status.current_temperature.get_f32(), Some(20.0));
+        assert_eq!(status.current_humidity.get_f32(), Some(50.0));
+        assert_eq!(status.current_outside_temperature.get_f32(), Some(19.0));
+        assert_eq!(status.mode.get_enum(), Some(Mode::Cooling));
+        assert_eq!(status.target_cooling_temperature.get_f32(), Some(24.5));
+        assert_eq!(status.target_heating_temperature.get_f32(), Some(25.0));
+        assert_eq!(status.target_automatic_temperature.get_f32(), Some(0.0));
+        assert_eq!(status.wind_speed.get_enum(), Some(WindSpeed::Auto));
         assert_eq!(
-            status.vertical_wind_direction,
+            status.automode_wind_speed.get_enum(),
+            Some(AutoModeWindSpeed::Auto)
+        );
+        assert_eq!(
+            status.vertical_wind_direction.get_enum(),
             Some(VerticalDirection::Auto)
         );
         assert_eq!(
-            status.horizontal_wind_direction,
+            status.horizontal_wind_direction.get_enum(),
             Some(HorizontalDirection::Auto)
         );
     }
@@ -188,15 +191,21 @@ mod tests {
             .expect("Invalid JSON file.");
         let mut status: DaikinStatus = res.into();
 
-        status.power = Some(1);
-        status.mode = Some(Mode::Cooling);
-        status.target_cooling_temperature = Some(24.5);
-        status.target_heating_temperature = Some(25.0);
-        status.target_automatic_temperature = Some(0.0);
-        status.automode_wind_speed = Some(AutoModeWindSpeed::Silent);
-        status.wind_speed = Some(WindSpeed::Lev4);
-        status.vertical_wind_direction = Some(VerticalDirection::BottomMost);
-        status.horizontal_wind_direction = Some(HorizontalDirection::RightCenter);
+        status.power.set_f32(1.0);
+        status.mode.set_enum(Mode::Cooling as u8);
+        status.target_cooling_temperature.set_f32(24.5);
+        status.target_heating_temperature.set_f32(25.0);
+        status.target_automatic_temperature.set_f32(0.0);
+        status
+            .automode_wind_speed
+            .set_enum(AutoModeWindSpeed::Silent as u8);
+        status.wind_speed.set_enum(WindSpeed::Lev4 as u8);
+        status
+            .vertical_wind_direction
+            .set_enum(VerticalDirection::BottomMost as u8);
+        status
+            .horizontal_wind_direction
+            .set_enum(HorizontalDirection::RightCenter as u8);
 
         let req: DaikinRequest = status.into();
         let json = serde_json::to_value(req).unwrap();
@@ -215,7 +224,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", status),
-            r#"DaikinStatus { power: Some(0), current_temperature: Some(20.0), current_humidity: Some(50.0), current_outside_temperature: Some(19.0), mode: Some(Cooling), target_cooling_temperature: Some(24.5), target_heating_temperature: Some(25.0), target_automatic_temperature: Some(0.0), wind_speed: Some(Auto), automode_wind_speed: Some(Auto), vertical_wind_direction: Some(Auto), horizontal_wind_direction: Some(Auto), meta: Metadata { power: Meta { step: 1.0, min: Some(0.0), max: Some(1.0), digits: 2 }, current_temperature: Meta { step: 1.0, min: Some(-9.0), max: Some(39.0), digits: 2 }, mode: Meta { step: 0.0, min: Some(NaN), max: Some(47.0), digits: 4 }, target_cooling_temperature: Meta { step: 0.5, min: Some(18.0), max: Some(32.0), digits: 2 }, target_heating_temperature: Meta { step: 0.5, min: Some(14.0), max: Some(30.0), digits: 2 }, target_automatic_temperature: Meta { step: 0.5, min: Some(-5.0), max: Some(5.0), digits: 2 }, wind_speed: Meta { step: 0.0, min: Some(NaN), max: Some(3320.0), digits: 4 }, automode_wind_speed: Meta { step: 0.0, min: Some(NaN), max: Some(3072.0), digits: 4 }, vertical_wind_direction: Meta { step: 0.0, min: Some(NaN), max: Some(8486975.0), digits: 8 }, horizontal_wind_direction: Meta { step: 0.0, min: Some(NaN), max: Some(98813.0), digits: 6 } } }"#
+            r#"DaikinStatus { power: Item { name: "p_01", value: String("00"), metadata: Binary(Step(BinaryStep { range: 0.0..=1.0, step: 1 })), phantom: PhantomData<fn() -> f32> }, current_temperature: Item { name: "p_01", value: String("14"), metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 1 })), phantom: PhantomData<fn() -> f32> }, current_humidity: Item { name: "p_02", value: String("32"), metadata: Binary(Step(BinaryStep { range: 25.0..=85.0, step: 1 })), phantom: PhantomData<fn() -> f32> }, current_outside_temperature: Item { name: "p_01", value: String("2600"), metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })), phantom: PhantomData<fn() -> f32> }, mode: Item { name: "p_01", value: String("0200"), metadata: Binary(Enum(BinaryEnum { max: "2F00" })), phantom: PhantomData<fn() -> daikin_homekit::status::Mode> }, target_cooling_temperature: Item { name: "p_02", value: String("31"), metadata: Binary(Step(BinaryStep { range: 18.0..=32.0, step: 0.5 })), phantom: PhantomData<fn() -> f32> }, target_heating_temperature: Item { name: "p_03", value: String("32"), metadata: Binary(Step(BinaryStep { range: 14.0..=30.0, step: 0.5 })), phantom: PhantomData<fn() -> f32> }, target_automatic_temperature: Item { name: "p_1F", value: String("00"), metadata: Binary(Step(BinaryStep { range: -5.0..=5.0, step: 0.5 })), phantom: PhantomData<fn() -> f32> }, wind_speed: Item { name: "p_09", value: String("0A00"), metadata: Binary(Enum(BinaryEnum { max: "F80C" })), phantom: PhantomData<fn() -> daikin_homekit::status::WindSpeed> }, automode_wind_speed: Item { name: "p_26", value: String("0A00"), metadata: Binary(Enum(BinaryEnum { max: "000C" })), phantom: PhantomData<fn() -> daikin_homekit::status::AutoModeWindSpeed> }, vertical_wind_direction: Item { name: "p_05", value: String("10000000"), metadata: Binary(Enum(BinaryEnum { max: "3F808100" })), phantom: PhantomData<fn() -> daikin_homekit::status::VerticalDirection> }, horizontal_wind_direction: Item { name: "p_06", value: String("100000"), metadata: Binary(Enum(BinaryEnum { max: "FD8101" })), phantom: PhantomData<fn() -> daikin_homekit::status::HorizontalDirection> } }"#
         );
     }
 }

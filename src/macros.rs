@@ -102,51 +102,28 @@ macro_rules! get_prop {
     };
 }
 
-macro_rules! propvalue {
-    ($dkst:tt . $name:ident as $ty:ty) => {{
-        match $dkst.$name {
-            Some((v, crate::property::Metadata::Binary(crate::property::Binary::Step(step)))) => {
-                Some(crate::property::PropValue::from(
-                    v as $ty as f32,
-                    step.step(),
-                    step.max.len(),
-                ))
-            }
-            Some((v, crate::property::Metadata::Binary(crate::property::Binary::Enum(en)))) => {
-                Some(crate::property::PropValue::from(
-                    v as $ty as f32,
-                    0.0,
-                    en.max.len(),
-                ))
-            }
-            _ => None,
-        }
-    }};
-    ($dkst:tt . $name:ident) => {
-        propvalue!($dkst.$name as f32)
-    };
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::property::PropValue;
+    use crate::property::{Item, PropValue};
     use crate::request::DaikinRequest;
     use crate::response::DaikinResponse;
-    use crate::status::DaikinStatus;
 
     #[test]
     fn get_prop() {
         let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
             .expect("Invalid JSON file.");
 
-        let p = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
+        let p: Item = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Ok(crate::property::Item { name: "p_03", value: String("3800"), metadata: Binary(Step(BinaryStep { step: 241, min: "0000", max: "FF00" })) })"#
+            r#"Item { name: "p_03", value: String("3800"), metadata: Binary(Step(BinaryStep { range: 0.0..=25.5, step: 0.1 })), phantom: PhantomData<fn() -> f32> }"#
         );
 
-        let p = get_prop!(res."/hoge".fuga.piyo);
-        assert_eq!(format!("{:?}", p), r#"Err(NoProperty)"#);
+        let p: Item = get_prop!(res."/hoge".fuga.piyo);
+        assert_eq!(
+            format!("{:?}", p),
+            r#"Item { name: "", value: Null, metadata: Undefined, phantom: PhantomData<fn() -> f32> }"#
+        );
     }
 
     #[test]
@@ -160,18 +137,5 @@ mod tests {
             serde_json::to_string(&req).unwrap(),
             r#"{"requests":[{"op":3,"pc":{"pn":"dgc_status","pch":[{"pn":"e_1002","pch":[{"pn":"e_A001","pch":[{"pn":"p_03","pv":"3800"}]}]}]},"to":"/dsiot/edge/adr_0100.dgc_status"}]}"#
         );
-    }
-
-    #[test]
-    fn propvalue() {
-        let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
-            .expect("Invalid JSON file.");
-        let status: DaikinStatus = res.into();
-
-        let pv = propvalue!(status.target_heating_temperature);
-        assert_eq!(format!("{:?}", pv), r#"Some(String("32"))"#);
-
-        let pv = propvalue!(status.mode as u8);
-        assert_eq!(format!("{:?}", pv), r#"Some(String("0200"))"#);
     }
 }

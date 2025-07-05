@@ -294,7 +294,7 @@ mod tests {
                 "mx": "40"
             }
         });
-        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        let p: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
         assert_eq!(p.get_f32(), Some(24.5));
 
         let json = json!({
@@ -305,7 +305,7 @@ mod tests {
                 "pt": "s"
             }
         });
-        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        let p: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
         assert_eq!(p.get_f32(), None);
     }
 
@@ -319,7 +319,7 @@ mod tests {
                 "pt": "s"
             }
         });
-        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        let p: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
         assert_eq!(p.get_string(), Some("e_1002".into()));
 
         let json = json!({
@@ -330,7 +330,7 @@ mod tests {
                 "pt": "i"
             }
         });
-        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        let p: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
         assert_eq!(p.get_string(), None);
     }
 
@@ -347,7 +347,7 @@ mod tests {
                 "mx": "4E00"
             }
         });
-        let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
+        let p: Item = serde_json::from_value(json).expect("Invalid JSON structure.");
         let pv = PropValue::from(p.get_f32().unwrap(), p.meta().0, p.size());
         let expect = PropValue::String("2600".into());
 
@@ -377,7 +377,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", children: [Item { name: "p_01", value: String("2600"), metadata: Binary(Step(BinaryStep { step: 245, min: "EEFF", max: "4E00" })) }] }"#
+            r#"Tree { name: "e_A00D", children: [Node(Item { name: "p_01", value: String("2600"), metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })), phantom: PhantomData<fn() -> f32> })] }"#
         );
     }
 }
