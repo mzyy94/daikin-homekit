@@ -14,15 +14,13 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4.2.2
-    - uses: dtolnay/rust-toolchain@stable
-    - name: Build
-      run: cargo build --verbose --release
+    - run: cargo build --verbose --release
     - uses: actions/upload-artifact@v4.6.2
       with:
         name: daikin-homekit_${{ matrix.os }}
@@ -37,10 +35,13 @@ jobs:
     - run: |
         chmod +x daikin-homekit_macos-latest/daikin-homekit
         tar zcvf daikin-homekit_macos-latest.tar.gz daikin-homekit_macos-latest
-        chmod +x daikin-homekit_ubuntu-latest/daikin-homekit
-        tar zcvf daikin-homekit_ubuntu-latest.tar.gz daikin-homekit_ubuntu-latest
+        chmod +x daikin-homekit_ubuntu-24.04/daikin-homekit
+        tar zcvf daikin-homekit_ubuntu-24.04.tar.gz daikin-homekit_ubuntu-24.04
+        chmod +x daikin-homekit_ubuntu-24.04-arm/daikin-homekit
+        tar zcvf daikin-homekit_ubuntu-24.04-arm.tar.gz daikin-homekit_ubuntu-24.04-arm
     - uses: softprops/action-gh-release@v2.3.2
       with:
         files: |
           daikin-homekit_macos-latest.tar.gz
-          daikin-homekit_ubuntu-latest.tar.gz
+          daikin-homekit_ubuntu-24.04.tar.gz
+          daikin-homekit_ubuntu-24.04-arm.tar.gz
