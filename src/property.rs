@@ -201,7 +201,7 @@ pub enum Binary {
     String {},
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone)]
 pub struct BinaryStep {
     #[serde(rename = "st")]
     pub step: u8,
@@ -226,6 +226,17 @@ impl BinaryStep {
         let min_value = hex2int(min) as f32 * step;
         let max_value = hex2int(max) as f32 * step;
         RangeInclusive::new(min_value, max_value)
+    }
+}
+
+impl std::fmt::Debug for BinaryStep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "BinaryStep {{ range: {:?}, step: {} }}",
+            self.range(),
+            self.step(),
+        )
     }
 }
 
