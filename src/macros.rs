@@ -7,7 +7,7 @@ macro_rules! set_child_prop {
                     crate::property::Property::Item { name, .. } => name == stringify!($name),
                 });
                 if let Some(crate::property::Property::Item { ref mut value, .. }) = found {
-                    *value = Some($propval);
+                    *value = $propval;
                 } else {
                     let pp = crate::property::Property::new(stringify!($name), $propval);
                     children.push(pp);
@@ -132,7 +132,7 @@ mod tests {
         let p = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);
         assert_eq!(
             format!("{:?}", p),
-            r#"Ok(Item { name: "p_03", type_: 3, value: Some(56), metadata: (0.1, Some(0.0), Some(25.5)) })"#
+            r#"Ok(Item { name: "p_03", type_: 3, value: 56, metadata: (0.1, Some(0.0), Some(25.5)) })"#
         );
 
         let p = get_prop!(res."/hoge".fuga.piyo);

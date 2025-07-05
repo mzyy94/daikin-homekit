@@ -19,7 +19,7 @@ pub enum Property {
         #[serde(skip_serializing, rename = "pt")]
         type_: u8,
         #[serde(rename = "pv")]
-        value: Option<PropValue>,
+        value: PropValue,
         #[serde(skip_serializing, rename = "md")]
         metadata: Metadata,
     },
@@ -45,7 +45,7 @@ impl Property {
         Property::Item {
             name: name.to_string(),
             type_: 2,
-            value: Some(value),
+            value: value,
             metadata: Metadata::default(),
         }
     }
@@ -85,7 +85,7 @@ impl Property {
     pub fn size(&self) -> usize {
         match self {
             Property::Item {
-                value: Some(PropValue::String(str)),
+                value: PropValue::String(str),
                 ..
             } => str.len(),
             _ => 0,
@@ -95,7 +95,7 @@ impl Property {
     pub fn get_f32(&self) -> Option<f32> {
         match self {
             Property::Item {
-                value: Some(PropValue::String(pv)),
+                value: PropValue::String(pv),
                 metadata: md,
                 ..
             } => {
@@ -112,7 +112,7 @@ impl Property {
                 }
             }
             Property::Item {
-                value: Some(PropValue::Integer(pv)),
+                value: PropValue::Integer(pv),
                 metadata: md,
                 ..
             } => {
@@ -129,7 +129,7 @@ impl Property {
     pub fn get_string(&self) -> Option<String> {
         match self {
             Property::Item {
-                value: Some(PropValue::String(pv)),
+                value: PropValue::String(pv),
                 metadata: md,
                 ..
             } => {
@@ -151,6 +151,7 @@ impl Property {
 pub enum PropValue {
     String(String),
     Integer(i32),
+    Null,
 }
 
 impl std::fmt::Debug for PropValue {
@@ -158,6 +159,7 @@ impl std::fmt::Debug for PropValue {
         match self {
             PropValue::String(s) => write!(f, "{:?}", hex2int(s)),
             PropValue::Integer(i) => write!(f, "{:?}", i),
+            PropValue::Null => write!(f, "null"),
         }
     }
 }
@@ -334,7 +336,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", p),
-            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: Some(38), metadata: (0.5, Some(-9.0), Some(39.0)) }] }"#
+            r#"Tree { name: "e_A00D", type_: 1, children: [Item { name: "p_01", type_: 3, value: 38, metadata: (0.5, Some(-9.0), Some(39.0)) }] }"#
         );
     }
 }
