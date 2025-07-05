@@ -104,34 +104,38 @@ impl Item {
         match self {
             Item {
                 value: PropValue::String(pv),
-                metadata: md,
-                ..
-            } => match md {
-                Metadata::Binary(Binary::Step(step)) => {
-                    let value = hex2int(pv) as f32;
-                    let step = step.step();
-                    if step == 0.0 {
-                        Some(value)
-                    } else {
-                        Some(value * step)
-                    }
-                }
-                Metadata::Binary(Binary::Enum(..)) => {
-                    let value = hex2int(pv) as f32;
-                    Some(value)
-                }
-                _ => None,
-            },
-            Item {
-                value: PropValue::Integer(pv),
-                metadata: md,
+                metadata: Metadata::Binary(Binary::Step(step)),
                 ..
             } => {
-                if matches!(md, Metadata::Integer {}) {
-                    Some(*pv as f32)
-                } else {
-                    None
-                }
+                let value = hex2int(pv) as f32;
+                let step = step.step();
+                Some(value * step)
+            }
+            _ => None,
+        }
+    }
+
+    pub fn get_int(&self) -> Option<i32> {
+        match self {
+            Item {
+                value: PropValue::Integer(pv),
+                metadata: Metadata::Integer {},
+                ..
+            } => Some(*pv),
+            _ => None,
+        }
+    }
+
+    pub fn get_enum(&self) -> Option<u8> {
+        match self {
+            Item {
+                value: PropValue::String(pv),
+                metadata: Metadata::Binary(Binary::Enum(..)),
+                ..
+            } => {
+                let value = hex2int(pv);
+                serde_json::from_value(serde_json::Value::Number(serde_json::Number::from(value)))
+                    .ok()
             }
             _ => None,
         }
