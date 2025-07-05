@@ -22,13 +22,15 @@ pub async fn setup_characteristic(
 ) -> anyhow::Result<()> {
     let status = daikin.get_status().await?;
 
-    if status.wind_speed.is_none() || status.meta.wind_speed.max.map(|v| v as u32) != Some(0x0cf8) {
+    if status.wind_speed.get_enum().is_none()
+        || status.wind_speed.meta().2.map(|v| v as u32) != Some(0x0cf8)
+    {
         info!("wind_speed is not compatible. remove rotation_speed characteristic");
         service.rotation_speed = None;
     }
 
-    if status.vertical_wind_direction.is_none()
-        || status.meta.vertical_wind_direction.max.map(|v| v as u32) != Some(0x0081803f)
+    if status.vertical_wind_direction.get_enum().is_none()
+        || status.vertical_wind_direction.meta().2.map(|v| v as u32) != Some(0x0081803f)
     {
         info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
         service.swing_mode = None;
@@ -67,38 +69,41 @@ async fn set_initial_value(
     status: DaikinStatus,
     service: &mut HeaterCoolerService,
 ) -> anyhow::Result<()> {
-    service.active.set_value(status.power.into()).await?;
+    service
+        .active
+        .set_value(status.power.get_f32().map(|v| v as u8).into())
+        .await?;
     service
         .current_heater_cooler_state
-        .set_value(current_mode_mapping(status.mode).into())
+        .set_value(current_mode_mapping(status.mode.get_enum()).into())
         .await?;
     service
         .target_heater_cooler_state
-        .set_value(target_mode_mapping(status.mode).into())
+        .set_value(target_mode_mapping(status.mode.get_enum()).into())
         .await?;
     service
         .current_temperature
-        .set_value(status.current_temperature.into())
+        .set_value(status.current_temperature.get_f32().into())
         .await?;
 
     if let Some(char) = service.heating_threshold_temperature.as_mut() {
-        char.set_value(status.target_heating_temperature.into())
+        char.set_value(status.target_heating_temperature.get_f32().into())
             .await?;
-        char.set_step_value(Some(status.meta.target_heating_temperature.step.into()))?;
-        char.set_min_value(status.meta.target_heating_temperature.min.map(|v| v.into()))?;
-        char.set_max_value(status.meta.target_heating_temperature.max.map(|v| v.into()))?;
+        char.set_step_value(Some(status.target_heating_temperature.meta().0.into()))?;
+        char.set_min_value(status.target_heating_temperature.meta().1.map(|v| v.into()))?;
+        char.set_max_value(status.target_heating_temperature.meta().2.map(|v| v.into()))?;
     }
 
     if let Some(char) = service.cooling_threshold_temperature.as_mut() {
-        char.set_value(status.target_cooling_temperature.into())
+        char.set_value(status.target_cooling_temperature.get_f32().into())
             .await?;
-        char.set_step_value(Some(status.meta.target_cooling_temperature.step.into()))?;
-        char.set_min_value(status.meta.target_cooling_temperature.min.map(|v| v.into()))?;
-        char.set_max_value(status.meta.target_cooling_temperature.max.map(|v| v.into()))?;
+        char.set_step_value(Some(status.target_cooling_temperature.meta().0.into()))?;
+        char.set_min_value(status.target_cooling_temperature.meta().1.map(|v| v.into()))?;
+        char.set_max_value(status.target_cooling_temperature.meta().2.map(|v| v.into()))?;
     }
 
     if let Some(char) = service.rotation_speed.as_mut() {
-        char.set_value(windspeed_mapping(status.wind_speed).into())
+        char.set_value(windspeed_mapping(status.wind_speed.get_enum()).into())
             .await?;
         char.set_step_value(Some(json!(1.0)))?;
         char.set_min_value(Some(json!(0.0)))?;
@@ -107,7 +112,11 @@ async fn set_initial_value(
 
     if let Some(char) = service.swing_mode.as_mut() {
         char.set_value(
-            Some((status.vertical_wind_direction == Some(VerticalDirection::Swing)) as i32).into(),
+            Some(
+                (status.vertical_wind_direction.get_enum() == Some(VerticalDirection::Swing))
+                    as i32,
+            )
+            .into(),
         )
         .await?;
     }
@@ -164,7 +173,7 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
         async move {
             debug!("active read");
             let status = dk.get_status().await?;
-            Ok(status.power)
+            Ok(status.power.get_f32().map(|v| v as u8))
         }
         .boxed()
     }));
@@ -175,7 +184,7 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
         async move {
             update_assert_ne!("active", cur, new);
             let mut status = dk.get_status().await?;
-            status.power = Some(new);
+            status.power.set_f32(new as f32);
             dk.update(status).await?;
             Ok(())
         }
@@ -193,7 +202,7 @@ pub fn setup_current_heater_cooler_state(
         async move {
             debug!("current_heater_cooler_state read");
             let status = dk.get_status().await?;
-            Ok(Some(current_mode_mapping(status.mode)))
+            Ok(Some(current_mode_mapping(status.mode.get_enum())))
         }
         .boxed()
     }));
@@ -209,7 +218,7 @@ pub fn setup_target_heater_cooler_state(
         async move {
             debug!("target_heater_cooler_state read");
             let status = dk.get_status().await?;
-            Ok(target_mode_mapping(status.mode))
+            Ok(target_mode_mapping(status.mode.get_enum()))
         }
         .boxed()
     }));
@@ -226,7 +235,7 @@ pub fn setup_target_heater_cooler_state(
                 2 => Some(Mode::Cooling),
                 _ => None,
             } {
-                status.mode = Some(mode);
+                status.mode.set_enum(mode as u8);
                 dk.update(status).await?;
             }
 
@@ -243,7 +252,7 @@ pub fn setup_current_temperature(daikin: Daikin, char: &mut CurrentTemperatureCh
         async move {
             debug!("current_temperature read");
             let status = dk.get_status().await?;
-            Ok(status.current_temperature)
+            Ok(status.current_temperature.get_f32())
         }
         .boxed()
     }));
@@ -259,7 +268,7 @@ pub fn setup_heating_threshold_temperature(
         async move {
             debug!("heating_threshold_temperature read");
             let status = dk.get_status().await?;
-            Ok(status.target_heating_temperature)
+            Ok(status.target_heating_temperature.get_f32())
         }
         .boxed()
     }));
@@ -270,7 +279,7 @@ pub fn setup_heating_threshold_temperature(
         async move {
             update_assert_ne!("heating_threshold_temperature", cur, new);
             let mut status = dk.get_status().await?;
-            status.target_heating_temperature = Some(new);
+            status.target_heating_temperature.set_f32(new);
             dk.update(status).await?;
             Ok(())
         }
@@ -288,7 +297,7 @@ pub fn setup_cooling_threshold_temperature(
         async move {
             debug!("cooling_threshold_temperature read");
             let status = dk.get_status().await?;
-            Ok(status.target_cooling_temperature)
+            Ok(status.target_cooling_temperature.get_f32())
         }
         .boxed()
     }));
@@ -299,7 +308,7 @@ pub fn setup_cooling_threshold_temperature(
         async move {
             update_assert_ne!("cooling_threshold_temperature", cur, new);
             let mut status = dk.get_status().await?;
-            status.target_cooling_temperature = Some(new);
+            status.target_cooling_temperature.set_f32(new);
             dk.update(status).await?;
             Ok(())
         }
@@ -314,7 +323,7 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
         async move {
             debug!("rotation_speed read");
             let status = dk.get_status().await?;
-            let speed = windspeed_mapping(status.wind_speed);
+            let speed = windspeed_mapping(status.wind_speed.get_enum());
             Ok(speed)
         }
         .boxed()
@@ -340,8 +349,8 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
             } else {
                 AutoModeWindSpeed::Auto
             };
-            status.wind_speed = Some(speed);
-            status.automode_wind_speed = Some(auto_speed);
+            status.wind_speed.set_enum(speed as u8);
+            status.automode_wind_speed.set_enum(auto_speed as u8);
             dk.update(status).await?;
             Ok(())
         }
@@ -356,7 +365,7 @@ pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
         async move {
             debug!("swing_mode read");
             let status = dk.get_status().await?;
-            let mode = match status.vertical_wind_direction {
+            let mode = match status.vertical_wind_direction.get_enum() {
                 Some(VerticalDirection::Swing) => Some(1),
                 _ => Some(0),
             };
@@ -372,11 +381,19 @@ pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
             update_assert_ne!("swing_mode", cur, new);
             let mut status = dk.get_status().await?;
             if new == 0 {
-                status.vertical_wind_direction = Some(VerticalDirection::Auto);
-                status.horizontal_wind_direction = Some(HorizontalDirection::Auto);
+                status
+                    .vertical_wind_direction
+                    .set_enum(VerticalDirection::Auto as u8);
+                status
+                    .horizontal_wind_direction
+                    .set_enum(HorizontalDirection::Auto as u8);
             } else {
-                status.vertical_wind_direction = Some(VerticalDirection::Swing);
-                status.horizontal_wind_direction = Some(HorizontalDirection::Swing);
+                status
+                    .vertical_wind_direction
+                    .set_enum(VerticalDirection::Swing as u8);
+                status
+                    .horizontal_wind_direction
+                    .set_enum(HorizontalDirection::Swing as u8);
             }
             dk.update(status).await?;
             Ok(())
