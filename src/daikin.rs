@@ -1,10 +1,8 @@
-use crate::discovery;
 use crate::error::Error;
 use crate::info::DaikinInfo;
 use crate::request::DaikinRequest;
 use crate::response::{DaikinResponse, Response};
 use crate::status::DaikinStatus;
-use futures::prelude::*;
 use retainer::*;
 use serde_json::json;
 use serde_json::value::Value;
@@ -30,13 +28,6 @@ impl Daikin {
             endpoint: format!("http://{}/dsiot/multireq", ip_addr),
             cache: Arc::new(Cache::new()),
         }
-    }
-
-    pub async fn discovery(
-        timeout: Duration,
-    ) -> anyhow::Result<impl Stream<Item = anyhow::Result<(Daikin, DaikinInfo)>>> {
-        let stream = discovery::discovery(timeout).await?;
-        Ok(stream)
     }
 
     async fn send_request(&self, payload: Value) -> anyhow::Result<String> {

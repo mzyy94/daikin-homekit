@@ -1,5 +1,7 @@
 use clap::{crate_authors, crate_description, crate_name, crate_version, Parser};
-use daikin_homekit::{characteristic::setup_characteristic, daikin::Daikin, info::DaikinInfo};
+use daikin_homekit::{
+    characteristic::setup_characteristic, daikin::Daikin, discovery::discovery, info::DaikinInfo,
+};
 use futures::{pin_mut, prelude::*};
 use log::{info, warn};
 use std::net::Ipv4Addr;
@@ -51,20 +53,9 @@ async fn main() -> anyhow::Result<()> {
     } else {
         warn!("No IP address provided. Discovering Daikin devices on the local network...");
         let timeout = std::time::Duration::new(3, 0);
-        let stream = Daikin::discovery(timeout).await?;
+        let stream = discovery(timeout).await;
         pin_mut!(stream);
-        stream
-            .collect::<Vec<_>>()
-            .await
-            .into_iter()
-            .filter_map(|res| match res {
-                Ok((daikin, info)) => Some((daikin, info)),
-                Err(e) => {
-                    warn!("Error during discovery: {}", e);
-                    None
-                }
-            })
-            .collect()
+        stream.try_collect::<Vec<_>>().await?
     };
 
     if devices.is_empty() {

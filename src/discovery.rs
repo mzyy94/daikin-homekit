@@ -1,6 +1,6 @@
 use crate::daikin::Daikin;
 use crate::info::DaikinInfo;
-use async_stream::stream;
+use async_stream::try_stream;
 use futures::prelude::*;
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use std::collections::HashMap;
@@ -47,7 +47,7 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
 
 pub async fn discovery(
     timeout: Duration,
-) -> anyhow::Result<impl Stream<Item = anyhow::Result<(Daikin, DaikinInfo)>>> {
+) -> impl Stream<Item = anyhow::Result<(Daikin, DaikinInfo)>> {
     let (srcip, dstip) = get_ipaddr();
     let src_addr = format!("{}:30000", srcip);
     let dst_addr = format!("{}:30050", dstip);
@@ -57,45 +57,31 @@ pub async fn discovery(
         src_addr, dst_addr
     );
 
-    let socket = UdpSocket::bind(src_addr).await?;
-    socket.set_broadcast(true)?;
-    let payload = "DAIKIN_UDP/common/basic_info";
+    try_stream! {
+        let socket = UdpSocket::bind(src_addr).await?;
+        socket.set_broadcast(true)?;
+        let payload = "DAIKIN_UDP/common/basic_info";
 
-    socket.send_to(payload.as_bytes(), dst_addr).await?;
+        socket.send_to(payload.as_bytes(), dst_addr).await?;
 
-    Ok(stream!({
         loop {
             let mut buf = [0; 2048];
-            let (text, src_addr) =
-                match tokio::time::timeout(timeout, socket.recv_from(&mut buf)).await {
-                    Err(e) => {
-                        info!("stop discovering");
-                        yield Err(e.into());
-                        break;
-                    }
-                    Ok(res) => match res {
-                        Ok((2048, _)) => {
-                            warn!("UDP buffer too small");
-                            continue;
-                        }
-                        Ok((buf_size, SocketAddr::V4(src_addr))) => {
-                            match str::from_utf8(&buf[..buf_size]) {
-                                Ok(val) => (val, src_addr),
-                                Err(e) => {
-                                    yield Err(e.into());
-                                    continue;
-                                }
-                            }
-                        }
-                        Ok(_) => {
-                            continue;
-                        }
-                        Err(e) => {
-                            yield Err(e.into());
-                            continue;
-                        }
-                    },
-                };
+            let Ok(res) = tokio::time::timeout(timeout, socket.recv_from(&mut buf)).await else {
+                debug!("Discovery timed out after {:?}", timeout);
+                break;
+            };
+            let (text, src_addr) = match res? {
+                (2048, _) => {
+                    warn!("UDP buffer too small");
+                    continue;
+                }
+                (buf_size, SocketAddr::V4(src_addr)) => {
+                    (str::from_utf8(&buf[..buf_size])?, src_addr)
+                }
+                _ => {
+                    continue;
+                }
+            };
 
             let item: HashMap<String, String> =
                 form_urlencoded::parse(text.replace(",", "&").as_bytes())
@@ -116,7 +102,7 @@ pub async fn discovery(
                 info.name().unwrap_or("Unknown name".into())
             );
 
-            yield Ok((daikin, info));
+            yield (daikin, info);
         }
-    }))
+    }
 }

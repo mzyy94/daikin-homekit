@@ -1,10 +1,10 @@
-use daikin_homekit::daikin::Daikin;
+use daikin_homekit::discovery::discovery;
 use futures::{pin_mut, prelude::*};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> () {
     let timeout = std::time::Duration::new(3, 0);
-    let stream = Daikin::discovery(timeout).await?;
+    let stream = discovery(timeout).await;
     pin_mut!(stream);
     while let Some(item) = stream.next().await {
         match item {
@@ -20,5 +20,4 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-    Ok(())
 }
