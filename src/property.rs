@@ -118,6 +118,16 @@ impl<T: Sized + DeserializeOwned> Item<T> {
         }
     }
 
+    pub fn set_f32(&mut self, value: f32) {
+        if let Item {
+            metadata: Metadata::Binary(Binary::Step(step)),
+            ..
+        } = self
+        {
+            self.value = PropValue::from(value, step.step(), step.max.len());
+        }
+    }
+
     pub fn get_int(&self) -> Option<i32> {
         match self {
             Item {
@@ -141,6 +151,16 @@ impl<T: Sized + DeserializeOwned> Item<T> {
                     .ok()
             }
             _ => None,
+        }
+    }
+
+    pub fn set_enum(&mut self, value: u8) {
+        if let Item {
+            metadata: Metadata::Binary(Binary::Enum(en)),
+            ..
+        } = self
+        {
+            self.value = PropValue::from(value as f32, 0.0, en.max.len());
         }
     }
 
