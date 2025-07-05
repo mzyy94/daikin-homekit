@@ -64,20 +64,14 @@ macro_rules! set_prop {
 
 macro_rules! get_child_prop {
     ({ $popt:expr }) => {
-        $popt.ok_or(crate::error::Error::NoProperty)
-    };
-    ({ $popt:expr } as $ty:ty) => {
         match $popt {
             Some(crate::property::Property::Node( item )) => {
-                item.get_f32().map(|v| (v as $ty, item.metadata.clone()))
-            },
-            _ => None,
-        }
-    };
-    ({ $popt:expr } .into()) => {
-        match $popt {
-            Some(crate::property::Property::Node( item )) => {
-                serde_json::from_value(item.get_f32().map(|v| serde_json::Value::Number(serde_json::Number::from(v as u8))).unwrap_or_default()).map(|v| (v, item.metadata.clone())).ok()
+                Some(crate::property::Item {
+                    name: item.name.clone(),
+                    value: item.value.clone(),
+                    metadata: item.metadata.clone(),
+                    phantom: std::marker::PhantomData,
+                })
             },
             _ => None,
         }

@@ -1,38 +1,39 @@
+use crate::property::Item;
 use crate::request::DaikinRequest;
 use crate::response::DaikinResponse;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Clone, Debug)]
 pub struct DaikinStatus {
-    pub power: Option<(u8, crate::property::Metadata)>,
-    pub current_temperature: Option<(f32, crate::property::Metadata)>,
-    pub current_humidity: Option<(f32, crate::property::Metadata)>,
-    pub current_outside_temperature: Option<(f32, crate::property::Metadata)>,
-    pub mode: Option<(Mode, crate::property::Metadata)>,
-    pub target_cooling_temperature: Option<(f32, crate::property::Metadata)>,
-    pub target_heating_temperature: Option<(f32, crate::property::Metadata)>,
-    pub target_automatic_temperature: Option<(f32, crate::property::Metadata)>,
-    pub wind_speed: Option<(WindSpeed, crate::property::Metadata)>,
-    pub automode_wind_speed: Option<(AutoModeWindSpeed, crate::property::Metadata)>,
-    pub vertical_wind_direction: Option<(VerticalDirection, crate::property::Metadata)>,
-    pub horizontal_wind_direction: Option<(HorizontalDirection, crate::property::Metadata)>,
+    pub power: Option<Item<f32>>,
+    pub current_temperature: Option<Item<f32>>,
+    pub current_humidity: Option<Item<f32>>,
+    pub current_outside_temperature: Option<Item<f32>>,
+    pub mode: Option<Item<Mode>>,
+    pub target_cooling_temperature: Option<Item<f32>>,
+    pub target_heating_temperature: Option<Item<f32>>,
+    pub target_automatic_temperature: Option<Item<f32>>,
+    pub wind_speed: Option<Item<WindSpeed>>,
+    pub automode_wind_speed: Option<Item<AutoModeWindSpeed>>,
+    pub vertical_wind_direction: Option<Item<VerticalDirection>>,
+    pub horizontal_wind_direction: Option<Item<HorizontalDirection>>,
 }
 
 impl From<DaikinResponse> for DaikinStatus {
     fn from(response: DaikinResponse) -> Self {
         DaikinStatus {
-            power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 as u8),
-            current_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01 as f32),
-            current_humidity: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02 as f32),
-            current_outside_temperature: get_prop!(response."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01 as f32),
-            mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 .into()),
-            target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 as f32),
-            target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 as f32),
-            target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F as f32),
-            wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 .into()),
-            automode_wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 .into()),
-            vertical_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 .into()),
-            horizontal_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 .into()),
+            power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01),
+            current_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01),
+            current_humidity: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02),
+            current_outside_temperature: get_prop!(response."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01),
+            mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01),
+            target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02),
+            target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03),
+            target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F),
+            wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09),
+            automode_wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26),
+            vertical_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05),
+            horizontal_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06),
         }
     }
 }
@@ -42,40 +43,40 @@ impl Into<DaikinRequest> for DaikinStatus {
     fn into(self) -> DaikinRequest {
         let mut req = DaikinRequest { requests: vec![] };
 
-        if let Some(pv) = propvalue!(self.power) {
+        if let Some(Item { value: pv, .. }) = self.power {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = pv);
         };
 
-        if let Some(pv) = propvalue!(self.mode as u8) {
+        if let Some(Item { value: pv, .. }) = self.mode {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = pv);
         };
 
-        if let Some(pv) = propvalue!(self.target_cooling_temperature) {
+        if let Some(Item { value: pv, .. }) = self.target_cooling_temperature {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = pv);
         };
 
-        if let Some(pv) = propvalue!(self.target_heating_temperature) {
+        if let Some(Item { value: pv, .. }) = self.target_heating_temperature {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = pv);
         };
 
-        if let Some(pv) = propvalue!(self.target_automatic_temperature) {
+        if let Some(Item { value: pv, .. }) = self.target_automatic_temperature {
             set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = pv);
         };
 
-        if let Some(pv) = propvalue!(self.wind_speed as u8) {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 = pv)
+        if let Some(Item { value: pv, .. }) = self.wind_speed {
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 = pv);
         };
 
-        if let Some(pv) = propvalue!(self.automode_wind_speed as u8) {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 = pv)
+        if let Some(Item { value: pv, .. }) = self.automode_wind_speed {
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 = pv);
         };
 
-        if let Some(pv) = propvalue!(self.vertical_wind_direction as u8) {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 = pv)
+        if let Some(Item { value: pv, .. }) = self.vertical_wind_direction {
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 = pv);
         };
 
-        if let Some(pv) = propvalue!(self.horizontal_wind_direction as u8) {
-            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 = pv)
+        if let Some(Item { value: pv, .. }) = self.horizontal_wind_direction {
+            set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 = pv);
         };
 
         req

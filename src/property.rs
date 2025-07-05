@@ -1,6 +1,6 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use core::f32;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{io::Cursor, ops::RangeInclusive};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -18,7 +18,7 @@ pub enum Property {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Item {
+pub struct Item<T: Sized + DeserializeOwned = f32> {
     #[serde(rename = "pn")]
     pub name: String,
     // #[serde(skip_serializing, rename = "pt")]
@@ -27,6 +27,8 @@ pub struct Item {
     pub value: PropValue,
     #[serde(skip_serializing, rename = "md")]
     pub metadata: Metadata,
+    #[serde(skip)]
+    pub phantom: std::marker::PhantomData<fn() -> T>,
 }
 
 fn hex2int(hex: &String) -> i32 {
@@ -50,6 +52,7 @@ impl Property {
             name: name.to_string(),
             value: value,
             metadata: Metadata::Undefined,
+            phantom: std::marker::PhantomData,
         })
     }
 
@@ -71,7 +74,7 @@ impl Property {
     }
 }
 
-impl Item {
+impl<T: Sized + DeserializeOwned> Item<T> {
     pub fn meta(&self) -> (f32, Option<f32>, Option<f32>) {
         match self {
             Item {
@@ -126,7 +129,7 @@ impl Item {
         }
     }
 
-    pub fn get_enum(&self) -> Option<u8> {
+    pub fn get_enum(&self) -> Option<T> {
         match self {
             Item {
                 value: PropValue::String(pv),
