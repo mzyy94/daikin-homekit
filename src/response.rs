@@ -1,5 +1,5 @@
 use crate::property::Property;
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DaikinResponse {

@@ -1,6 +1,6 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use core::f32;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{io::Cursor, ops::RangeInclusive};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

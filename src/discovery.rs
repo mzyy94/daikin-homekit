@@ -15,7 +15,7 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
             return (
                 IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
                 IpAddr::V4(Ipv4Addr::new(255, 255, 255, 255)),
-            )
+            );
         }
     };
 

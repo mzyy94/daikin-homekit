@@ -1,4 +1,4 @@
-use clap::{crate_authors, crate_name, crate_version, Parser};
+use clap::{Parser, crate_authors, crate_name, crate_version};
 use daikin_homekit::{
     characteristic::setup_characteristic, daikin::Daikin, discovery::discovery, info::DaikinInfo,
 };
@@ -7,13 +7,13 @@ use log::{error, info, warn};
 use std::net::Ipv4Addr;
 
 use hap::{
+    Config, Pin,
     accessory::{
-        bridge::BridgeAccessory, heater_cooler::HeaterCoolerAccessory, AccessoryCategory,
-        AccessoryInformation,
+        AccessoryCategory, AccessoryInformation, bridge::BridgeAccessory,
+        heater_cooler::HeaterCoolerAccessory,
     },
     server::{IpServer, Server},
     storage::{FileStorage, Storage},
-    Config, Pin,
 };
 
 #[derive(Parser)]

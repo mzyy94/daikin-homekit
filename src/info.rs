@@ -1,6 +1,6 @@
 use crate::response::DaikinResponse;
 use byteorder::{BigEndian, ReadBytesExt};
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de};
 use std::io::Cursor;
 
 #[derive(Deserialize, Debug, Clone)]

@@ -4,14 +4,13 @@ use crate::status::{
 use crate::{daikin::Daikin, property::Binary, property::Metadata, status::Mode};
 use futures::prelude::*;
 use hap::characteristic::{
-    active::ActiveCharacteristic,
+    AsyncCharacteristicCallbacks, HapCharacteristic, active::ActiveCharacteristic,
     cooling_threshold_temperature::CoolingThresholdTemperatureCharacteristic,
     current_heater_cooler_state::CurrentHeaterCoolerStateCharacteristic,
     current_temperature::CurrentTemperatureCharacteristic,
     heating_threshold_temperature::HeatingThresholdTemperatureCharacteristic,
     rotation_speed::RotationSpeedCharacteristic, swing_mode::SwingModeCharacteristic,
     target_heater_cooler_state::TargetHeaterCoolerStateCharacteristic,
-    AsyncCharacteristicCallbacks, HapCharacteristic,
 };
 use hap::service::heater_cooler::HeaterCoolerService;
 use serde_json::json;
