@@ -9,6 +9,9 @@ repository = "https://github.com/mzyy94/daikin-homekit/"
 license = "GPL-3.0"
 keywords = ["daikin", "homekit"]
 
+[workspace]
+members = [".", "dsiot"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -32,3 +35,4 @@ serde_json = "1.0.140"
 serde_qs = "0.15.0"
 serde_repr = "0.1.20"
 tokio = { version = "1.46.1", features = ["full"] }
+dsiot = { path = "./dsiot", version = "0.1.0" }
