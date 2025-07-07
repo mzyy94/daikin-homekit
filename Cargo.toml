@@ -1,7 +1,7 @@
 [package]
 name = "daikin-homekit"
 version = "0.2.0"
-edition = "2021"
+edition = "2024"
 authors = ["mzyy94"]
 rust-version = "1.86"
 description = "Control Daikin Air Conditioner via HomeKit"

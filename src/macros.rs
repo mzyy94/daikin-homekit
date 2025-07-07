@@ -1,12 +1,12 @@
 macro_rules! set_child_prop {
     ( $p:tt . $name:ident = $item:expr) => {
         match $p {
-            crate::property::Property::Tree{ref mut children, ..} => {
+            crate::property::Property::Tree{ children, ..} => {
                 let found = children.iter_mut().find(|p| match p {
                     crate::property::Property::Tree { name, .. } => name == stringify!($name),
                     crate::property::Property::Node(crate::property::Item { name, .. }) => name == stringify!($name),
                 });
-                if let Some(crate::property::Property::Node(crate::property::Item { ref mut value, .. })) = found {
+                if let Some(crate::property::Property::Node(crate::property::Item { value, .. })) = found {
                     *value = $item.value;
                 } else {
                     let pp = crate::property::Property::Node(crate::property::Item {
@@ -24,45 +24,16 @@ macro_rules! set_child_prop {
     };
     ({ $p:expr } . $name:ident $($rest:tt)*) => {
         set_child_prop!(
-            {
-                match $p {
-                    crate::property::Property::Tree{ref mut children, ..} => {
-                        let found = children.iter_mut().find(|p| match p {
-                            crate::property::Property::Tree { name, .. } => name == stringify!($name),
-                            crate::property::Property::Node(crate::property::Item { name, .. }) => name == stringify!($name),
-                        });
-                        if let Some(p) = found {
-                            p
-                        } else {
-                            let pp = crate::property::Property::new_tree(stringify!($name));
-                            children.push(pp);
-                            children.iter_mut().last().unwrap()
-                        }
-                    },
-                    _ => unreachable!(),
-                }
-            } $($rest)*
-        )
-    };
-}
-
-macro_rules! set_prop {
-    (&mut $root:tt . $path:literal $($rest:tt)*) => {
-        set_child_prop!(
-            {
-                &mut match $root.requests.iter_mut().find(|r| r.to == $path) {
-                    Some(ref mut r) => r,
+            {{
+                match $p.find_mut(stringify!($name)) {
+                    Some(property) => property,
                     None => {
-                        let req = crate::request::Request {
-                            op: 3,
-                            pc: crate::property::Property::new_tree("dgc_status"),
-                            to: $path.into(),
-                        };
-                        $root.requests.push(req);
-                        $root.requests.last_mut().unwrap()
+                        let pp = crate::property::Property::new_tree(stringify!($name));
+                        $p.push(pp);
+                        $p.find_mut(stringify!($name)).unwrap()
                     }
-                }.pc
-            }  $($rest)*
+                }
+            }} $($rest)*
         )
     };
 }
@@ -110,7 +81,7 @@ macro_rules! get_prop {
 #[cfg(test)]
 mod tests {
     use crate::property::{Item, PropValue};
-    use crate::request::DaikinRequest;
+    use crate::request::{DaikinRequest, Request};
     use crate::response::DaikinResponse;
 
     #[test]
@@ -132,16 +103,24 @@ mod tests {
     }
 
     #[test]
-    fn set_prop() {
-        let mut req = DaikinRequest { requests: vec![] };
-
+    fn set_child_prop() {
         let item: Item<f32> = Item {
             name: "p_03".into(),
             value: PropValue::String("3800".into()),
             metadata: crate::property::Metadata::Undefined,
             phantom: std::marker::PhantomData,
         };
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03 = item);
+        let mut prop = crate::property::Property::new_tree("dgc_status");
+
+        set_child_prop!({ prop }.e_1002.e_A001.p_03 = item);
+
+        let req = DaikinRequest {
+            requests: vec![Request {
+                op: 3,
+                pc: prop,
+                to: "/dsiot/edge/adr_0100.dgc_status".into(),
+            }],
+        };
 
         assert_eq!(
             serde_json::to_string(&req).unwrap(),

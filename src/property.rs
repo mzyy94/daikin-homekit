@@ -81,6 +81,26 @@ impl Property {
             _ => None,
         }
     }
+
+    pub fn find_mut(&mut self, name: &str) -> Option<&mut Property> {
+        match self {
+            Property::Tree { children, .. } => children.iter_mut().find(|p| match p {
+                Property::Tree { name: n, .. } => name == n,
+                Property::Node(Item { name: n, .. }) => name == n,
+            }),
+            _ => None,
+        }
+    }
+
+    pub fn push(&mut self, property: Property) -> Option<&mut Property> {
+        match self {
+            Property::Tree { children, .. } => {
+                children.push(property);
+                children.last_mut()
+            }
+            _ => None,
+        }
+    }
 }
 
 impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
@@ -328,6 +348,13 @@ mod tests {
         let expect = PropValue::String("2600".into());
 
         assert_eq!(pv, expect);
+    }
+
+    #[test]
+    fn find_push() {
+        let mut tree = Property::new_tree("root");
+        let _child = tree.push(Property::new_tree("child")).unwrap();
+        assert!(matches!(tree.find("child"), Some(Property::Tree { .. })));
     }
 
     #[test]

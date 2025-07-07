@@ -1,6 +1,9 @@
-use crate::property::Item;
 use crate::request::DaikinRequest;
 use crate::response::DaikinResponse;
+use crate::{
+    property::{Item, Property},
+    request::Request,
+};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Clone, Debug)]
@@ -41,19 +44,25 @@ impl From<DaikinResponse> for DaikinStatus {
 #[allow(clippy::from_over_into)]
 impl Into<DaikinRequest> for DaikinStatus {
     fn into(self) -> DaikinRequest {
-        let mut req = DaikinRequest { requests: vec![] };
+        let mut prop = Property::new_tree("dgc_status");
 
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01 = self.power);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01 = self.mode);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02 = self.target_cooling_temperature);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03 = self.target_heating_temperature);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F = self.target_automatic_temperature);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09 = self.wind_speed);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26 = self.automode_wind_speed);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05 = self.vertical_wind_direction);
-        set_prop!(&mut req."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06 = self.horizontal_wind_direction);
+        set_child_prop!({ prop }.e_1002.e_A002.p_01 = self.power);
+        set_child_prop!({ prop }.e_1002.e_3001.p_01 = self.mode);
+        set_child_prop!({ prop }.e_1002.e_3001.p_02 = self.target_cooling_temperature);
+        set_child_prop!({ prop }.e_1002.e_3001.p_03 = self.target_heating_temperature);
+        set_child_prop!({ prop }.e_1002.e_3001.p_1F = self.target_automatic_temperature);
+        set_child_prop!({ prop }.e_1002.e_3001.p_09 = self.wind_speed);
+        set_child_prop!({ prop }.e_1002.e_3001.p_26 = self.automode_wind_speed);
+        set_child_prop!({ prop }.e_1002.e_3001.p_05 = self.vertical_wind_direction);
+        set_child_prop!({ prop }.e_1002.e_3001.p_06 = self.horizontal_wind_direction);
 
-        req
+        DaikinRequest {
+            requests: vec![Request {
+                op: 3,
+                pc: prop,
+                to: "/dsiot/edge/adr_0100.dgc_status".into(),
+            }],
+        }
     }
 }
 

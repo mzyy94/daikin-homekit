@@ -32,10 +32,10 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    if cfg!(debug_assertions) {
-        std::env::set_var("RUST_LOG", "hap=info,daikin_homekit=debug");
-    }
-    env_logger::init();
+    env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("hap=info,daikin_homekit=debug"),
+    )
+    .init();
 
     let cli = Cli::parse();
 
