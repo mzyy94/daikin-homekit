@@ -25,17 +25,17 @@ async fn main() -> anyhow::Result<()> {
 async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     let daikin = Daikin::new(ip_addr);
     println!("Checking compatibility.");
-    println!("Device IP Address: {}", ip_addr);
+    println!("Device IP Address: {ip_addr}");
 
     let info = match daikin.get_info().await {
         Ok(i) => i,
         Err(error) => {
             if let Some(e) = error.downcast_ref::<reqwest::Error>() {
-                println!("❌ API endpoint: Server not found. - {}", e);
+                println!("❌ API endpoint: Server not found. - {e}");
                 return Ok(());
             }
             if let Some(e) = error.downcast_ref::<serde_json::Error>() {
-                println!("❌ API endpoint: Invalid response. - {}", e);
+                println!("❌ API endpoint: Invalid response. - {e}");
                 return Ok(());
             }
             println!("❌ API endpoint: Unknown error.");
@@ -51,11 +51,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         Ok(s) => s,
         Err(error) => {
             if let Some(e) = error.downcast_ref::<reqwest::Error>() {
-                println!("❌ Request API: Server not found. - {}", e);
+                println!("❌ Request API: Server not found. - {e}");
                 return Ok(());
             }
             if let Some(e) = error.downcast_ref::<serde_json::Error>() {
-                println!("❌ Request API: Invalid response. - {}", e);
+                println!("❌ Request API: Invalid response. - {e}");
                 return Ok(());
             }
 

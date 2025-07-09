@@ -236,7 +236,7 @@ mod tests {
         let status: DaikinStatus = res.into();
 
         assert_eq!(
-            format!("{:?}", status),
+            format!("{status:?}"),
             r#"DaikinStatus { power: Item { name: "p_01", value: 0.0, metadata: Binary(Step(BinaryStep { range: 0.0..=1.0, step: 1 })) }, current_temperature: Item { name: "p_01", value: 20.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 1 })) }, current_humidity: Item { name: "p_02", value: 50.0, metadata: Binary(Step(BinaryStep { range: 25.0..=85.0, step: 1 })) }, current_outside_temperature: Item { name: "p_01", value: 19.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })) }, mode: Item { name: "p_01", value: String("0200"), metadata: Binary(Enum { max: "2F00" }) }, target_cooling_temperature: Item { name: "p_02", value: 24.5, metadata: Binary(Step(BinaryStep { range: 18.0..=32.0, step: 0.5 })) }, target_heating_temperature: Item { name: "p_03", value: 25.0, metadata: Binary(Step(BinaryStep { range: 14.0..=30.0, step: 0.5 })) }, target_automatic_temperature: Item { name: "p_1F", value: 0.0, metadata: Binary(Step(BinaryStep { range: -5.0..=5.0, step: 0.5 })) }, wind_speed: Item { name: "p_09", value: String("0A00"), metadata: Binary(Enum { max: "F80C" }) }, automode_wind_speed: Item { name: "p_26", value: String("0A00"), metadata: Binary(Enum { max: "000C" }) }, vertical_wind_direction: Item { name: "p_05", value: String("10000000"), metadata: Binary(Enum { max: "3F808100" }) }, horizontal_wind_direction: Item { name: "p_06", value: String("100000"), metadata: Binary(Enum { max: "FD8101" }) } }"#
         );
     }

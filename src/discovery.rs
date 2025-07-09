@@ -48,13 +48,10 @@ pub async fn discovery(
     timeout: Duration,
 ) -> impl Stream<Item = anyhow::Result<(Daikin, DaikinInfo)>> {
     let (srcip, dstip) = get_ipaddr();
-    let src_addr = format!("{}:30000", srcip);
-    let dst_addr = format!("{}:30050", dstip);
+    let src_addr = format!("{srcip}:30000");
+    let dst_addr = format!("{dstip}:30050");
 
-    debug!(
-        "discovering daikin device from {} to {}",
-        src_addr, dst_addr
-    );
+    debug!("discovering daikin device from {src_addr} to {dst_addr}");
 
     try_stream! {
         let socket = UdpSocket::bind(src_addr).await?;
@@ -66,7 +63,7 @@ pub async fn discovery(
         loop {
             let mut buf = [0; 2048];
             let Ok(res) = tokio::time::timeout(timeout, socket.recv_from(&mut buf)).await else {
-                debug!("Discovery timed out after {:?}", timeout);
+                debug!("Discovery timed out after {timeout:?}");
                 break;
             };
             let (text, src_addr) = match res? {

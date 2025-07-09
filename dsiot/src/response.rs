@@ -24,7 +24,7 @@ where
     if value / 10 == 200 {
         Ok(value)
     } else {
-        Err(de::Error::custom(format!("Invalid status code: {}", value)))
+        Err(de::Error::custom(format!("Invalid status code: {value}")))
     }
 }
 

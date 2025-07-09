@@ -24,7 +24,7 @@ impl std::fmt::Debug for Daikin {
 impl Daikin {
     pub fn new(ip_addr: Ipv4Addr) -> Daikin {
         Daikin {
-            endpoint: format!("http://{}/dsiot/multireq", ip_addr),
+            endpoint: format!("http://{ip_addr}/dsiot/multireq"),
             cache: Arc::new(Cache::new()),
         }
     }

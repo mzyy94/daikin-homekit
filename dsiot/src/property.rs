@@ -379,7 +379,7 @@ mod tests {
         let p: Property = serde_json::from_value(json).expect("Invalid JSON structure.");
 
         assert_eq!(
-            format!("{:?}", p),
+            format!("{p:?}"),
             r#"Tree { name: "e_A00D", children: [Node(Item { name: "p_01", value: 19.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })) })] }"#
         );
     }

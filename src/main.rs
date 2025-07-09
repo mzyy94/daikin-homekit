@@ -81,7 +81,7 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    info!("config file location: {:?}", storage);
+    info!("config file location: {storage:?}");
 
     let config = match storage.load_config().await {
         Ok(mut config) => {

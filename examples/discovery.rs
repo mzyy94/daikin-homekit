@@ -9,13 +9,13 @@ async fn main() {
     while let Some(item) = stream.next().await {
         match item {
             Ok(found) => {
-                println!("Discovered Daikin device: {:?}", found);
+                println!("Discovered Daikin device: {found:?}");
             }
             Err(e) => {
                 if let Some(elapsed) = e.downcast_ref::<tokio::time::error::Elapsed>() {
-                    println!("Discovery finished: {}", elapsed);
+                    println!("Discovery finished: {elapsed}");
                 } else {
-                    println!("Error during discovery: {}", e);
+                    println!("Error during discovery: {e}");
                 }
             }
         }

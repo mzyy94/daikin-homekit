@@ -25,10 +25,10 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     let daikin = Daikin::new(ip_addr);
 
     let info = daikin.get_info().await?;
-    println!("{:#?}", info);
+    println!("{info:#?}");
 
     let status = daikin.get_status().await?;
-    println!("{:#?}", status);
+    println!("{status:#?}");
 
     Ok(())
 }
