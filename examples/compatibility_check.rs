@@ -1,6 +1,6 @@
 use clap::Parser;
 use daikin_homekit::daikin::Daikin;
-use daikin_homekit::property::{Binary, Item, Metadata};
+use dsiot::property::{Binary, Item, Metadata};
 use std::net::Ipv4Addr;
 
 #[derive(Parser)]

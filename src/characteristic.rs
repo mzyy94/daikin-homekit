@@ -1,7 +1,8 @@
-use crate::status::{
-    AutoModeWindSpeed, DaikinStatus, HorizontalDirection, VerticalDirection, WindSpeed,
+use crate::daikin::Daikin;
+use dsiot::status::{
+    AutoModeWindSpeed, DaikinStatus, HorizontalDirection, Mode, VerticalDirection, WindSpeed,
 };
-use crate::{daikin::Daikin, property::Binary, property::Metadata, status::Mode};
+use dsiot::{property::Binary, property::Metadata};
 use futures::prelude::*;
 use hap::characteristic::{
     AsyncCharacteristicCallbacks, HapCharacteristic, active::ActiveCharacteristic,

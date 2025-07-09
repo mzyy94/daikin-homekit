@@ -413,7 +413,6 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-stream",
- "byteorder",
  "clap",
  "dirs",
  "dsiot",
@@ -421,7 +420,6 @@ dependencies = [
  "form_urlencoded",
  "futures",
  "hap",
- "hex",
  "log",
  "network-interface",
  "openssl",
@@ -430,7 +428,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs",
- "serde_repr",
  "tokio",
 ]
 
@@ -556,6 +553,14 @@ dependencies = [
 [[package]]
 name = "dsiot"
 version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "hex",
+ "serde",
+ "serde_json",
+ "serde_qs",
+ "serde_repr",
+]
 
 [[package]]
 name = "ed25519"

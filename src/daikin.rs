@@ -1,7 +1,7 @@
-use crate::info::DaikinInfo;
-use crate::request::DaikinRequest;
-use crate::response::DaikinResponse;
-use crate::status::DaikinStatus;
+use dsiot::info::DaikinInfo;
+use dsiot::request::DaikinRequest;
+use dsiot::response::DaikinResponse;
+use dsiot::status::DaikinStatus;
 use retainer::*;
 use serde_json::json;
 use serde_json::value::Value;

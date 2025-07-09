@@ -1,6 +1,6 @@
 use crate::daikin::Daikin;
-use crate::info::DaikinInfo;
 use async_stream::try_stream;
+use dsiot::info::DaikinInfo;
 use futures::prelude::*;
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};

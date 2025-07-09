@@ -17,5 +17,5 @@ jobs:
     steps:
     - uses: actions/checkout@v4.2.2
     - run: cargo build --verbose
-    - run: cargo test --verbose
+    - run: cargo test -p dsiot --verbose
     - run: cargo clippy --all-targets --all-features -- -D warnings

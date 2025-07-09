@@ -17,14 +17,12 @@ members = [".", "dsiot"]
 [dependencies]
 anyhow = "1.0.98"
 async-stream = "0.3.6"
-byteorder = "1.5.0"
 clap = { version = "4.5.40", features = ["derive", "cargo"] }
 dirs = "6.0.0"
 env_logger = "0.11.8"
 form_urlencoded = "1.2.1"
 futures = "0.3.31"
 hap = { git = "https://github.com/mzyy94/hap-rs", branch = "patch-verify" }
-hex = "0.4.3"
 log = "0.4.27"
 network-interface = "2.0.1"
 openssl = "0.10.73"
@@ -33,6 +31,5 @@ retainer = "0.4.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_qs = "0.15.0"
-serde_repr = "0.1.20"
 tokio = { version = "1.46.1", features = ["full"] }
 dsiot = { path = "./dsiot", version = "0.1.0" }
