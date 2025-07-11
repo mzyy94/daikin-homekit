@@ -1,9 +1,9 @@
 use crate::client::ReqwestClient;
-use crate::daikin::Daikin;
+use dsiot::daikin::Daikin;
+use dsiot::property::{Binary, Metadata};
 use dsiot::status::{
     AutoModeWindSpeed, DaikinStatus, HorizontalDirection, Mode, VerticalDirection, WindSpeed,
 };
-use dsiot::{property::Binary, property::Metadata};
 use futures::prelude::*;
 use hap::characteristic::{
     AsyncCharacteristicCallbacks, HapCharacteristic, active::ActiveCharacteristic,

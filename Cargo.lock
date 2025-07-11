@@ -393,7 +393,6 @@ name = "daikin-homekit"
 version = "0.2.1"
 dependencies = [
  "anyhow",
- "async-lock",
  "async-stream",
  "clap",
  "dirs",
@@ -535,6 +534,8 @@ dependencies = [
 name = "dsiot"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-lock",
  "byteorder",
  "hex",
  "serde",

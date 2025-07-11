@@ -1,8 +1,8 @@
+use crate::info::DaikinInfo;
+use crate::request::DaikinRequest;
+use crate::response::DaikinResponse;
+use crate::status::DaikinStatus;
 use async_lock::RwLock;
-use dsiot::info::DaikinInfo;
-use dsiot::request::DaikinRequest;
-use dsiot::response::DaikinResponse;
-use dsiot::status::DaikinStatus;
 use serde_json::json;
 use serde_json::value::Value;
 use std::net::Ipv4Addr;

@@ -1,6 +1,6 @@
 use crate::client::ReqwestClient;
-use crate::daikin::Daikin;
 use async_stream::try_stream;
+use dsiot::daikin::Daikin;
 use dsiot::info::DaikinInfo;
 use futures::prelude::*;
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};

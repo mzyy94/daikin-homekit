@@ -1,6 +1,6 @@
 use clap::Parser;
 use daikin_homekit::client::ReqwestClient;
-use daikin_homekit::daikin::Daikin;
+use dsiot::daikin::Daikin;
 use std::net::Ipv4Addr;
 
 #[derive(Parser)]

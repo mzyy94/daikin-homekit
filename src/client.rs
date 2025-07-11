@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::daikin::HttpClient;
+use dsiot::daikin::HttpClient;
 use serde_json::Value;
 
 #[derive(Clone, Debug)]
