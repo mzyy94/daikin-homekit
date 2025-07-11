@@ -1,3 +1,4 @@
+use crate::client::ReqwestClient;
 use crate::daikin::Daikin;
 use dsiot::status::{
     AutoModeWindSpeed, DaikinStatus, HorizontalDirection, Mode, VerticalDirection, WindSpeed,
@@ -17,7 +18,7 @@ use hap::service::heater_cooler::HeaterCoolerService;
 use serde_json::json;
 
 pub async fn setup_characteristic(
-    daikin: Daikin,
+    daikin: Daikin<ReqwestClient>,
     service: &mut HeaterCoolerService,
 ) -> anyhow::Result<()> {
     let status = daikin.get_status().await?;
@@ -47,7 +48,7 @@ pub async fn setup_characteristic(
     set_initial_value(status, service).await
 }
 
-fn setup_characteristic_callback(daikin: Daikin, service: &mut HeaterCoolerService) {
+fn setup_characteristic_callback(daikin: Daikin<ReqwestClient>, service: &mut HeaterCoolerService) {
     setup_active(daikin.clone(), &mut service.active);
     setup_current_heater_cooler_state(daikin.clone(), &mut service.current_heater_cooler_state);
     setup_target_heater_cooler_state(daikin.clone(), &mut service.target_heater_cooler_state);
@@ -173,7 +174,7 @@ macro_rules! update_assert_ne {
     };
 }
 
-pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
+pub fn setup_active(daikin: Daikin<ReqwestClient>, char: &mut ActiveCharacteristic) {
     let dk = daikin.clone();
     char.on_read_async(Some(move || {
         let dk = dk.clone();
@@ -200,7 +201,7 @@ pub fn setup_active(daikin: Daikin, char: &mut ActiveCharacteristic) {
 }
 
 pub fn setup_current_heater_cooler_state(
-    daikin: Daikin,
+    daikin: Daikin<ReqwestClient>,
     char: &mut CurrentHeaterCoolerStateCharacteristic,
 ) {
     let dk = daikin;
@@ -216,7 +217,7 @@ pub fn setup_current_heater_cooler_state(
 }
 
 pub fn setup_target_heater_cooler_state(
-    daikin: Daikin,
+    daikin: Daikin<ReqwestClient>,
     char: &mut TargetHeaterCoolerStateCharacteristic,
 ) {
     let dk = daikin.clone();
@@ -252,7 +253,10 @@ pub fn setup_target_heater_cooler_state(
     }));
 }
 
-pub fn setup_current_temperature(daikin: Daikin, char: &mut CurrentTemperatureCharacteristic) {
+pub fn setup_current_temperature(
+    daikin: Daikin<ReqwestClient>,
+    char: &mut CurrentTemperatureCharacteristic,
+) {
     let dk = daikin;
     char.on_read_async(Some(move || {
         let dk = dk.clone();
@@ -266,7 +270,7 @@ pub fn setup_current_temperature(daikin: Daikin, char: &mut CurrentTemperatureCh
 }
 
 pub fn setup_heating_threshold_temperature(
-    daikin: Daikin,
+    daikin: Daikin<ReqwestClient>,
     char: &mut HeatingThresholdTemperatureCharacteristic,
 ) {
     let dk = daikin.clone();
@@ -295,7 +299,7 @@ pub fn setup_heating_threshold_temperature(
 }
 
 pub fn setup_cooling_threshold_temperature(
-    daikin: Daikin,
+    daikin: Daikin<ReqwestClient>,
     char: &mut CoolingThresholdTemperatureCharacteristic,
 ) {
     let dk = daikin.clone();
@@ -323,7 +327,7 @@ pub fn setup_cooling_threshold_temperature(
     }));
 }
 
-pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacteristic) {
+pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSpeedCharacteristic) {
     let dk = daikin.clone();
     char.on_read_async(Some(move || {
         let dk = dk.clone();
@@ -365,7 +369,7 @@ pub fn setup_rotation_speed(daikin: Daikin, char: &mut RotationSpeedCharacterist
     }));
 }
 
-pub fn setup_swing_mode(daikin: Daikin, char: &mut SwingModeCharacteristic) {
+pub fn setup_swing_mode(daikin: Daikin<ReqwestClient>, char: &mut SwingModeCharacteristic) {
     let dk = daikin.clone();
     char.on_read_async(Some(move || {
         let dk = dk.clone();

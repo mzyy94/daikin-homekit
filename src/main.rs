@@ -1,5 +1,8 @@
 use clap::{Parser, crate_authors, crate_name, crate_version};
-use daikin_homekit::{characteristic::setup_characteristic, daikin::Daikin, discovery::discovery};
+use daikin_homekit::{
+    characteristic::setup_characteristic, client::ReqwestClient, daikin::Daikin,
+    discovery::discovery,
+};
 use dsiot::info::DaikinInfo;
 use futures::prelude::*;
 use log::{error, info, warn};
@@ -38,12 +41,12 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    let devices: Vec<(Daikin, DaikinInfo)> = if !cli.ip_addrs.is_empty() {
+    let devices: Vec<(Daikin<ReqwestClient>, DaikinInfo)> = if !cli.ip_addrs.is_empty() {
         info!("Using provided IP address(es): {:?}", cli.ip_addrs);
 
         stream::iter(cli.ip_addrs)
             .then(|ip| async move {
-                let daikin = Daikin::new(ip);
+                let daikin = Daikin::new(ip, ReqwestClient::try_new()?);
                 let info = daikin.get_info().await?;
                 anyhow::Ok((daikin, info))
             })

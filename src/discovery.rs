@@ -1,3 +1,4 @@
+use crate::client::ReqwestClient;
 use crate::daikin::Daikin;
 use async_stream::try_stream;
 use dsiot::info::DaikinInfo;
@@ -46,7 +47,7 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
 
 pub async fn discovery(
     timeout: Duration,
-) -> impl Stream<Item = anyhow::Result<(Daikin, DaikinInfo)>> {
+) -> impl Stream<Item = anyhow::Result<(Daikin<ReqwestClient>, DaikinInfo)>> {
     let (srcip, dstip) = get_ipaddr();
     let src_addr = format!("{srcip}:30000");
     let dst_addr = format!("{dstip}:30050");
@@ -80,7 +81,7 @@ pub async fn discovery(
             };
 
 
-            let daikin = Daikin::new(*src_addr.ip());
+            let daikin = Daikin::new(*src_addr.ip(), ReqwestClient::try_new()?);
             let info = serde_qs::from_str::<DaikinInfo>(&text.replace(",", "&")).unwrap();
 
             info!(

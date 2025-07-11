@@ -1,4 +1,5 @@
 use clap::Parser;
+use daikin_homekit::client::ReqwestClient;
 use daikin_homekit::daikin::Daikin;
 use dsiot::property::{Binary, Item, Metadata};
 use std::net::Ipv4Addr;
@@ -23,7 +24,8 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
-    let daikin = Daikin::new(ip_addr);
+    let client = ReqwestClient::try_new()?;
+    let daikin = Daikin::new(ip_addr, client);
     println!("Checking compatibility.");
     println!("Device IP Address: {ip_addr}");
 
