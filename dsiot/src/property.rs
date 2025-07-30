@@ -1,7 +1,6 @@
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use core::f32;
+use core::ops::RangeInclusive;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use std::{io::Cursor, ops::RangeInclusive};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
@@ -54,14 +53,32 @@ fn hex2int(hex: &String) -> i32 {
     if size > 8 {
         return 0;
     }
-    let mut bytes = vec![0u8; size / 2];
-    hex::decode_to_slice(hex, &mut bytes as &mut [u8]).ok();
-    let mut rdr = Cursor::new(bytes);
+    let mut bytes = [0u8; 4];
+    hex::decode_to_slice(hex, &mut bytes[0..hex.len() / 2]).unwrap();
+    match size {
+        2 => i8::from_le_bytes(bytes[0..1].try_into().unwrap()) as i32,
+        4 => i16::from_le_bytes(bytes[0..2].try_into().unwrap()) as i32,
+        6 | 8 => i32::from_le_bytes(bytes),
+        _ => 0,
+    }
+}
 
-    rdr.read_int::<LittleEndian>(size / 2)
-        .unwrap()
-        .try_into()
-        .unwrap_or(0)
+#[cfg(test)]
+mod tests2 {
+    use super::*;
+
+    #[test]
+    fn hex2int_test() {
+        let hex = "18".to_string();
+        let result = hex2int(&hex);
+        assert_eq!(result, 24);
+        let hex = "eeff".to_string();
+        let result = hex2int(&hex);
+        assert_eq!(result, -18);
+        let hex = "12345600".to_string();
+        let result = hex2int(&hex);
+        assert_eq!(result, 5649426);
+    }
 }
 
 impl Property {
@@ -124,19 +141,14 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
             Metadata::Integer => self.value = PropValue::Integer(value.into() as i32),
             Metadata::String => todo!(), // self.value = PropValue::String(value.to_string()),
             Metadata::Binary(Binary::Step(step)) => {
-                let mut wtr = vec![];
-                wtr.write_int::<LittleEndian>(
-                    (value.into() / step.step()) as i64,
-                    step.max.len() / 2,
-                )
-                .unwrap();
-                self.value = PropValue::String(hex::encode(wtr));
+                let value = (value.into() / step.step()) as i64;
+                let bytes = value.to_le_bytes();
+                self.value = PropValue::String(hex::encode(&bytes[..(step.max.len() / 2)]));
             }
             Metadata::Binary(Binary::Enum { max }) => {
-                let mut wtr = vec![];
-                wtr.write_int::<LittleEndian>(value.into() as i64, max.len() / 2)
-                    .unwrap();
-                self.value = PropValue::String(hex::encode(wtr));
+                let value = value.into() as i64;
+                let bytes = value.to_le_bytes();
+                self.value = PropValue::String(hex::encode(&bytes[..(max.len() / 2)]));
             }
             _ => self.value = PropValue::Null,
         }

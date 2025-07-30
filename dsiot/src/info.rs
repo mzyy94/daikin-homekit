@@ -1,7 +1,5 @@
 use crate::response::DaikinResponse;
-use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Deserializer, de};
-use std::io::Cursor;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct DaikinInfo {
@@ -24,14 +22,12 @@ fn parse_edid<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u64, D::Erro
 }
 
 fn str2edid(edid: &str) -> Option<u64> {
-    let mut bytes = vec![0u8; 8];
-    match hex::decode_to_slice(edid, &mut bytes as &mut [u8]) {
+    let mut bytes = [0u8; 8];
+    match hex::decode_to_slice(edid, &mut bytes) {
         Ok(_) => {}
         Err(_) => return None,
     };
-    let mut rdr = Cursor::new(bytes);
-
-    rdr.read_u64::<BigEndian>().ok()
+    Some(u64::from_be_bytes(bytes))
 }
 
 impl From<DaikinResponse> for DaikinInfo {
