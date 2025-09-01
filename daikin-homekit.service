@@ -1,0 +1,14 @@
+[Unit]
+Description=Daikin HomeKit
+After=network.target
+
+[Service]
+Environment="RUST_LOG=hap=info,daikin_homekit=info"
+ExecStart=/usr/local/bin/daikin-homekit
+Type=simple
+Restart=always
+RestartSec=5
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
