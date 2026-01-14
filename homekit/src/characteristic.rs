@@ -3,8 +3,8 @@ use crate::fan_mapping;
 use dsiot::daikin::Daikin;
 use dsiot::mapping::{mode, swing};
 use dsiot::property::{Binary, Metadata};
-use dsiot::ValueConstraints;
 use dsiot::status::DaikinStatus;
+use dsiot::{PowerState, StateTransition, ValueConstraints};
 use futures::prelude::*;
 use hap::characteristic::{
     AsyncCharacteristicCallbacks, HapCharacteristic, active::ActiveCharacteristic,
@@ -147,7 +147,8 @@ pub fn setup_active(daikin: Daikin<ReqwestClient>, char: &mut ActiveCharacterist
         async move {
             debug!("active read");
             let status = dk.get_status().await?;
-            Ok(status.power.get_f32().map(|v| v as u8))
+            let power = PowerState::from_status(&status);
+            Ok(power.map(|p| if p == PowerState::On { 1u8 } else { 0u8 }))
         }
         .boxed()
     }));
@@ -158,7 +159,14 @@ pub fn setup_active(daikin: Daikin<ReqwestClient>, char: &mut ActiveCharacterist
         async move {
             update_assert_ne!("active", cur, new);
             let mut status = dk.get_status().await?;
-            status.power.set_value(new as f32);
+            let power = if new != 0 {
+                PowerState::On
+            } else {
+                PowerState::Off
+            };
+            StateTransition::new()
+                .power(power)
+                .apply_to_status(&mut status)?;
             dk.update(status).await?;
             Ok(())
         }
@@ -204,7 +212,9 @@ pub fn setup_target_heater_cooler_state(
             update_assert_ne!("target_heater_cooler_state", cur, new);
             let mut status = dk.get_status().await?;
             if let Some(m) = mode::from_target_state(new) {
-                status.mode.set_value(m);
+                StateTransition::new()
+                    .mode(m)
+                    .apply_to_status(&mut status)?;
                 dk.update(status).await?;
             }
 
