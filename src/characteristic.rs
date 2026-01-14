@@ -1,9 +1,9 @@
 use crate::client::ReqwestClient;
+use dsiot::ValueConstraints;
 use dsiot::daikin::Daikin;
+use dsiot::mapping::{fan, mode, swing};
 use dsiot::property::{Binary, Metadata};
-use dsiot::status::{
-    AutoModeWindSpeed, DaikinStatus, HorizontalDirection, Mode, VerticalDirection, WindSpeed,
-};
+use dsiot::status::DaikinStatus;
 use futures::prelude::*;
 use hap::characteristic::{
     AsyncCharacteristicCallbacks, HapCharacteristic, active::ActiveCharacteristic,
@@ -79,11 +79,11 @@ async fn set_initial_value(
         .await?;
     service
         .current_heater_cooler_state
-        .set_value(current_mode_mapping(status.mode.get_enum()).into())
+        .set_value(mode::to_current_state(status.mode.get_enum()).into())
         .await?;
     service
         .target_heater_cooler_state
-        .set_value(target_mode_mapping(status.mode.get_enum()).into())
+        .set_value(mode::to_target_state(status.mode.get_enum()).into())
         .await?;
     service
         .current_temperature
@@ -93,75 +93,40 @@ async fn set_initial_value(
     if let Some(char) = service.heating_threshold_temperature.as_mut() {
         char.set_value(status.target_heating_temperature.get_f32().into())
             .await?;
-        if let Metadata::Binary(Binary::Step(step)) = status.target_heating_temperature.metadata {
-            char.set_step_value(Some(step.step().into()))?;
-            char.set_min_value(Some((*step.range().start()).into()))?;
-            char.set_max_value(Some((*step.range().end()).into()))?;
+        if let Some(constraints) = ValueConstraints::from_item(&status.target_heating_temperature) {
+            char.set_step_value(Some(constraints.step.into()))?;
+            char.set_min_value(Some(constraints.min.into()))?;
+            char.set_max_value(Some(constraints.max.into()))?;
         }
     }
 
     if let Some(char) = service.cooling_threshold_temperature.as_mut() {
         char.set_value(status.target_cooling_temperature.get_f32().into())
             .await?;
-        if let Metadata::Binary(Binary::Step(step)) = status.target_cooling_temperature.metadata {
-            char.set_step_value(Some(step.step().into()))?;
-            char.set_min_value(Some((*step.range().start()).into()))?;
-            char.set_max_value(Some((*step.range().end()).into()))?;
+        if let Some(constraints) = ValueConstraints::from_item(&status.target_cooling_temperature) {
+            char.set_step_value(Some(constraints.step.into()))?;
+            char.set_min_value(Some(constraints.min.into()))?;
+            char.set_max_value(Some(constraints.max.into()))?;
         }
     }
 
     if let Some(char) = service.rotation_speed.as_mut() {
-        char.set_value(windspeed_mapping(status.wind_speed.get_enum()).into())
+        char.set_value(fan::speed_to_scale(status.wind_speed.get_enum()).into())
             .await?;
-        char.set_step_value(Some(json!(1.0)))?;
-        char.set_min_value(Some(json!(0.0)))?;
-        char.set_max_value(Some(json!(7.0)))?;
+        let fan_constraints = ValueConstraints::fan_speed_scale();
+        char.set_step_value(Some(json!(fan_constraints.step)))?;
+        char.set_min_value(Some(json!(fan_constraints.min)))?;
+        char.set_max_value(Some(json!(fan_constraints.max)))?;
     }
 
     if let Some(char) = service.swing_mode.as_mut() {
         char.set_value(
-            Some(
-                (status.vertical_wind_direction.get_enum() == Some(VerticalDirection::Swing))
-                    as i32,
-            )
-            .into(),
+            Some(swing::to_enabled(status.vertical_wind_direction.get_enum()) as i32).into(),
         )
         .await?;
     }
 
     Ok(())
-}
-
-fn windspeed_mapping(wind_speed: Option<WindSpeed>) -> Option<f32> {
-    match wind_speed {
-        Some(WindSpeed::Silent) => Some(1.0),
-        Some(WindSpeed::Lev1) => Some(2.0),
-        Some(WindSpeed::Lev2) => Some(3.0),
-        Some(WindSpeed::Lev3) => Some(4.0),
-        Some(WindSpeed::Lev4) => Some(5.0),
-        Some(WindSpeed::Lev5) => Some(6.0),
-        Some(WindSpeed::Auto) => Some(7.0),
-        _ => None,
-    }
-}
-
-fn current_mode_mapping(mode: Option<Mode>) -> u8 {
-    match mode {
-        Some(Mode::Fan) => 0,        // Inactive,
-        Some(Mode::Dehumidify) => 1, // Idle
-        Some(Mode::Heating) => 2,    // Heating
-        Some(Mode::Cooling) => 3,    // Cooling
-        _ => 0,                      // FIXME: Auto mode
-    }
-}
-
-fn target_mode_mapping(mode: Option<Mode>) -> Option<u8> {
-    match mode {
-        Some(Mode::Auto) => Some(0),    // Auto,
-        Some(Mode::Heating) => Some(1), // Heat
-        Some(Mode::Cooling) => Some(2), // Cool
-        _ => None,
-    }
 }
 
 macro_rules! update_assert_ne {
@@ -210,7 +175,7 @@ pub fn setup_current_heater_cooler_state(
         async move {
             debug!("current_heater_cooler_state read");
             let status = dk.get_status().await?;
-            Ok(Some(current_mode_mapping(status.mode.get_enum())))
+            Ok(Some(mode::to_current_state(status.mode.get_enum())))
         }
         .boxed()
     }));
@@ -226,7 +191,7 @@ pub fn setup_target_heater_cooler_state(
         async move {
             debug!("target_heater_cooler_state read");
             let status = dk.get_status().await?;
-            Ok(target_mode_mapping(status.mode.get_enum()))
+            Ok(mode::to_target_state(status.mode.get_enum()))
         }
         .boxed()
     }));
@@ -237,13 +202,8 @@ pub fn setup_target_heater_cooler_state(
         async move {
             update_assert_ne!("target_heater_cooler_state", cur, new);
             let mut status = dk.get_status().await?;
-            if let Some(mode) = match new {
-                0 => Some(Mode::Auto),
-                1 => Some(Mode::Heating),
-                2 => Some(Mode::Cooling),
-                _ => None,
-            } {
-                status.mode.set_value(mode);
+            if let Some(m) = mode::from_target_state(new) {
+                status.mode.set_value(m);
                 dk.update(status).await?;
             }
 
@@ -334,8 +294,7 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             debug!("rotation_speed read");
             let status = dk.get_status().await?;
-            let speed = windspeed_mapping(status.wind_speed.get_enum());
-            Ok(speed)
+            Ok(fan::speed_to_scale(status.wind_speed.get_enum()))
         }
         .boxed()
     }));
@@ -346,22 +305,10 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             update_assert_ne!("rotation_speed", cur, new);
             let mut status = dk.get_status().await?;
-            let speed = match new as u8 {
-                1 => WindSpeed::Silent,
-                2 => WindSpeed::Lev1,
-                3 => WindSpeed::Lev2,
-                4 => WindSpeed::Lev3,
-                5 => WindSpeed::Lev4,
-                6 => WindSpeed::Lev5,
-                _ => WindSpeed::Auto,
-            };
-            let auto_speed = if new < 50.0 {
-                AutoModeWindSpeed::Silent
-            } else {
-                AutoModeWindSpeed::Auto
-            };
-            status.wind_speed.set_value(speed);
-            status.automode_wind_speed.set_value(auto_speed);
+            status.wind_speed.set_value(fan::scale_to_speed(new));
+            status
+                .automode_wind_speed
+                .set_value(fan::scale_to_auto_mode(new));
             dk.update(status).await?;
             Ok(())
         }
@@ -376,11 +323,8 @@ pub fn setup_swing_mode(daikin: Daikin<ReqwestClient>, char: &mut SwingModeChara
         async move {
             debug!("swing_mode read");
             let status = dk.get_status().await?;
-            let mode = match status.vertical_wind_direction.get_enum() {
-                Some(VerticalDirection::Swing) => Some(1),
-                _ => Some(0),
-            };
-            Ok(mode)
+            let enabled = swing::to_enabled(status.vertical_wind_direction.get_enum());
+            Ok(Some(enabled as u8))
         }
         .boxed()
     }));
@@ -391,21 +335,9 @@ pub fn setup_swing_mode(daikin: Daikin<ReqwestClient>, char: &mut SwingModeChara
         async move {
             update_assert_ne!("swing_mode", cur, new);
             let mut status = dk.get_status().await?;
-            if new == 0 {
-                status
-                    .vertical_wind_direction
-                    .set_value(VerticalDirection::Auto);
-                status
-                    .horizontal_wind_direction
-                    .set_value(HorizontalDirection::Auto);
-            } else {
-                status
-                    .vertical_wind_direction
-                    .set_value(VerticalDirection::Swing);
-                status
-                    .horizontal_wind_direction
-                    .set_value(HorizontalDirection::Swing);
-            }
+            let (vertical, horizontal) = swing::from_enabled(new != 0);
+            status.vertical_wind_direction.set_value(vertical);
+            status.horizontal_wind_direction.set_value(horizontal);
             dk.update(status).await?;
             Ok(())
         }
