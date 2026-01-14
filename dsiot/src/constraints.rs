@@ -59,11 +59,6 @@ impl ValueConstraints {
     pub fn heating_temperature_default() -> Self {
         Self::new(14.0, 30.0, 0.5)
     }
-
-    /// Constraints for fan speed scale (0-7, step 1).
-    pub fn fan_speed_scale() -> Self {
-        Self::new(0.0, 7.0, 1.0)
-    }
 }
 
 #[cfg(test)]
@@ -112,10 +107,5 @@ mod tests {
         assert_eq!(heating.min, 14.0);
         assert_eq!(heating.max, 30.0);
         assert_eq!(heating.step, 0.5);
-
-        let fan = ValueConstraints::fan_speed_scale();
-        assert_eq!(fan.min, 0.0);
-        assert_eq!(fan.max, 7.0);
-        assert_eq!(fan.step, 1.0);
     }
 }

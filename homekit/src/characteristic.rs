@@ -1,8 +1,9 @@
 use crate::client::ReqwestClient;
-use dsiot::ValueConstraints;
+use crate::fan_mapping;
 use dsiot::daikin::Daikin;
-use dsiot::mapping::{fan, mode, swing};
+use dsiot::mapping::{mode, swing};
 use dsiot::property::{Binary, Metadata};
+use dsiot::ValueConstraints;
 use dsiot::status::DaikinStatus;
 use futures::prelude::*;
 use hap::characteristic::{
@@ -111,9 +112,9 @@ async fn set_initial_value(
     }
 
     if let Some(char) = service.rotation_speed.as_mut() {
-        char.set_value(fan::speed_to_scale(status.wind_speed.get_enum()).into())
+        char.set_value(fan_mapping::speed_to_scale(status.wind_speed.get_enum()).into())
             .await?;
-        let fan_constraints = ValueConstraints::fan_speed_scale();
+        let fan_constraints = fan_mapping::fan_speed_constraints();
         char.set_step_value(Some(json!(fan_constraints.step)))?;
         char.set_min_value(Some(json!(fan_constraints.min)))?;
         char.set_max_value(Some(json!(fan_constraints.max)))?;
@@ -294,7 +295,7 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             debug!("rotation_speed read");
             let status = dk.get_status().await?;
-            Ok(fan::speed_to_scale(status.wind_speed.get_enum()))
+            Ok(fan_mapping::speed_to_scale(status.wind_speed.get_enum()))
         }
         .boxed()
     }));
@@ -305,10 +306,10 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             update_assert_ne!("rotation_speed", cur, new);
             let mut status = dk.get_status().await?;
-            status.wind_speed.set_value(fan::scale_to_speed(new));
+            status.wind_speed.set_value(fan_mapping::scale_to_speed(new));
             status
                 .automode_wind_speed
-                .set_value(fan::scale_to_auto_mode(new));
+                .set_value(fan_mapping::scale_to_auto_mode(new));
             dk.update(status).await?;
             Ok(())
         }
