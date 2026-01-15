@@ -78,7 +78,6 @@ impl DeviceState {
     /// Rules:
     /// - Power can always be turned off or on
     /// - Mode can be changed regardless of power state
-    ///   (HomeKit allows setting target mode while device is off)
     pub fn transition(
         &self,
         new_power: Option<PowerState>,
@@ -202,7 +201,6 @@ mod tests {
 
     #[test]
     fn test_mode_change_when_off_allowed() {
-        // HomeKit allows setting target mode while device is off
         let state = make_test_state(PowerState::Off, Mode::Cooling);
         let result = state.transition(None, Some(Mode::Heating));
         assert!(result.is_ok());
@@ -224,7 +222,6 @@ mod tests {
     #[test]
     fn test_power_off_and_mode_change_allowed() {
         let state = make_test_state(PowerState::On, Mode::Cooling);
-        // HomeKit allows turning off and changing mode simultaneously
         let result = state.transition(Some(PowerState::Off), Some(Mode::Heating));
         assert!(result.is_ok());
         let new_state = result.unwrap();

@@ -1,62 +1,9 @@
 //! Protocol-agnostic value mapping functions.
 //!
 //! These functions convert between Daikin-specific enum values and
-//! generic numeric representations suitable for various smart home protocols.
+//! generic representations suitable for various smart home protocols.
 
-use crate::status::{AutoModeWindSpeed, HorizontalDirection, Mode, VerticalDirection, WindSpeed};
-
-/// Mode mapping functions for HVAC operating states.
-pub mod mode {
-    use super::Mode;
-
-    /// Convert Daikin Mode to current operating state.
-    ///
-    /// Returns:
-    /// - 0: Inactive (Fan mode)
-    /// - 1: Idle (Dehumidify mode)
-    /// - 2: Heating
-    /// - 3: Cooling
-    pub fn to_current_state(mode: Option<Mode>) -> u8 {
-        match mode {
-            Some(Mode::Fan) => 0,
-            Some(Mode::Dehumidify) => 1,
-            Some(Mode::Heating) => 2,
-            Some(Mode::Cooling) => 3,
-            // TODO: Auto mode should map based on actual heating/cooling activity
-            _ => 0,
-        }
-    }
-
-    /// Convert Daikin Mode to target operating state.
-    ///
-    /// Returns:
-    /// - Some(0): Auto mode
-    /// - Some(1): Heating mode
-    /// - Some(2): Cooling mode
-    /// - None: Other modes (Fan, Dehumidify)
-    pub fn to_target_state(mode: Option<Mode>) -> Option<u8> {
-        match mode {
-            Some(Mode::Auto) => Some(0),
-            Some(Mode::Heating) => Some(1),
-            Some(Mode::Cooling) => Some(2),
-            _ => None,
-        }
-    }
-
-    /// Convert target operating state to Daikin Mode.
-    ///
-    /// - 0 -> Auto
-    /// - 1 -> Heating
-    /// - 2 -> Cooling
-    pub fn from_target_state(state: u8) -> Option<Mode> {
-        match state {
-            0 => Some(Mode::Auto),
-            1 => Some(Mode::Heating),
-            2 => Some(Mode::Cooling),
-            _ => None,
-        }
-    }
-}
+use crate::status::{AutoModeWindSpeed, HorizontalDirection, VerticalDirection, WindSpeed};
 
 /// Fan speed mapping functions.
 ///
@@ -177,47 +124,6 @@ pub mod swing {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    mod mode_tests {
-        use super::*;
-
-        #[test]
-        fn test_to_current_state() {
-            assert_eq!(mode::to_current_state(Some(Mode::Fan)), 0);
-            assert_eq!(mode::to_current_state(Some(Mode::Dehumidify)), 1);
-            assert_eq!(mode::to_current_state(Some(Mode::Heating)), 2);
-            assert_eq!(mode::to_current_state(Some(Mode::Cooling)), 3);
-            assert_eq!(mode::to_current_state(Some(Mode::Auto)), 0);
-            assert_eq!(mode::to_current_state(None), 0);
-        }
-
-        #[test]
-        fn test_to_target_state() {
-            assert_eq!(mode::to_target_state(Some(Mode::Auto)), Some(0));
-            assert_eq!(mode::to_target_state(Some(Mode::Heating)), Some(1));
-            assert_eq!(mode::to_target_state(Some(Mode::Cooling)), Some(2));
-            assert_eq!(mode::to_target_state(Some(Mode::Fan)), None);
-            assert_eq!(mode::to_target_state(Some(Mode::Dehumidify)), None);
-            assert_eq!(mode::to_target_state(None), None);
-        }
-
-        #[test]
-        fn test_from_target_state() {
-            assert_eq!(mode::from_target_state(0), Some(Mode::Auto));
-            assert_eq!(mode::from_target_state(1), Some(Mode::Heating));
-            assert_eq!(mode::from_target_state(2), Some(Mode::Cooling));
-            assert_eq!(mode::from_target_state(3), None);
-            assert_eq!(mode::from_target_state(255), None);
-        }
-
-        #[test]
-        fn test_roundtrip() {
-            for state in 0..=2 {
-                let mode = mode::from_target_state(state);
-                assert_eq!(mode::to_target_state(mode), Some(state));
-            }
-        }
-    }
 
     mod fan_tests {
         use super::*;

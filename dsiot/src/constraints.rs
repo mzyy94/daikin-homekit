@@ -48,19 +48,6 @@ impl ValueConstraints {
     }
 }
 
-/// Temperature constraints with common presets.
-impl ValueConstraints {
-    /// Default constraints for cooling temperature (18-32°C, 0.5°C step).
-    pub fn cooling_temperature_default() -> Self {
-        Self::new(18.0, 32.0, 0.5)
-    }
-
-    /// Default constraints for heating temperature (14-30°C, 0.5°C step).
-    pub fn heating_temperature_default() -> Self {
-        Self::new(14.0, 30.0, 0.5)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -96,16 +83,4 @@ mod tests {
         assert!(ValueConstraints::from_metadata(&metadata).is_none());
     }
 
-    #[test]
-    fn test_default_constraints() {
-        let cooling = ValueConstraints::cooling_temperature_default();
-        assert_eq!(cooling.min, 18.0);
-        assert_eq!(cooling.max, 32.0);
-        assert_eq!(cooling.step, 0.5);
-
-        let heating = ValueConstraints::heating_temperature_default();
-        assert_eq!(heating.min, 14.0);
-        assert_eq!(heating.max, 30.0);
-        assert_eq!(heating.step, 0.5);
-    }
 }

@@ -1,7 +1,8 @@
 use crate::client::ReqwestClient;
 use crate::fan_mapping;
+use crate::mode_mapping;
 use dsiot::daikin::Daikin;
-use dsiot::mapping::{mode, swing};
+use dsiot::mapping::swing;
 use dsiot::property::{Binary, Metadata};
 use dsiot::status::DaikinStatus;
 use dsiot::{PowerState, StateTransition, TemperatureTarget, ValueConstraints};
@@ -80,11 +81,11 @@ async fn set_initial_value(
         .await?;
     service
         .current_heater_cooler_state
-        .set_value(mode::to_current_state(status.mode.get_enum()).into())
+        .set_value(mode_mapping::to_current_state(status.mode.get_enum()).into())
         .await?;
     service
         .target_heater_cooler_state
-        .set_value(mode::to_target_state(status.mode.get_enum()).into())
+        .set_value(mode_mapping::to_target_state(status.mode.get_enum()).into())
         .await?;
     service
         .current_temperature
@@ -184,7 +185,7 @@ pub fn setup_current_heater_cooler_state(
         async move {
             debug!("current_heater_cooler_state read");
             let status = dk.get_status().await?;
-            Ok(Some(mode::to_current_state(status.mode.get_enum())))
+            Ok(Some(mode_mapping::to_current_state(status.mode.get_enum())))
         }
         .boxed()
     }));
@@ -200,7 +201,7 @@ pub fn setup_target_heater_cooler_state(
         async move {
             debug!("target_heater_cooler_state read");
             let status = dk.get_status().await?;
-            Ok(mode::to_target_state(status.mode.get_enum()))
+            Ok(mode_mapping::to_target_state(status.mode.get_enum()))
         }
         .boxed()
     }));
@@ -211,7 +212,7 @@ pub fn setup_target_heater_cooler_state(
         async move {
             update_assert_ne!("target_heater_cooler_state", cur, new);
             let mut status = dk.get_status().await?;
-            if let Some(m) = mode::from_target_state(new) {
+            if let Some(m) = mode_mapping::from_target_state(new) {
                 StateTransition::new()
                     .mode(m)
                     .apply_to_status(&mut status)?;
