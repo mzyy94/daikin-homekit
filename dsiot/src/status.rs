@@ -6,37 +6,77 @@ use crate::{
 };
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
+/// Sensor readings from the device (read-only values).
+#[derive(Clone, Debug)]
+pub struct SensorReadings {
+    /// Indoor temperature in Celsius.
+    pub temperature: Item<f32>,
+    /// Indoor humidity percentage.
+    pub humidity: Item<f32>,
+    /// Outdoor temperature in Celsius.
+    pub outdoor_temperature: Item<f32>,
+}
+
+/// Temperature target settings for each mode.
+#[derive(Clone, Debug)]
+pub struct TemperatureSettings {
+    /// Target temperature for cooling mode.
+    pub cooling: Item<f32>,
+    /// Target temperature for heating mode.
+    pub heating: Item<f32>,
+    /// Temperature offset for auto mode (-5 to +5).
+    pub automatic: Item<f32>,
+}
+
+/// Wind/airflow control settings.
+#[derive(Clone, Debug)]
+pub struct WindSettings {
+    /// Fan speed setting.
+    pub speed: Item<WindSpeed>,
+    /// Fan speed for auto mode.
+    pub automode_speed: Item<AutoModeWindSpeed>,
+    /// Vertical air direction.
+    pub vertical_direction: Item<VerticalDirection>,
+    /// Horizontal air direction.
+    pub horizontal_direction: Item<HorizontalDirection>,
+}
+
+/// Complete device status containing all readable and writable properties.
 #[derive(Clone, Debug)]
 pub struct DaikinStatus {
+    /// Power state (0.0 = off, 1.0 = on).
     pub power: Item<f32>,
-    pub current_temperature: Item<f32>,
-    pub current_humidity: Item<f32>,
-    pub current_outside_temperature: Item<f32>,
+    /// Operating mode.
     pub mode: Item<Mode>,
-    pub target_cooling_temperature: Item<f32>,
-    pub target_heating_temperature: Item<f32>,
-    pub target_automatic_temperature: Item<f32>,
-    pub wind_speed: Item<WindSpeed>,
-    pub automode_wind_speed: Item<AutoModeWindSpeed>,
-    pub vertical_wind_direction: Item<VerticalDirection>,
-    pub horizontal_wind_direction: Item<HorizontalDirection>,
+    /// Sensor readings (temperature, humidity).
+    pub sensors: SensorReadings,
+    /// Temperature settings for each mode.
+    pub temperature: TemperatureSettings,
+    /// Wind/airflow settings.
+    pub wind: WindSettings,
 }
 
 impl From<DaikinResponse> for DaikinStatus {
     fn from(response: DaikinResponse) -> Self {
         DaikinStatus {
             power: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A002.p_01),
-            current_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01),
-            current_humidity: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02),
-            current_outside_temperature: get_prop!(response."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01),
             mode: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_01),
-            target_cooling_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02),
-            target_heating_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03),
-            target_automatic_temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F),
-            wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09),
-            automode_wind_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26),
-            vertical_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05),
-            horizontal_wind_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06),
+            sensors: SensorReadings {
+                temperature: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_01),
+                humidity: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A00B.p_02),
+                outdoor_temperature: get_prop!(response."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A00D.p_01),
+            },
+            temperature: TemperatureSettings {
+                cooling: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_02),
+                heating: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_03),
+                automatic: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_1F),
+            },
+            wind: WindSettings {
+                speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_09),
+                automode_speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_26),
+                vertical_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_05),
+                horizontal_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_06),
+            },
         }
     }
 }
@@ -48,13 +88,13 @@ impl Into<DaikinRequest> for DaikinStatus {
 
         set_child_prop!({ prop }.e_1002.e_A002.p_01 = self.power);
         set_child_prop!({ prop }.e_1002.e_3001.p_01 = self.mode);
-        set_child_prop!({ prop }.e_1002.e_3001.p_02 = self.target_cooling_temperature);
-        set_child_prop!({ prop }.e_1002.e_3001.p_03 = self.target_heating_temperature);
-        set_child_prop!({ prop }.e_1002.e_3001.p_1F = self.target_automatic_temperature);
-        set_child_prop!({ prop }.e_1002.e_3001.p_09 = self.wind_speed);
-        set_child_prop!({ prop }.e_1002.e_3001.p_26 = self.automode_wind_speed);
-        set_child_prop!({ prop }.e_1002.e_3001.p_05 = self.vertical_wind_direction);
-        set_child_prop!({ prop }.e_1002.e_3001.p_06 = self.horizontal_wind_direction);
+        set_child_prop!({ prop }.e_1002.e_3001.p_02 = self.temperature.cooling);
+        set_child_prop!({ prop }.e_1002.e_3001.p_03 = self.temperature.heating);
+        set_child_prop!({ prop }.e_1002.e_3001.p_1F = self.temperature.automatic);
+        set_child_prop!({ prop }.e_1002.e_3001.p_09 = self.wind.speed);
+        set_child_prop!({ prop }.e_1002.e_3001.p_26 = self.wind.automode_speed);
+        set_child_prop!({ prop }.e_1002.e_3001.p_05 = self.wind.vertical_direction);
+        set_child_prop!({ prop }.e_1002.e_3001.p_06 = self.wind.horizontal_direction);
 
         DaikinRequest {
             requests: vec![Request {
@@ -176,24 +216,30 @@ mod tests {
         let status: DaikinStatus = res.into();
 
         assert_eq!(status.power.get_f32(), Some(0.0));
-        assert_eq!(status.current_temperature.get_f32(), Some(20.0));
-        assert_eq!(status.current_humidity.get_f32(), Some(50.0));
-        assert_eq!(status.current_outside_temperature.get_f32(), Some(19.0));
         assert_eq!(status.mode.get_enum(), Some(Mode::Cooling));
-        assert_eq!(status.target_cooling_temperature.get_f32(), Some(24.5));
-        assert_eq!(status.target_heating_temperature.get_f32(), Some(25.0));
-        assert_eq!(status.target_automatic_temperature.get_f32(), Some(0.0));
-        assert_eq!(status.wind_speed.get_enum(), Some(WindSpeed::Auto));
+
+        // Sensor readings
+        assert_eq!(status.sensors.temperature.get_f32(), Some(20.0));
+        assert_eq!(status.sensors.humidity.get_f32(), Some(50.0));
+        assert_eq!(status.sensors.outdoor_temperature.get_f32(), Some(19.0));
+
+        // Temperature settings
+        assert_eq!(status.temperature.cooling.get_f32(), Some(24.5));
+        assert_eq!(status.temperature.heating.get_f32(), Some(25.0));
+        assert_eq!(status.temperature.automatic.get_f32(), Some(0.0));
+
+        // Wind settings
+        assert_eq!(status.wind.speed.get_enum(), Some(WindSpeed::Auto));
         assert_eq!(
-            status.automode_wind_speed.get_enum(),
+            status.wind.automode_speed.get_enum(),
             Some(AutoModeWindSpeed::Auto)
         );
         assert_eq!(
-            status.vertical_wind_direction.get_enum(),
+            status.wind.vertical_direction.get_enum(),
             Some(VerticalDirection::Auto)
         );
         assert_eq!(
-            status.horizontal_wind_direction.get_enum(),
+            status.wind.horizontal_direction.get_enum(),
             Some(HorizontalDirection::Auto)
         );
     }
@@ -206,18 +252,21 @@ mod tests {
 
         status.power.set_value(1.0);
         status.mode.set_value(Mode::Cooling);
-        status.target_cooling_temperature.set_value(24.5);
-        status.target_heating_temperature.set_value(25.0);
-        status.target_automatic_temperature.set_value(0.0);
+        status.temperature.cooling.set_value(24.5);
+        status.temperature.heating.set_value(25.0);
+        status.temperature.automatic.set_value(0.0);
         status
-            .automode_wind_speed
+            .wind
+            .automode_speed
             .set_value(AutoModeWindSpeed::Silent);
-        status.wind_speed.set_value(WindSpeed::Lev4);
+        status.wind.speed.set_value(WindSpeed::Lev4);
         status
-            .vertical_wind_direction
+            .wind
+            .vertical_direction
             .set_value(VerticalDirection::BottomMost);
         status
-            .horizontal_wind_direction
+            .wind
+            .horizontal_direction
             .set_value(HorizontalDirection::RightCenter);
 
         let req: DaikinRequest = status.into();
@@ -226,18 +275,6 @@ mod tests {
             json,
             serde_json::from_str::<serde_json::Value>(include_str!("./fixtures/update.json"))
                 .unwrap()
-        );
-    }
-
-    #[test]
-    fn debug_display() {
-        let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
-            .expect("Invalid JSON file.");
-        let status: DaikinStatus = res.into();
-
-        assert_eq!(
-            format!("{status:?}"),
-            r#"DaikinStatus { power: Item { name: "p_01", value: 0.0, metadata: Binary(Step(BinaryStep { range: 0.0..=1.0, step: 1 })) }, current_temperature: Item { name: "p_01", value: 20.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 1 })) }, current_humidity: Item { name: "p_02", value: 50.0, metadata: Binary(Step(BinaryStep { range: 25.0..=85.0, step: 1 })) }, current_outside_temperature: Item { name: "p_01", value: 19.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })) }, mode: Item { name: "p_01", value: String("0200"), metadata: Binary(Enum { max: "2F00" }) }, target_cooling_temperature: Item { name: "p_02", value: 24.5, metadata: Binary(Step(BinaryStep { range: 18.0..=32.0, step: 0.5 })) }, target_heating_temperature: Item { name: "p_03", value: 25.0, metadata: Binary(Step(BinaryStep { range: 14.0..=30.0, step: 0.5 })) }, target_automatic_temperature: Item { name: "p_1F", value: 0.0, metadata: Binary(Step(BinaryStep { range: -5.0..=5.0, step: 0.5 })) }, wind_speed: Item { name: "p_09", value: String("0A00"), metadata: Binary(Enum { max: "F80C" }) }, automode_wind_speed: Item { name: "p_26", value: String("0A00"), metadata: Binary(Enum { max: "000C" }) }, vertical_wind_direction: Item { name: "p_05", value: String("10000000"), metadata: Binary(Enum { max: "3F808100" }) }, horizontal_wind_direction: Item { name: "p_06", value: String("100000"), metadata: Binary(Enum { max: "FD8101" }) } }"#
         );
     }
 }

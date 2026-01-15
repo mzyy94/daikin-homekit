@@ -71,9 +71,9 @@ impl TemperatureTarget {
         let mode = status.mode.get_enum()?;
 
         match mode {
-            Mode::Heating => status.target_heating_temperature.get_f32().map(Self::Heating),
-            Mode::Cooling => status.target_cooling_temperature.get_f32().map(Self::Cooling),
-            Mode::Auto => status.target_automatic_temperature.get_f32().map(Self::Auto),
+            Mode::Heating => status.temperature.heating.get_f32().map(Self::Heating),
+            Mode::Cooling => status.temperature.cooling.get_f32().map(Self::Cooling),
+            Mode::Auto => status.temperature.automatic.get_f32().map(Self::Auto),
             Mode::Fan | Mode::Dehumidify => Some(Self::None),
             Mode::Unknown => None,
         }
@@ -97,13 +97,13 @@ impl TemperatureTarget {
     pub fn apply_to_status(&self, status: &mut DaikinStatus) {
         match self {
             Self::Heating(temp) => {
-                status.target_heating_temperature.set_value(*temp);
+                status.temperature.heating.set_value(*temp);
             }
             Self::Cooling(temp) => {
-                status.target_cooling_temperature.set_value(*temp);
+                status.temperature.cooling.set_value(*temp);
             }
             Self::Auto(offset) => {
-                status.target_automatic_temperature.set_value(*offset);
+                status.temperature.automatic.set_value(*offset);
             }
             Self::None => {
                 // No temperature to set
@@ -115,7 +115,10 @@ impl TemperatureTarget {
     ///
     /// Returns an error if the temperature type doesn't match the current mode.
     pub fn apply_validated(&self, status: &mut DaikinStatus) -> Result<(), TemperatureError> {
-        let mode = status.mode.get_enum().ok_or(TemperatureError::UnknownMode)?;
+        let mode = status
+            .mode
+            .get_enum()
+            .ok_or(TemperatureError::UnknownMode)?;
 
         if !self.is_valid_for_mode(&mode) {
             return Err(TemperatureError::ModeMismatch {

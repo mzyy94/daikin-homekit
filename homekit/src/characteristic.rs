@@ -25,9 +25,9 @@ pub async fn setup_characteristic(
 ) -> anyhow::Result<()> {
     let status = daikin.get_status().await?;
 
-    if status.wind_speed.get_enum().is_none()
+    if status.wind.speed.get_enum().is_none()
         || matches!(
-            status.clone().wind_speed.metadata,
+            status.clone().wind.speed.metadata,
             Metadata::Binary(Binary::Enum { max }) if max != "F80C"
         )
     {
@@ -35,8 +35,8 @@ pub async fn setup_characteristic(
         service.rotation_speed = None;
     }
 
-    if status.vertical_wind_direction.get_enum().is_none()
-        || matches!( status.clone().vertical_wind_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
+    if status.wind.vertical_direction.get_enum().is_none()
+        || matches!( status.clone().wind.vertical_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
     {
         info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
         service.swing_mode = None;
@@ -89,13 +89,13 @@ async fn set_initial_value(
         .await?;
     service
         .current_temperature
-        .set_value(status.current_temperature.get_f32().into())
+        .set_value(status.sensors.temperature.get_f32().into())
         .await?;
 
     if let Some(char) = service.heating_threshold_temperature.as_mut() {
-        char.set_value(status.target_heating_temperature.get_f32().into())
+        char.set_value(status.temperature.heating.get_f32().into())
             .await?;
-        if let Some(constraints) = ValueConstraints::from_item(&status.target_heating_temperature) {
+        if let Some(constraints) = ValueConstraints::from_item(&status.temperature.heating) {
             char.set_step_value(Some(constraints.step.into()))?;
             char.set_min_value(Some(constraints.min.into()))?;
             char.set_max_value(Some(constraints.max.into()))?;
@@ -103,9 +103,9 @@ async fn set_initial_value(
     }
 
     if let Some(char) = service.cooling_threshold_temperature.as_mut() {
-        char.set_value(status.target_cooling_temperature.get_f32().into())
+        char.set_value(status.temperature.cooling.get_f32().into())
             .await?;
-        if let Some(constraints) = ValueConstraints::from_item(&status.target_cooling_temperature) {
+        if let Some(constraints) = ValueConstraints::from_item(&status.temperature.cooling) {
             char.set_step_value(Some(constraints.step.into()))?;
             char.set_min_value(Some(constraints.min.into()))?;
             char.set_max_value(Some(constraints.max.into()))?;
@@ -113,7 +113,7 @@ async fn set_initial_value(
     }
 
     if let Some(char) = service.rotation_speed.as_mut() {
-        char.set_value(fan_mapping::speed_to_scale(status.wind_speed.get_enum()).into())
+        char.set_value(fan_mapping::speed_to_scale(status.wind.speed.get_enum()).into())
             .await?;
         let fan_constraints = fan_mapping::fan_speed_constraints();
         char.set_step_value(Some(json!(fan_constraints.step)))?;
@@ -123,7 +123,7 @@ async fn set_initial_value(
 
     if let Some(char) = service.swing_mode.as_mut() {
         char.set_value(
-            Some(swing::to_enabled(status.vertical_wind_direction.get_enum()) as i32).into(),
+            Some(swing::to_enabled(status.wind.vertical_direction.get_enum()) as i32).into(),
         )
         .await?;
     }
@@ -235,7 +235,7 @@ pub fn setup_current_temperature(
         async move {
             debug!("current_temperature read");
             let status = dk.get_status().await?;
-            Ok(status.current_temperature.get_f32())
+            Ok(status.sensors.temperature.get_f32())
         }
         .boxed()
     }));
@@ -251,7 +251,7 @@ pub fn setup_heating_threshold_temperature(
         async move {
             debug!("heating_threshold_temperature read");
             let status = dk.get_status().await?;
-            Ok(status.target_heating_temperature.get_f32())
+            Ok(status.temperature.heating.get_f32())
         }
         .boxed()
     }));
@@ -280,7 +280,7 @@ pub fn setup_cooling_threshold_temperature(
         async move {
             debug!("cooling_threshold_temperature read");
             let status = dk.get_status().await?;
-            Ok(status.target_cooling_temperature.get_f32())
+            Ok(status.temperature.cooling.get_f32())
         }
         .boxed()
     }));
@@ -306,7 +306,7 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             debug!("rotation_speed read");
             let status = dk.get_status().await?;
-            Ok(fan_mapping::speed_to_scale(status.wind_speed.get_enum()))
+            Ok(fan_mapping::speed_to_scale(status.wind.speed.get_enum()))
         }
         .boxed()
     }));
@@ -317,9 +317,13 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             update_assert_ne!("rotation_speed", cur, new);
             let mut status = dk.get_status().await?;
-            status.wind_speed.set_value(fan_mapping::scale_to_speed(new));
             status
-                .automode_wind_speed
+                .wind
+                .speed
+                .set_value(fan_mapping::scale_to_speed(new));
+            status
+                .wind
+                .automode_speed
                 .set_value(fan_mapping::scale_to_auto_mode(new));
             dk.update(status).await?;
             Ok(())
@@ -335,7 +339,7 @@ pub fn setup_swing_mode(daikin: Daikin<ReqwestClient>, char: &mut SwingModeChara
         async move {
             debug!("swing_mode read");
             let status = dk.get_status().await?;
-            let enabled = swing::to_enabled(status.vertical_wind_direction.get_enum());
+            let enabled = swing::to_enabled(status.wind.vertical_direction.get_enum());
             Ok(Some(enabled as u8))
         }
         .boxed()
@@ -348,8 +352,8 @@ pub fn setup_swing_mode(daikin: Daikin<ReqwestClient>, char: &mut SwingModeChara
             update_assert_ne!("swing_mode", cur, new);
             let mut status = dk.get_status().await?;
             let (vertical, horizontal) = swing::from_enabled(new != 0);
-            status.vertical_wind_direction.set_value(vertical);
-            status.horizontal_wind_direction.set_value(horizontal);
+            status.wind.vertical_direction.set_value(vertical);
+            status.wind.horizontal_direction.set_value(horizontal);
             dk.update(status).await?;
             Ok(())
         }
