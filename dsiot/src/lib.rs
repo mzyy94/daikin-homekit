@@ -9,6 +9,8 @@ pub mod request;
 pub mod response;
 pub mod state;
 pub mod status;
+pub mod temperature;
 
 pub use constraints::ValueConstraints;
 pub use state::{DeviceState, PowerState, StateTransition, StateTransitionError};
+pub use temperature::{TemperatureError, TemperatureTarget};

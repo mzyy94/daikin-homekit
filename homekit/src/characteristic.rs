@@ -4,7 +4,7 @@ use dsiot::daikin::Daikin;
 use dsiot::mapping::{mode, swing};
 use dsiot::property::{Binary, Metadata};
 use dsiot::status::DaikinStatus;
-use dsiot::{PowerState, StateTransition, ValueConstraints};
+use dsiot::{PowerState, StateTransition, TemperatureTarget, ValueConstraints};
 use futures::prelude::*;
 use hap::characteristic::{
     AsyncCharacteristicCallbacks, HapCharacteristic, active::ActiveCharacteristic,
@@ -261,7 +261,7 @@ pub fn setup_heating_threshold_temperature(
         async move {
             update_assert_ne!("heating_threshold_temperature", cur, new);
             let mut status = dk.get_status().await?;
-            status.target_heating_temperature.set_value(new);
+            TemperatureTarget::heating(new).apply_to_status(&mut status);
             dk.update(status).await?;
             Ok(())
         }
@@ -290,7 +290,7 @@ pub fn setup_cooling_threshold_temperature(
         async move {
             update_assert_ne!("cooling_threshold_temperature", cur, new);
             let mut status = dk.get_status().await?;
-            status.target_cooling_temperature.set_value(new);
+            TemperatureTarget::cooling(new).apply_to_status(&mut status);
             dk.update(status).await?;
             Ok(())
         }
