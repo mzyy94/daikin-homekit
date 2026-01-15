@@ -11,7 +11,7 @@ use std::time::Instant;
 
 #[allow(async_fn_in_trait)]
 pub trait HttpClient {
-    async fn send_request(&self, url: String, payload: Value) -> anyhow::Result<Value>;
+    async fn send_request(&self, url: &str, payload: Value) -> anyhow::Result<Value>;
 }
 
 struct Cache {
@@ -78,10 +78,7 @@ impl<H: HttpClient> Daikin<H> {
             }
         ]});
 
-        let body = self
-            .client
-            .send_request(self.endpoint.clone(), payload)
-            .await?;
+        let body = self.client.send_request(&self.endpoint, payload).await?;
         let status: DaikinStatus = serde_json::from_value::<DaikinResponse>(body)?.into();
 
         let mut cache = self.cache.write().await;
@@ -102,24 +99,16 @@ impl<H: HttpClient> Daikin<H> {
             }
         ]});
 
-        let body = self
-            .client
-            .send_request(self.endpoint.clone(), payload)
-            .await?;
+        let body = self.client.send_request(&self.endpoint, payload).await?;
         let info: DaikinInfo = serde_json::from_value::<DaikinResponse>(body)?.into();
 
         Ok(info)
     }
 
     pub async fn update(&self, status: DaikinStatus) -> anyhow::Result<()> {
-        let request: DaikinRequest = status.clone().into();
-        let payload = serde_json::to_value(request)?;
-        let _ = self
-            .client
-            .send_request(self.endpoint.clone(), payload)
-            .await?;
+        let payload = serde_json::to_value(DaikinRequest::from(status.clone()))?;
+        self.client.send_request(&self.endpoint, payload).await?;
         self.cache.write().await.update(status);
-
         Ok(())
     }
 }

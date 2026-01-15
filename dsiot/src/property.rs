@@ -33,9 +33,13 @@ pub struct Item<T: Sized + DeserializeOwned + Into<f32> = f32> {
 impl<T: Sized + DeserializeOwned + Into<f32>> std::fmt::Debug for Item<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Item {{ name: {:?}, ", self.name)?;
-        match self.metadata {
+        match &self.metadata {
             Metadata::Binary(Binary::Step(..)) => {
-                write!(f, "value: {:?}", self.get_f32().unwrap())
+                if let Some(v) = self.get_f32() {
+                    write!(f, "value: {v:?}")
+                } else {
+                    write!(f, "value: {:?}", self.value)
+                }
             }
             Metadata::Binary(Binary::String { .. }) => {
                 write!(f, "value: {:?}", self.get_string())
@@ -48,16 +52,18 @@ impl<T: Sized + DeserializeOwned + Into<f32>> std::fmt::Debug for Item<T> {
     }
 }
 
-fn hex2int(hex: &String) -> i32 {
+fn hex2int(hex: &str) -> i32 {
     let size = hex.len();
-    if size > 8 {
+    if size > 8 || size % 2 != 0 {
         return 0;
     }
     let mut bytes = [0u8; 4];
-    hex::decode_to_slice(hex, &mut bytes[0..hex.len() / 2]).unwrap();
+    if hex::decode_to_slice(hex, &mut bytes[0..size / 2]).is_err() {
+        return 0;
+    }
     match size {
-        2 => i8::from_le_bytes(bytes[0..1].try_into().unwrap()) as i32,
-        4 => i16::from_le_bytes(bytes[0..2].try_into().unwrap()) as i32,
+        2 => i8::from_le_bytes([bytes[0]]) as i32,
+        4 => i16::from_le_bytes([bytes[0], bytes[1]]) as i32,
         6 | 8 => i32::from_le_bytes(bytes),
         _ => 0,
     }
@@ -139,7 +145,7 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
     pub fn set_value(&mut self, value: T) {
         match &self.metadata {
             Metadata::Integer => self.value = PropValue::Integer(value.into() as i32),
-            Metadata::String => todo!(), // self.value = PropValue::String(value.to_string()),
+            Metadata::String => {} // String metadata does not support numeric value conversion
             Metadata::Binary(Binary::Step(step)) => {
                 let value = (value.into() / step.step()) as i64;
                 let bytes = value.to_le_bytes();

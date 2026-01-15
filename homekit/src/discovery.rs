@@ -36,7 +36,13 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
         );
     }
 
-    let ipv4_addr = nis[0].addr.iter().find(|a| a.ip().is_ipv4()).unwrap();
+    // Safe: filter above guarantees at least one IPv4 address exists
+    let Some(ipv4_addr) = nis[0].addr.iter().find(|a| a.ip().is_ipv4()) else {
+        return (
+            IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
+            IpAddr::V4(Ipv4Addr::new(255, 255, 255, 255)),
+        );
+    };
     (
         ipv4_addr.ip(),
         ipv4_addr
@@ -82,7 +88,10 @@ pub async fn discovery(
 
 
             let daikin = Daikin::new(*src_addr.ip(), ReqwestClient::try_new()?);
-            let info = serde_qs::from_str::<DaikinInfo>(&text.replace(",", "&")).unwrap();
+            let Ok(info) = serde_qs::from_str::<DaikinInfo>(&text.replace(',', "&")) else {
+                warn!("Failed to parse device info from {}", src_addr.ip());
+                continue;
+            };
 
             info!(
                 "found daikin device at {}: {}",

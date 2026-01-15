@@ -81,20 +81,19 @@ impl From<DaikinResponse> for DaikinStatus {
     }
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<DaikinRequest> for DaikinStatus {
-    fn into(self) -> DaikinRequest {
+impl From<DaikinStatus> for DaikinRequest {
+    fn from(status: DaikinStatus) -> Self {
         let mut prop = Property::new_tree("dgc_status");
 
-        set_child_prop!({ prop }.e_1002.e_A002.p_01 = self.power);
-        set_child_prop!({ prop }.e_1002.e_3001.p_01 = self.mode);
-        set_child_prop!({ prop }.e_1002.e_3001.p_02 = self.temperature.cooling);
-        set_child_prop!({ prop }.e_1002.e_3001.p_03 = self.temperature.heating);
-        set_child_prop!({ prop }.e_1002.e_3001.p_1F = self.temperature.automatic);
-        set_child_prop!({ prop }.e_1002.e_3001.p_09 = self.wind.speed);
-        set_child_prop!({ prop }.e_1002.e_3001.p_26 = self.wind.automode_speed);
-        set_child_prop!({ prop }.e_1002.e_3001.p_05 = self.wind.vertical_direction);
-        set_child_prop!({ prop }.e_1002.e_3001.p_06 = self.wind.horizontal_direction);
+        set_child_prop!({ prop }.e_1002.e_A002.p_01 = status.power);
+        set_child_prop!({ prop }.e_1002.e_3001.p_01 = status.mode);
+        set_child_prop!({ prop }.e_1002.e_3001.p_02 = status.temperature.cooling);
+        set_child_prop!({ prop }.e_1002.e_3001.p_03 = status.temperature.heating);
+        set_child_prop!({ prop }.e_1002.e_3001.p_1F = status.temperature.automatic);
+        set_child_prop!({ prop }.e_1002.e_3001.p_09 = status.wind.speed);
+        set_child_prop!({ prop }.e_1002.e_3001.p_26 = status.wind.automode_speed);
+        set_child_prop!({ prop }.e_1002.e_3001.p_05 = status.wind.vertical_direction);
+        set_child_prop!({ prop }.e_1002.e_3001.p_06 = status.wind.horizontal_direction);
 
         DaikinRequest {
             requests: vec![Request {
@@ -106,7 +105,7 @@ impl Into<DaikinRequest> for DaikinStatus {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum Mode {
     Fan = 0,
@@ -124,7 +123,7 @@ impl From<Mode> for f32 {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum WindSpeed {
     Silent = 0x0B,
@@ -144,7 +143,7 @@ impl From<WindSpeed> for f32 {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum AutoModeWindSpeed {
     Silent = 0x0B,
@@ -159,7 +158,7 @@ impl From<AutoModeWindSpeed> for f32 {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum VerticalDirection {
     TopMost = 0x01,
@@ -182,7 +181,7 @@ impl From<VerticalDirection> for f32 {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum HorizontalDirection {
     LeftMost = 0x02,

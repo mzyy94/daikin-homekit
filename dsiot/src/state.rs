@@ -84,7 +84,7 @@ impl DeviceState {
         new_mode: Option<Mode>,
     ) -> Result<DeviceState, StateTransitionError> {
         let target_power = new_power.unwrap_or(self.power);
-        let target_mode = new_mode.unwrap_or_else(|| self.mode.clone());
+        let target_mode = new_mode.unwrap_or(self.mode);
 
         Ok(DeviceState {
             power: target_power,
@@ -95,7 +95,7 @@ impl DeviceState {
     /// Apply this state to a DaikinStatus.
     pub fn apply_to_status(&self, status: &mut DaikinStatus) {
         status.power.set_value(self.power.to_f32());
-        status.mode.set_value(self.mode.clone());
+        status.mode.set_value(self.mode);
     }
 }
 
@@ -139,7 +139,7 @@ impl StateTransition {
 
     /// Apply transition to current state.
     pub fn apply(&self, current: &DeviceState) -> Result<DeviceState, StateTransitionError> {
-        current.transition(self.power, self.mode.clone())
+        current.transition(self.power, self.mode)
     }
 
     /// Apply transition directly to DaikinStatus.

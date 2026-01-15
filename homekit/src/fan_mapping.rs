@@ -110,7 +110,7 @@ mod tests {
             WindSpeed::Auto,
         ];
         for speed in speeds {
-            let scale = speed_to_scale(Some(speed.clone())).unwrap();
+            let scale = speed_to_scale(Some(speed)).unwrap();
             assert_eq!(scale_to_speed(scale), speed);
         }
     }

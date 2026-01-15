@@ -20,8 +20,8 @@ impl ReqwestClient {
 }
 
 impl HttpClient for ReqwestClient {
-    async fn send_request(&self, url: String, payload: Value) -> anyhow::Result<Value> {
-        let response = self.client.post(&url).json(&payload).send().await?;
+    async fn send_request(&self, url: &str, payload: Value) -> anyhow::Result<Value> {
+        let response = self.client.post(url).json(&payload).send().await?;
         let body = response.json().await?;
         Ok(body)
     }

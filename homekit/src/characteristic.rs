@@ -27,7 +27,7 @@ pub async fn setup_characteristic(
 
     if status.wind.speed.get_enum().is_none()
         || matches!(
-            status.clone().wind.speed.metadata,
+            &status.wind.speed.metadata,
             Metadata::Binary(Binary::Enum { max }) if max != "F80C"
         )
     {
@@ -36,7 +36,7 @@ pub async fn setup_characteristic(
     }
 
     if status.wind.vertical_direction.get_enum().is_none()
-        || matches!( status.clone().wind.vertical_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
+        || matches!(&status.wind.vertical_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
     {
         info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
         service.swing_mode = None;
@@ -55,14 +55,12 @@ fn setup_characteristic_callback(daikin: Daikin<ReqwestClient>, service: &mut He
     setup_current_heater_cooler_state(daikin.clone(), &mut service.current_heater_cooler_state);
     setup_target_heater_cooler_state(daikin.clone(), &mut service.target_heater_cooler_state);
     setup_current_temperature(daikin.clone(), &mut service.current_temperature);
-    setup_heating_threshold_temperature(
-        daikin.clone(),
-        service.heating_threshold_temperature.as_mut().unwrap(),
-    );
-    setup_cooling_threshold_temperature(
-        daikin.clone(),
-        service.cooling_threshold_temperature.as_mut().unwrap(),
-    );
+    if let Some(char) = service.heating_threshold_temperature.as_mut() {
+        setup_heating_threshold_temperature(daikin.clone(), char);
+    }
+    if let Some(char) = service.cooling_threshold_temperature.as_mut() {
+        setup_cooling_threshold_temperature(daikin.clone(), char);
+    }
     if let Some(char) = service.rotation_speed.as_mut() {
         setup_rotation_speed(daikin.clone(), char);
     }

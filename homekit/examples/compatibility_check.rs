@@ -1,7 +1,7 @@
 use clap::Parser;
 use daikin_homekit::client::ReqwestClient;
 use dsiot::daikin::Daikin;
-use dsiot::property::{Binary, Item, Metadata};
+use dsiot::property::{Binary, Metadata};
 use std::net::Ipv4Addr;
 
 #[derive(Parser)]
@@ -67,11 +67,8 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
     };
     println!("✅ Request API: available");
     println!("✅ Status API: available");
-    match status.power.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Step(step)),
-            ..
-        } => {
+    match &status.power.metadata {
+        Metadata::Binary(Binary::Step(step)) => {
             println!(
                 "ℹ️  Power Status: {:?} ({:?}) / {}",
                 status.power.get_f32(),
@@ -79,16 +76,13 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
                 step.step()
             );
         }
-        v => {
-            println!("❌ Power Status: {v:?} - invalid data");
+        _ => {
+            println!("❌ Power Status: {:?} - invalid data", status.power);
             return Ok(());
         }
     }
-    match status.sensors.temperature.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Step(step)),
-            ..
-        } => {
+    match &status.sensors.temperature.metadata {
+        Metadata::Binary(Binary::Step(step)) => {
             println!(
                 "ℹ️  Current temperature: {:?} ({:?}) / {}",
                 status.sensors.temperature.get_f32(),
@@ -96,28 +90,25 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
                 step.step()
             );
         }
-        v => {
-            println!("❌ Current temperature: {v:?} - invalid data");
+        _ => {
+            println!(
+                "❌ Current temperature: {:?} - invalid data",
+                status.sensors.temperature
+            );
             return Ok(());
         }
     }
-    match status.mode.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Enum { max }),
-            ..
-        } if max == "2F00" => {
+    match &status.mode.metadata {
+        Metadata::Binary(Binary::Enum { max }) if max == "2F00" => {
             println!("ℹ️  Mode: {:?} [{}]", status.mode.get_enum(), max);
         }
-        v => {
-            println!("❌ Mode: {v:?} - invalid data");
+        _ => {
+            println!("❌ Mode: {:?} - invalid data", status.mode);
             return Ok(());
         }
     }
-    match status.temperature.cooling.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Step(step)),
-            ..
-        } => {
+    match &status.temperature.cooling.metadata {
+        Metadata::Binary(Binary::Step(step)) => {
             println!(
                 "ℹ️  Target Cooling Temperature: {:?} ({:?}) / {:?}",
                 status.temperature.cooling.get_f32(),
@@ -125,16 +116,16 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
                 step.step()
             );
         }
-        v => {
-            println!("❌ Target Cooling Temperature: {v:?} - invalid data");
+        _ => {
+            println!(
+                "❌ Target Cooling Temperature: {:?} - invalid data",
+                status.temperature.cooling
+            );
             return Ok(());
         }
     }
-    match status.temperature.heating.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Step(step)),
-            ..
-        } => {
+    match &status.temperature.heating.metadata {
+        Metadata::Binary(Binary::Step(step)) => {
             println!(
                 "ℹ️  Target Heating Temperature: {:?} ({:?}) / {:?}",
                 status.temperature.heating.get_f32(),
@@ -142,59 +133,59 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
                 step.step()
             );
         }
-        v => {
-            println!("❌ Target Heating Temperature: {v:?} - invalid data");
+        _ => {
+            println!(
+                "❌ Target Heating Temperature: {:?} - invalid data",
+                status.temperature.heating
+            );
             return Ok(());
         }
     }
 
     let mut warn = false;
 
-    match status.wind.speed.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Enum { max }),
-            ..
-        } if max == "F80C" => {
+    match &status.wind.speed.metadata {
+        Metadata::Binary(Binary::Enum { max }) if max == "F80C" => {
             println!(
                 "ℹ️  Wind Speed: {:?} [{}]",
                 status.wind.speed.get_enum(),
                 max
             );
         }
-        v => {
-            println!("⚠️  Wind Speed: {v:?} - invalid data");
+        _ => {
+            println!("⚠️  Wind Speed: {:?} - invalid data", status.wind.speed);
             warn = true;
         }
     }
-    match status.wind.vertical_direction.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Enum { max }),
-            ..
-        } if max == "3F808100" => {
+    match &status.wind.vertical_direction.metadata {
+        Metadata::Binary(Binary::Enum { max }) if max == "3F808100" => {
             println!(
                 "ℹ️  Vertical Wind Direction: {:?} [{}]",
                 status.wind.vertical_direction.get_enum(),
                 max
             );
         }
-        v => {
-            println!("⚠️  Vertical Wind Direction: {v:?} - invalid data");
+        _ => {
+            println!(
+                "⚠️  Vertical Wind Direction: {:?} - invalid data",
+                status.wind.vertical_direction
+            );
             warn = true;
         }
     }
-    match status.wind.horizontal_direction.clone() {
-        Item {
-            metadata: Metadata::Binary(Binary::Enum { max }),
-            ..
-        } if max == "FD8101" => {
+    match &status.wind.horizontal_direction.metadata {
+        Metadata::Binary(Binary::Enum { max }) if max == "FD8101" => {
             println!(
                 "ℹ️  Horizontal Wind Direction: {:?} [{}]",
                 status.wind.horizontal_direction.get_enum(),
                 max
             );
         }
-        v => {
-            println!("⚠️  Horizontal Wind Direction: {v:?} - invalid data");
+        _ => {
+            println!(
+                "⚠️  Horizontal Wind Direction: {:?} - invalid data",
+                status.wind.horizontal_direction
+            );
             warn = true;
         }
     }
