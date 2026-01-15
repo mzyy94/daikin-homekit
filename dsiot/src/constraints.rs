@@ -82,5 +82,4 @@ mod tests {
         let metadata = Metadata::Integer;
         assert!(ValueConstraints::from_metadata(&metadata).is_none());
     }
-
 }

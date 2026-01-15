@@ -165,15 +165,42 @@ mod tests {
 
         #[test]
         fn test_fan_speed_to_speed() {
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(0)), WindSpeed::Silent);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(9)), WindSpeed::Silent);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(10)), WindSpeed::Lev1);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(29)), WindSpeed::Lev1);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(30)), WindSpeed::Lev2);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(50)), WindSpeed::Lev3);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(70)), WindSpeed::Lev4);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(90)), WindSpeed::Lev5);
-            assert_eq!(fan::fan_speed_to_speed(&FanSpeed::manual(100)), WindSpeed::Lev5);
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(0)),
+                WindSpeed::Silent
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(9)),
+                WindSpeed::Silent
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(10)),
+                WindSpeed::Lev1
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(29)),
+                WindSpeed::Lev1
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(30)),
+                WindSpeed::Lev2
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(50)),
+                WindSpeed::Lev3
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(70)),
+                WindSpeed::Lev4
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(90)),
+                WindSpeed::Lev5
+            );
+            assert_eq!(
+                fan::fan_speed_to_speed(&FanSpeed::manual(100)),
+                WindSpeed::Lev5
+            );
             assert_eq!(fan::fan_speed_to_speed(&FanSpeed::auto()), WindSpeed::Auto);
         }
 
