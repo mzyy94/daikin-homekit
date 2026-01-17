@@ -4,7 +4,7 @@
 //! from Daikin's binary protocol metadata, enabling protocol-agnostic
 //! constraint propagation to smart home platforms.
 
-use crate::property::{Binary, Item, Metadata};
+use crate::protocol::property::{Binary, Item, Metadata};
 use serde::de::DeserializeOwned;
 
 /// Value constraints for a numeric property.

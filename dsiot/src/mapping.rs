@@ -3,7 +3,7 @@
 //! These functions convert between Daikin-specific enum values and
 //! generic representations suitable for various smart home protocols.
 
-use crate::status::{AutoModeWindSpeed, HorizontalDirection, VerticalDirection, WindSpeed};
+use crate::types::{AutoModeWindSpeed, HorizontalDirection, VerticalDirection, WindSpeed};
 
 /// Fan speed mapping functions.
 ///

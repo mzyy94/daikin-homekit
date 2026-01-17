@@ -3,7 +3,8 @@
 //! This module provides type-safe state transitions for power and mode control,
 //! ensuring invalid state combinations are prevented at compile time or runtime.
 
-use crate::status::{DaikinStatus, Mode};
+use crate::protocol::status::DaikinStatus;
+use crate::types::Mode;
 
 /// Represents the device's power state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

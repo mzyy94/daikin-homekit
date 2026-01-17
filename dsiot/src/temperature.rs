@@ -3,7 +3,8 @@
 //! This module provides type-safe temperature handling that ensures
 //! temperatures are applied correctly based on the current operating mode.
 
-use crate::status::{DaikinStatus, Mode};
+use crate::protocol::status::DaikinStatus;
+use crate::types::Mode;
 
 /// Represents valid temperature targets for a given mode.
 #[derive(Debug, Clone, PartialEq)]

@@ -1,4 +1,4 @@
-use crate::response::DaikinResponse;
+use super::response::DaikinResponse;
 use serde::{Deserialize, Deserializer, de};
 
 #[derive(Deserialize, Debug, Clone)]
@@ -52,8 +52,8 @@ mod tests {
 
     #[test]
     fn getter() {
-        let res: DaikinResponse =
-            serde_json::from_str(include_str!("./fixtures/info.json")).expect("Invalid JSON file.");
+        let res: DaikinResponse = serde_json::from_str(include_str!("../fixtures/info.json"))
+            .expect("Invalid JSON file.");
         let info: DaikinInfo = res.into();
 
         assert_eq!(info.name, "display_name");

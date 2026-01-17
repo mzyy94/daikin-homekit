@@ -1,10 +1,7 @@
-use crate::request::DaikinRequest;
-use crate::response::DaikinResponse;
-use crate::{
-    property::{Item, Property},
-    request::Request,
-};
-use serde_repr::{Deserialize_repr, Serialize_repr};
+use super::property::{Item, Property};
+use super::request::{DaikinRequest, Request};
+use super::response::DaikinResponse;
+use crate::types::{AutoModeWindSpeed, HorizontalDirection, Mode, VerticalDirection, WindSpeed};
 
 /// Sensor readings from the device (read-only values).
 #[derive(Clone, Debug)]
@@ -105,112 +102,13 @@ impl From<DaikinStatus> for DaikinRequest {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
-#[repr(u8)]
-pub enum Mode {
-    Fan = 0,
-    Heating = 1,
-    Cooling = 2,
-    Auto = 3,
-    Dehumidify = 5,
-
-    Unknown = 255,
-}
-
-impl From<Mode> for f32 {
-    fn from(val: Mode) -> Self {
-        val as u8 as f32
-    }
-}
-
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
-#[repr(u8)]
-pub enum WindSpeed {
-    Silent = 0x0B,
-    Lev1 = 0x03,
-    Lev2 = 0x04,
-    Lev3 = 0x05,
-    Lev4 = 0x06,
-    Lev5 = 0x07,
-    Auto = 0x0A,
-
-    Unknown = 0xFF,
-}
-
-impl From<WindSpeed> for f32 {
-    fn from(val: WindSpeed) -> Self {
-        val as u8 as f32
-    }
-}
-
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
-#[repr(u8)]
-pub enum AutoModeWindSpeed {
-    Silent = 0x0B,
-    Auto = 0x0A,
-
-    Unknown = 0xFF,
-}
-
-impl From<AutoModeWindSpeed> for f32 {
-    fn from(val: AutoModeWindSpeed) -> Self {
-        val as u8 as f32
-    }
-}
-
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
-#[repr(u8)]
-pub enum VerticalDirection {
-    TopMost = 0x01,
-    Top = 0x02,
-    Center = 0x03,
-    Bottom = 0x04,
-    BottomMost = 0x05,
-
-    Swing = 0x0F,
-    Auto = 0x10,
-
-    Nice = 0x17,
-
-    Unknown = 0xFF,
-}
-
-impl From<VerticalDirection> for f32 {
-    fn from(val: VerticalDirection) -> Self {
-        val as u8 as f32
-    }
-}
-
-#[derive(Serialize_repr, Deserialize_repr, Debug, PartialEq, Eq, Clone, Copy)]
-#[repr(u8)]
-pub enum HorizontalDirection {
-    LeftMost = 0x02,
-    Left = 0x03,
-    LeftCenter = 0x04,
-    Center = 0x05,
-    RightCenter = 0x06,
-    Right = 0x07,
-    RightMost = 0x08,
-
-    Swing = 0x0F,
-    Auto = 0x10,
-
-    Unknown = 0xFF,
-}
-
-impl From<HorizontalDirection> for f32 {
-    fn from(val: HorizontalDirection) -> Self {
-        val as u8 as f32
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn getter() {
-        let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
+        let res: DaikinResponse = serde_json::from_str(include_str!("../fixtures/status.json"))
             .expect("Invalid JSON file.");
         let status: DaikinStatus = res.into();
 
@@ -245,7 +143,7 @@ mod tests {
 
     #[test]
     fn setter() {
-        let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
+        let res: DaikinResponse = serde_json::from_str(include_str!("../fixtures/status.json"))
             .expect("Invalid JSON file.");
         let mut status: DaikinStatus = res.into();
 
@@ -272,7 +170,7 @@ mod tests {
         let json = serde_json::to_value(req).unwrap();
         assert_eq!(
             json,
-            serde_json::from_str::<serde_json::Value>(include_str!("./fixtures/update.json"))
+            serde_json::from_str::<serde_json::Value>(include_str!("../fixtures/update.json"))
                 .unwrap()
         );
     }

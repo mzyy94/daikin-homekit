@@ -1,18 +1,18 @@
 macro_rules! set_child_prop {
     ( $p:tt . $name:ident = $item:expr) => {
         match $p {
-            crate::property::Property::Tree{ children, ..} => {
+            crate::protocol::property::Property::Tree{ children, ..} => {
                 let found = children.iter_mut().find(|p| match p {
-                    crate::property::Property::Tree { name, .. } => name == stringify!($name),
-                    crate::property::Property::Node(crate::property::Item { name, .. }) => name == stringify!($name),
+                    crate::protocol::property::Property::Tree { name, .. } => name == stringify!($name),
+                    crate::protocol::property::Property::Node(crate::protocol::property::Item { name, .. }) => name == stringify!($name),
                 });
-                if let Some(crate::property::Property::Node(crate::property::Item { value, .. })) = found {
+                if let Some(crate::protocol::property::Property::Node(crate::protocol::property::Item { value, .. })) = found {
                     *value = $item.value;
                 } else {
-                    let pp = crate::property::Property::Node(crate::property::Item {
+                    let pp = crate::protocol::property::Property::Node(crate::protocol::property::Item {
                         name: $item.name.to_string(),
                         value: $item.value,
-                        metadata: crate::property::Metadata::Undefined,
+                        metadata: crate::protocol::property::Metadata::Undefined,
                         phantom: std::marker::PhantomData,
                     });
                     children.push(pp);
@@ -28,7 +28,7 @@ macro_rules! set_child_prop {
                 match $p.find_mut(stringify!($name)) {
                     Some(property) => property,
                     None => {
-                        let pp = crate::property::Property::new_tree(stringify!($name));
+                        let pp = crate::protocol::property::Property::new_tree(stringify!($name));
                         $p.push(pp);
                         $p.find_mut(stringify!($name)).unwrap()
                     }
@@ -41,24 +41,24 @@ macro_rules! set_child_prop {
 macro_rules! get_child_prop {
     ({ $popt:expr }) => {
         match $popt {
-            Some(crate::property::Property::Node( item )) => {
-                crate::property::Item {
+            Some(crate::protocol::property::Property::Node( item )) => {
+                crate::protocol::property::Item {
                     name: item.name.clone(),
                     value: item.value.clone(),
                     metadata: item.metadata.clone(),
                     phantom: std::marker::PhantomData,
                 }
             },
-            _ => crate::property::Item {
+            _ => crate::protocol::property::Item {
                 name: String::new(),
-                value: crate::property::PropValue::Null,
-                metadata: crate::property::Metadata::Undefined,
+                value: crate::protocol::property::PropValue::Null,
+                metadata: crate::protocol::property::Metadata::Undefined,
                 phantom: std::marker::PhantomData,
             }
         }
     };
     ({ $popt:expr } .to_string()) => {{
-        let Some(crate::property::Property::Node( item )) = $popt else {
+        let Some(crate::protocol::property::Property::Node( item )) = $popt else {
             panic!("Expected a Property::Node, but got something else.");
         };
         item.get_string()
@@ -80,13 +80,13 @@ macro_rules! get_prop {
 
 #[cfg(test)]
 mod tests {
-    use crate::property::{Item, PropValue};
-    use crate::request::{DaikinRequest, Request};
-    use crate::response::DaikinResponse;
+    use crate::protocol::property::{Item, PropValue};
+    use crate::protocol::request::{DaikinRequest, Request};
+    use crate::protocol::response::DaikinResponse;
 
     #[test]
     fn get_prop() {
-        let res: DaikinResponse = serde_json::from_str(include_str!("./fixtures/status.json"))
+        let res: DaikinResponse = serde_json::from_str(include_str!("../fixtures/status.json"))
             .expect("Invalid JSON file.");
 
         let p: Item = get_prop!(res."/dsiot/edge/adr_0100.dgc_status".e_1002.e_A001.p_03);

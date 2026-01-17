@@ -1,4 +1,4 @@
-use crate::property::Property;
+use super::property::Property;
 use serde::{Deserialize, Deserializer, de};
 
 #[derive(Deserialize, Debug, Clone)]
