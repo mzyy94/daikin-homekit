@@ -18,9 +18,9 @@ pub use types::{AutoModeWindSpeed, HorizontalDirection, Mode, VerticalDirection,
 
 // Re-export protocol types for backward compatibility
 pub use protocol::{
-    AutoModeWindSettings, Binary, BinaryStep, DaikinInfo, DaikinRequest, DaikinResponse,
-    DaikinStatus, FanModeWindSettings, Item, Metadata, ModeWindSettings, PropValue, Property,
-    SensorReadings, TemperatureSettings, WindSettings,
+    AutoModeWindSettings, Binary, BinaryEnum, BinaryStep, DaikinInfo, DaikinRequest,
+    DaikinResponse, DaikinStatus, FanModeWindSettings, Item, Metadata, ModeWindSettings, PropValue,
+    Property, SensorReadings, TemperatureSettings, WindSettings,
 };
 
 // Legacy module aliases for backward compatibility

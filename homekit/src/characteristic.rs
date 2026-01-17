@@ -27,7 +27,7 @@ pub async fn setup_characteristic(
     if status.wind.cooling.speed.get_enum().is_none()
         || matches!(
             &status.wind.cooling.speed.metadata,
-            Metadata::Binary(Binary::Enum { max }) if max != "F80C"
+            Metadata::Binary(Binary::Enum(e)) if e.max != "F80C"
         )
     {
         info!("wind_speed is not compatible. remove rotation_speed characteristic");
@@ -36,7 +36,7 @@ pub async fn setup_characteristic(
 
     // Check cooling mode vertical direction compatibility
     if status.wind.cooling.vertical_direction.get_enum().is_none()
-        || matches!(&status.wind.cooling.vertical_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
+        || matches!(&status.wind.cooling.vertical_direction.metadata, Metadata::Binary(Binary::Enum(e)) if e.max != "3F808100")
     {
         info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
         service.swing_mode = None;

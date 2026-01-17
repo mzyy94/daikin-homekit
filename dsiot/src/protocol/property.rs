@@ -44,6 +44,13 @@ impl<T: Sized + DeserializeOwned + Into<f32>> std::fmt::Debug for Item<T> {
             Metadata::Binary(Binary::String { .. }) => {
                 write!(f, "value: {:?}", self.get_string())
             }
+            Metadata::Binary(Binary::Enum { .. }) => {
+                if let PropValue::String(pv) = &self.value {
+                    write!(f, "value: {:?}", hex2int(pv))
+                } else {
+                    write!(f, "value: {:?}", self.value)
+                }
+            }
             _ => {
                 write!(f, "value: {:?}", self.value)
             }
@@ -151,10 +158,10 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
                 let bytes = value.to_le_bytes();
                 self.value = PropValue::String(hex::encode(&bytes[..(step.max.len() / 2)]));
             }
-            Metadata::Binary(Binary::Enum { max }) => {
+            Metadata::Binary(Binary::Enum(e)) => {
                 let value = value.into() as i64;
                 let bytes = value.to_le_bytes();
-                self.value = PropValue::String(hex::encode(&bytes[..(max.len() / 2)]));
+                self.value = PropValue::String(hex::encode(&bytes[..(e.max.len() / 2)]));
             }
             _ => self.value = PropValue::Null,
         }
@@ -175,7 +182,7 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
         match self {
             Item {
                 value: PropValue::String(pv),
-                metadata: Metadata::Binary(Binary::Enum { .. }),
+                metadata: Metadata::Binary(Binary::Enum(_)),
                 ..
             } => {
                 let value = hex2int(pv);
@@ -243,11 +250,72 @@ pub enum Metadata {
 #[serde(untagged)]
 pub enum Binary {
     Step(BinaryStep),
-    Enum {
-        #[serde(rename = "mx")]
-        max: String,
-    },
+    Enum(BinaryEnum),
     String {},
+}
+
+/// Enum metadata with allowed values encoded as a bitmap.
+#[derive(Serialize, Deserialize, PartialEq, Clone)]
+pub struct BinaryEnum {
+    /// Bitmap of allowed values. Each bit position corresponds to an enum value.
+    /// Example: "2F00" allows values 0,1,2,3,5 (bits 0,1,2,3,5 are set).
+    #[serde(rename = "mx")]
+    pub max: String,
+}
+
+impl BinaryEnum {
+    /// Returns the raw max value as a hex string.
+    pub fn max(&self) -> &str {
+        &self.max
+    }
+
+    /// Returns a list of allowed enum values based on the bitmap.
+    ///
+    /// The bitmap encoding works as follows:
+    /// - Each byte represents 8 possible values
+    /// - Byte index = value / 8
+    /// - Bit position within byte = value % 8
+    /// - If the bit is set, the value is allowed
+    pub fn allowed_values(&self) -> Vec<u8> {
+        let bytes = match hex::decode(&self.max) {
+            Ok(b) => b,
+            Err(_) => return vec![],
+        };
+
+        let mut values = Vec::new();
+        for (byte_idx, &byte) in bytes.iter().enumerate() {
+            for bit in 0..8 {
+                if byte & (1 << bit) != 0 {
+                    let value = (byte_idx * 8 + bit) as u8;
+                    values.push(value);
+                }
+            }
+        }
+        values
+    }
+
+    /// Checks if a specific value is allowed by this enum.
+    pub fn is_allowed(&self, value: u8) -> bool {
+        let bytes = match hex::decode(&self.max) {
+            Ok(b) => b,
+            Err(_) => return false,
+        };
+
+        let byte_idx = (value / 8) as usize;
+        let bit_pos = value % 8;
+
+        if byte_idx >= bytes.len() {
+            return false;
+        }
+
+        bytes[byte_idx] & (1 << bit_pos) != 0
+    }
+}
+
+impl std::fmt::Debug for BinaryEnum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BinaryEnum {{ allowed: {:?} }}", self.allowed_values())
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
@@ -400,5 +468,58 @@ mod tests {
             format!("{p:?}"),
             r#"Tree { name: "e_A00D", children: [Node(Item { name: "p_01", value: 19.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })) })] }"#
         );
+    }
+
+    #[test]
+    fn binary_enum_allowed_values() {
+        // Mode enum: max="2F00" should allow 0,1,2,3,5 (Fan, Heating, Cooling, Auto, Dehumidify)
+        let e = BinaryEnum {
+            max: "2F00".to_string(),
+        };
+        assert_eq!(e.allowed_values(), vec![0, 1, 2, 3, 5]);
+        assert!(e.is_allowed(0)); // Fan
+        assert!(e.is_allowed(1)); // Heating
+        assert!(e.is_allowed(2)); // Cooling
+        assert!(e.is_allowed(3)); // Auto
+        assert!(!e.is_allowed(4)); // Not allowed
+        assert!(e.is_allowed(5)); // Dehumidify
+
+        // WindSpeed: max="F80C" should allow 3,4,5,6,7,10,11
+        let e = BinaryEnum {
+            max: "F80C".to_string(),
+        };
+        assert_eq!(e.allowed_values(), vec![3, 4, 5, 6, 7, 10, 11]);
+        assert!(!e.is_allowed(0));
+        assert!(e.is_allowed(3)); // Lev1
+        assert!(e.is_allowed(10)); // Auto
+        assert!(e.is_allowed(11)); // Silent
+
+        // AutoModeWindSpeed: max="000C" should allow only 10,11 (Auto, Silent)
+        let e = BinaryEnum {
+            max: "000C".to_string(),
+        };
+        assert_eq!(e.allowed_values(), vec![10, 11]);
+        assert!(!e.is_allowed(3));
+        assert!(e.is_allowed(10)); // Auto
+        assert!(e.is_allowed(11)); // Silent
+    }
+
+    #[test]
+    fn binary_enum_vertical_direction() {
+        // VerticalDirection: max="3F808100"
+        // Should allow: 1,2,3,4,5 (positions), 15 (Swing), 16 (Auto), 23 (Nice)
+        let e = BinaryEnum {
+            max: "3F808100".to_string(),
+        };
+        let allowed = e.allowed_values();
+        assert!(allowed.contains(&1)); // TopMost
+        assert!(allowed.contains(&2)); // Top
+        assert!(allowed.contains(&3)); // Center
+        assert!(allowed.contains(&4)); // Bottom
+        assert!(allowed.contains(&5)); // BottomMost
+        assert!(allowed.contains(&15)); // Swing (0x0F)
+        assert!(allowed.contains(&16)); // Auto (0x10)
+        assert!(allowed.contains(&23)); // Nice (0x17)
+        assert!(!allowed.contains(&6)); // Not allowed
     }
 }

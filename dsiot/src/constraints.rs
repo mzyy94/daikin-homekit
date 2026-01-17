@@ -70,9 +70,10 @@ mod tests {
 
     #[test]
     fn test_from_metadata_without_step() {
-        let metadata = Metadata::Binary(Binary::Enum {
+        use crate::property::BinaryEnum;
+        let metadata = Metadata::Binary(Binary::Enum(BinaryEnum {
             max: "FF".to_string(),
-        });
+        }));
 
         assert!(ValueConstraints::from_metadata(&metadata).is_none());
     }

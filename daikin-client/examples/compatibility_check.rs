@@ -98,8 +98,8 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match &status.mode.metadata {
-        Metadata::Binary(Binary::Enum { max }) if max == "2F00" => {
-            println!("ℹ️  Mode: {:?} [{}]", status.mode.get_enum(), max);
+        Metadata::Binary(Binary::Enum(e)) if e.max == "2F00" => {
+            println!("ℹ️  Mode: {:?} [{}]", status.mode.get_enum(), e.max);
         }
         _ => {
             println!("❌ Mode: {:?} - invalid data", status.mode);
@@ -145,11 +145,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
 
     // Check cooling mode wind settings (used as reference)
     match &status.wind.cooling.speed.metadata {
-        Metadata::Binary(Binary::Enum { max }) if max == "F80C" => {
+        Metadata::Binary(Binary::Enum(e)) if e.max == "F80C" => {
             println!(
                 "ℹ️  Wind Speed (Cooling): {:?} [{}]",
                 status.wind.cooling.speed.get_enum(),
-                max
+                e.max
             );
         }
         _ => {
@@ -161,11 +161,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match &status.wind.cooling.vertical_direction.metadata {
-        Metadata::Binary(Binary::Enum { max }) if max == "3F808100" => {
+        Metadata::Binary(Binary::Enum(e)) if e.max == "3F808100" => {
             println!(
                 "ℹ️  Vertical Wind Direction (Cooling): {:?} [{}]",
                 status.wind.cooling.vertical_direction.get_enum(),
-                max
+                e.max
             );
         }
         _ => {
@@ -177,11 +177,11 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
         }
     }
     match &status.wind.cooling.horizontal_direction.metadata {
-        Metadata::Binary(Binary::Enum { max }) if max == "FD8101" => {
+        Metadata::Binary(Binary::Enum(e)) if e.max == "FD8101" => {
             println!(
                 "ℹ️  Horizontal Wind Direction (Cooling): {:?} [{}]",
                 status.wind.cooling.horizontal_direction.get_enum(),
-                max
+                e.max
             );
         }
         _ => {

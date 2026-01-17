@@ -9,7 +9,7 @@ pub mod response;
 pub mod status;
 
 pub use info::DaikinInfo;
-pub use property::{Binary, BinaryStep, Item, Metadata, PropValue, Property};
+pub use property::{Binary, BinaryEnum, BinaryStep, Item, Metadata, PropValue, Property};
 pub use request::DaikinRequest;
 pub use response::DaikinResponse;
 pub use status::{
