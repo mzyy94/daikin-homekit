@@ -1,6 +1,6 @@
 [package]
 name = "daikin-homekit"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 authors = ["mzyy94"]
 rust-version = "1.86"
@@ -22,5 +22,5 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 serde_qs = "0.15.0"
 tokio = { version = "1.49.0", features = ["full"] }
-dsiot = { path = "../dsiot", version = "0.1.0" }
+dsiot = { path = "../dsiot", version = "0.2.0" }
 daikin-client = { path = "../daikin-client", version = "0.1.0" }

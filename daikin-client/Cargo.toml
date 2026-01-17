@@ -9,7 +9,7 @@ license = "GPL-3.0"
 keywords = ["daikin", "hvac", "iot"]
 
 [dependencies]
-dsiot = { path = "../dsiot", version = "0.1.0" }
+dsiot = { path = "../dsiot", version = "0.2.0" }
 anyhow = "1.0.100"
 reqwest = { version = "0.13.1", features = ["json"] }
 serde_json = "1.0.149"
