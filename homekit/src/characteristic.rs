@@ -23,9 +23,10 @@ pub async fn setup_characteristic(
 ) -> anyhow::Result<()> {
     let status = daikin.get_status().await?;
 
-    if status.wind.speed.get_enum().is_none()
+    // Check cooling mode wind speed compatibility (used as reference)
+    if status.wind.cooling.speed.get_enum().is_none()
         || matches!(
-            &status.wind.speed.metadata,
+            &status.wind.cooling.speed.metadata,
             Metadata::Binary(Binary::Enum { max }) if max != "F80C"
         )
     {
@@ -33,8 +34,9 @@ pub async fn setup_characteristic(
         service.rotation_speed = None;
     }
 
-    if status.wind.vertical_direction.get_enum().is_none()
-        || matches!(&status.wind.vertical_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
+    // Check cooling mode vertical direction compatibility
+    if status.wind.cooling.vertical_direction.get_enum().is_none()
+        || matches!(&status.wind.cooling.vertical_direction.metadata, Metadata::Binary(Binary::Enum { max }) if max != "3F808100")
     {
         info!("vertical_wind_direction is not compatible. remove swing_mode characteristic");
         service.swing_mode = None;
@@ -109,7 +111,8 @@ async fn set_initial_value(
     }
 
     if let Some(char) = service.rotation_speed.as_mut() {
-        char.set_value(fan_mapping::speed_to_scale(status.wind.speed.get_enum()).into())
+        // Use cooling mode wind speed as reference for HomeKit
+        char.set_value(fan_mapping::speed_to_scale(status.wind.cooling.speed.get_enum()).into())
             .await?;
         let fan_constraints = fan_mapping::fan_speed_constraints();
         char.set_step_value(Some(json!(fan_constraints.step)))?;
@@ -118,8 +121,10 @@ async fn set_initial_value(
     }
 
     if let Some(char) = service.swing_mode.as_mut() {
+        // Use cooling mode vertical direction as reference for HomeKit
         char.set_value(
-            Some(swing::to_enabled(status.wind.vertical_direction.get_enum()) as i32).into(),
+            Some(swing::to_enabled(status.wind.cooling.vertical_direction.get_enum()) as i32)
+                .into(),
         )
         .await?;
     }
@@ -302,7 +307,10 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             debug!("rotation_speed read");
             let status = dk.get_status().await?;
-            Ok(fan_mapping::speed_to_scale(status.wind.speed.get_enum()))
+            // Use cooling mode wind speed as reference for HomeKit
+            Ok(fan_mapping::speed_to_scale(
+                status.wind.cooling.speed.get_enum(),
+            ))
         }
         .boxed()
     }));
@@ -313,14 +321,16 @@ pub fn setup_rotation_speed(daikin: Daikin<ReqwestClient>, char: &mut RotationSp
         async move {
             update_assert_ne!("rotation_speed", cur, new);
             let mut status = dk.get_status().await?;
-            status
-                .wind
-                .speed
-                .set_value(fan_mapping::scale_to_speed(new));
-            status
-                .wind
-                .automode_speed
-                .set_value(fan_mapping::scale_to_auto_mode(new));
+            let speed = fan_mapping::scale_to_speed(new);
+            let auto_speed = fan_mapping::scale_to_auto_mode(new);
+
+            // Update wind speed for all modes
+            status.wind.cooling.speed.set_value(speed);
+            status.wind.heating.speed.set_value(speed);
+            status.wind.dehumidify.speed.set_value(speed);
+            status.wind.fan.speed.set_value(auto_speed);
+            status.wind.auto.speed.set_value(auto_speed);
+
             dk.update(status).await?;
             Ok(())
         }
@@ -335,7 +345,8 @@ pub fn setup_swing_mode(daikin: Daikin<ReqwestClient>, char: &mut SwingModeChara
         async move {
             debug!("swing_mode read");
             let status = dk.get_status().await?;
-            let enabled = swing::to_enabled(status.wind.vertical_direction.get_enum());
+            // Use cooling mode vertical direction as reference for HomeKit
+            let enabled = swing::to_enabled(status.wind.cooling.vertical_direction.get_enum());
             Ok(Some(enabled as u8))
         }
         .boxed()
@@ -348,8 +359,35 @@ pub fn setup_swing_mode(daikin: Daikin<ReqwestClient>, char: &mut SwingModeChara
             update_assert_ne!("swing_mode", cur, new);
             let mut status = dk.get_status().await?;
             let (vertical, horizontal) = swing::from_enabled(new != 0);
-            status.wind.vertical_direction.set_value(vertical);
-            status.wind.horizontal_direction.set_value(horizontal);
+
+            // Update swing direction for all modes
+            status.wind.cooling.vertical_direction.set_value(vertical);
+            status
+                .wind
+                .cooling
+                .horizontal_direction
+                .set_value(horizontal);
+            status.wind.heating.vertical_direction.set_value(vertical);
+            status
+                .wind
+                .heating
+                .horizontal_direction
+                .set_value(horizontal);
+            status.wind.fan.vertical_direction.set_value(vertical);
+            status.wind.fan.horizontal_direction.set_value(horizontal);
+            status
+                .wind
+                .dehumidify
+                .vertical_direction
+                .set_value(vertical);
+            status
+                .wind
+                .dehumidify
+                .horizontal_direction
+                .set_value(horizontal);
+            status.wind.auto.vertical_direction.set_value(vertical);
+            status.wind.auto.horizontal_direction.set_value(horizontal);
+
             dk.update(status).await?;
             Ok(())
         }

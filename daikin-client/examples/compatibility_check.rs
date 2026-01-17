@@ -143,47 +143,51 @@ async fn get_status(ip_addr: Ipv4Addr) -> anyhow::Result<()> {
 
     let mut warn = false;
 
-    match &status.wind.speed.metadata {
+    // Check cooling mode wind settings (used as reference)
+    match &status.wind.cooling.speed.metadata {
         Metadata::Binary(Binary::Enum { max }) if max == "F80C" => {
             println!(
-                "ℹ️  Wind Speed: {:?} [{}]",
-                status.wind.speed.get_enum(),
+                "ℹ️  Wind Speed (Cooling): {:?} [{}]",
+                status.wind.cooling.speed.get_enum(),
                 max
             );
         }
         _ => {
-            println!("⚠️  Wind Speed: {:?} - invalid data", status.wind.speed);
+            println!(
+                "⚠️  Wind Speed (Cooling): {:?} - invalid data",
+                status.wind.cooling.speed
+            );
             warn = true;
         }
     }
-    match &status.wind.vertical_direction.metadata {
+    match &status.wind.cooling.vertical_direction.metadata {
         Metadata::Binary(Binary::Enum { max }) if max == "3F808100" => {
             println!(
-                "ℹ️  Vertical Wind Direction: {:?} [{}]",
-                status.wind.vertical_direction.get_enum(),
+                "ℹ️  Vertical Wind Direction (Cooling): {:?} [{}]",
+                status.wind.cooling.vertical_direction.get_enum(),
                 max
             );
         }
         _ => {
             println!(
-                "⚠️  Vertical Wind Direction: {:?} - invalid data",
-                status.wind.vertical_direction
+                "⚠️  Vertical Wind Direction (Cooling): {:?} - invalid data",
+                status.wind.cooling.vertical_direction
             );
             warn = true;
         }
     }
-    match &status.wind.horizontal_direction.metadata {
+    match &status.wind.cooling.horizontal_direction.metadata {
         Metadata::Binary(Binary::Enum { max }) if max == "FD8101" => {
             println!(
-                "ℹ️  Horizontal Wind Direction: {:?} [{}]",
-                status.wind.horizontal_direction.get_enum(),
+                "ℹ️  Horizontal Wind Direction (Cooling): {:?} [{}]",
+                status.wind.cooling.horizontal_direction.get_enum(),
                 max
             );
         }
         _ => {
             println!(
-                "⚠️  Horizontal Wind Direction: {:?} - invalid data",
-                status.wind.horizontal_direction
+                "⚠️  Horizontal Wind Direction (Cooling): {:?} - invalid data",
+                status.wind.cooling.horizontal_direction
             );
             warn = true;
         }

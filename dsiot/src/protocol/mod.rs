@@ -12,4 +12,7 @@ pub use info::DaikinInfo;
 pub use property::{Binary, BinaryStep, Item, Metadata, PropValue, Property};
 pub use request::DaikinRequest;
 pub use response::DaikinResponse;
-pub use status::{DaikinStatus, SensorReadings, TemperatureSettings, WindSettings};
+pub use status::{
+    AutoModeWindSettings, DaikinStatus, FanModeWindSettings, ModeWindSettings, SensorReadings,
+    TemperatureSettings, WindSettings,
+};
