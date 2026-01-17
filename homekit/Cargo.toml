@@ -10,17 +10,17 @@ license = "GPL-3.0"
 keywords = ["daikin", "homekit"]
 
 [dependencies]
-anyhow = "1.0.99"
-clap = { version = "4.5.46", features = ["derive", "cargo"] }
+anyhow = "1.0.100"
+clap = { version = "4.5.54", features = ["derive", "cargo"] }
 dirs = "6.0.0"
 env_logger = "0.11.8"
 futures = "0.3.31"
 hap = { git = "https://github.com/mzyy94/hap-rs", branch = "patch-verify" }
-log = "0.4.27"
-openssl = "0.10.73"
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.143"
+log = "0.4.29"
+openssl = "0.10.75"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
 serde_qs = "0.15.0"
-tokio = { version = "1.47.1", features = ["full"] }
+tokio = { version = "1.49.0", features = ["full"] }
 dsiot = { path = "../dsiot", version = "0.1.0" }
 daikin-client = { path = "../daikin-client", version = "0.1.0" }
