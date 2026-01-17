@@ -1,4 +1,3 @@
-use core::f32;
 use core::ops::RangeInclusive;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -41,10 +40,10 @@ impl<T: Sized + DeserializeOwned + Into<f32>> std::fmt::Debug for Item<T> {
                     write!(f, "value: {:?}", self.value)
                 }
             }
-            Metadata::Binary(Binary::String { .. }) => {
+            Metadata::Binary(Binary::String {}) => {
                 write!(f, "value: {:?}", self.get_string())
             }
-            Metadata::Binary(Binary::Enum { .. }) => {
+            Metadata::Binary(Binary::Enum(_)) => {
                 if let PropValue::String(pv) = &self.value {
                     write!(f, "value: {:?}", hex2int(pv))
                 } else {
@@ -80,22 +79,24 @@ impl Property {
         }
     }
 
+    /// Returns the name of this property.
+    pub fn name(&self) -> &str {
+        match self {
+            Property::Tree { name, .. } => name,
+            Property::Node(item) => &item.name,
+        }
+    }
+
     pub fn find(&self, name: &str) -> Option<&Property> {
         match self {
-            Property::Tree { children, .. } => children.iter().find(|p| match p {
-                Property::Tree { name: n, .. } => name == n,
-                Property::Node(Item { name: n, .. }) => name == n,
-            }),
+            Property::Tree { children, .. } => children.iter().find(|p| p.name() == name),
             _ => None,
         }
     }
 
     pub fn find_mut(&mut self, name: &str) -> Option<&mut Property> {
         match self {
-            Property::Tree { children, .. } => children.iter_mut().find(|p| match p {
-                Property::Tree { name: n, .. } => name == n,
-                Property::Node(Item { name: n, .. }) => name == n,
-            }),
+            Property::Tree { children, .. } => children.iter_mut().find(|p| p.name() == name),
             _ => None,
         }
     }
@@ -180,7 +181,9 @@ impl<T: Sized + DeserializeOwned + Into<f32>> Item<T> {
             } => {
                 if matches!(md, Metadata::String) {
                     Some(pv.clone())
-                } else if matches!(md, Metadata::Binary(Binary::String { .. })) {
+                } else if matches!(md, Metadata::Binary(Binary::String {})) {
+                    // Binary strings are stored in reverse byte order (little-endian UTF-8).
+                    // Reverse the string to restore the original character order.
                     hex::decode(pv)
                         .ok()
                         .and_then(|bytes| String::from_utf8(bytes).ok())
