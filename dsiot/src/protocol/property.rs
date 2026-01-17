@@ -60,37 +60,15 @@ impl<T: Sized + DeserializeOwned + Into<f32>> std::fmt::Debug for Item<T> {
 }
 
 fn hex2int(hex: &str) -> i32 {
-    let size = hex.len();
-    if size > 8 || size % 2 != 0 {
+    let Ok(bytes) = hex::decode(hex) else {
         return 0;
-    }
-    let mut bytes = [0u8; 4];
-    if hex::decode_to_slice(hex, &mut bytes[0..size / 2]).is_err() {
-        return 0;
-    }
-    match size {
-        2 => i8::from_le_bytes([bytes[0]]) as i32,
-        4 => i16::from_le_bytes([bytes[0], bytes[1]]) as i32,
-        6 | 8 => i32::from_le_bytes(bytes),
+    };
+    match bytes.len() {
+        1 => i8::from_le_bytes([bytes[0]]) as i32,
+        2 => i16::from_le_bytes([bytes[0], bytes[1]]) as i32,
+        3 => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0]),
+        4 => i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
         _ => 0,
-    }
-}
-
-#[cfg(test)]
-mod tests2 {
-    use super::*;
-
-    #[test]
-    fn hex2int_test() {
-        let hex = "18".to_string();
-        let result = hex2int(&hex);
-        assert_eq!(result, 24);
-        let hex = "eeff".to_string();
-        let result = hex2int(&hex);
-        assert_eq!(result, -18);
-        let hex = "12345600".to_string();
-        let result = hex2int(&hex);
-        assert_eq!(result, 5649426);
     }
 }
 
@@ -362,6 +340,19 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+
+    #[test]
+    fn test_hex2int() {
+        let hex = "18".to_string();
+        let result = hex2int(&hex);
+        assert_eq!(result, 24);
+        let hex = "eeff".to_string();
+        let result = hex2int(&hex);
+        assert_eq!(result, -18);
+        let hex = "12345600".to_string();
+        let result = hex2int(&hex);
+        assert_eq!(result, 5649426);
+    }
 
     #[test]
     fn get_f32() {
