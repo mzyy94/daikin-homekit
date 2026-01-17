@@ -1,7 +1,8 @@
-use crate::client::ReqwestClient;
+//! Device discovery for Daikin air conditioners.
+
+use crate::client::{Daikin, ReqwestClient};
 use async_stream::try_stream;
-use dsiot::daikin::Daikin;
-use dsiot::info::DaikinInfo;
+use dsiot::protocol::DaikinInfo;
 use futures::prelude::*;
 use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -51,6 +52,9 @@ fn get_ipaddr() -> (IpAddr, IpAddr) {
     )
 }
 
+/// Discover Daikin devices on the local network.
+///
+/// Returns a stream of discovered devices with their information.
 pub async fn discovery(
     timeout: Duration,
 ) -> impl Stream<Item = anyhow::Result<(Daikin<ReqwestClient>, DaikinInfo)>> {

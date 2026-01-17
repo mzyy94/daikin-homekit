@@ -389,22 +389,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "daikin-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-lock",
+ "async-stream",
+ "clap",
+ "dsiot",
+ "futures",
+ "log",
+ "network-interface",
+ "reqwest",
+ "serde_json",
+ "serde_qs",
+ "tokio",
+]
+
+[[package]]
 name = "daikin-homekit"
 version = "0.2.2"
 dependencies = [
  "anyhow",
- "async-stream",
  "clap",
+ "daikin-client",
  "dirs",
  "dsiot",
  "env_logger",
- "form_urlencoded",
  "futures",
  "hap",
  "log",
- "network-interface",
  "openssl",
- "reqwest",
  "serde",
  "serde_json",
  "serde_qs",

@@ -1,8 +1,6 @@
 use clap::{Parser, crate_authors, crate_name, crate_version};
-use daikin_homekit::{
-    characteristic::setup_characteristic, client::ReqwestClient, discovery::discovery,
-};
-use dsiot::{daikin::Daikin, info::DaikinInfo};
+use daikin_client::{Daikin, DaikinInfo, ReqwestClient, discovery};
+use daikin_homekit::characteristic::setup_characteristic;
 use futures::prelude::*;
 use log::{error, info, warn};
 use std::net::Ipv4Addr;

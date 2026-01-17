@@ -1,4 +1,4 @@
-use daikin_homekit::discovery::discovery;
+use daikin_client::discovery;
 use futures::{pin_mut, prelude::*};
 
 #[tokio::main]

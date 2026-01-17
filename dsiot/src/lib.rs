@@ -18,16 +18,11 @@ pub use types::{AutoModeWindSpeed, HorizontalDirection, Mode, VerticalDirection,
 
 // Re-export protocol types for backward compatibility
 pub use protocol::{
-    Binary, BinaryStep, Daikin, DaikinInfo, DaikinRequest, DaikinResponse, DaikinStatus,
-    HttpClient, Item, Metadata, PropValue, Property, SensorReadings, TemperatureSettings,
-    WindSettings,
+    Binary, BinaryStep, DaikinInfo, DaikinRequest, DaikinResponse, DaikinStatus, Item, Metadata,
+    PropValue, Property, SensorReadings, TemperatureSettings, WindSettings,
 };
 
 // Legacy module aliases for backward compatibility
-#[doc(hidden)]
-pub mod daikin {
-    pub use crate::protocol::client::*;
-}
 #[doc(hidden)]
 pub mod property {
     pub use crate::protocol::property::*;

@@ -1,10 +1,8 @@
-use crate::client::ReqwestClient;
 use crate::fan_mapping;
 use crate::mode_mapping;
-use dsiot::daikin::Daikin;
+use daikin_client::{Daikin, DaikinStatus, ReqwestClient};
 use dsiot::mapping::swing;
-use dsiot::property::{Binary, Metadata};
-use dsiot::status::DaikinStatus;
+use dsiot::protocol::property::{Binary, Metadata};
 use dsiot::{PowerState, StateTransition, TemperatureTarget, ValueConstraints};
 use futures::prelude::*;
 use hap::characteristic::{

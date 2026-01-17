@@ -11,19 +11,16 @@ keywords = ["daikin", "homekit"]
 
 [dependencies]
 anyhow = "1.0.99"
-async-stream = "0.3.6"
 clap = { version = "4.5.46", features = ["derive", "cargo"] }
 dirs = "6.0.0"
 env_logger = "0.11.8"
-form_urlencoded = "1.2.2"
 futures = "0.3.31"
 hap = { git = "https://github.com/mzyy94/hap-rs", branch = "patch-verify" }
 log = "0.4.27"
-network-interface = "2.0.3"
 openssl = "0.10.73"
-reqwest = { version = "0.12.23", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.143"
 serde_qs = "0.15.0"
 tokio = { version = "1.47.1", features = ["full"] }
 dsiot = { path = "../dsiot", version = "0.1.0" }
+daikin-client = { path = "../daikin-client", version = "0.1.0" }
