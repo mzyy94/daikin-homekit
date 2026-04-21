@@ -11,11 +11,17 @@ keywords = ["daikin", "matter"]
 
 [dependencies]
 anyhow = "1.0"
+async-io = "2"
 clap = { version = "4.5", features = ["derive", "cargo"] }
+embassy-futures = "0.1"
+embassy-time = { version = "0.5", features = ["std"] }
+embassy-time-queue-utils = { version = "0.3", features = ["generic-queue-64"] }
 env_logger = "0.11"
 futures-lite = "2"
 log = "0.4"
+rand = "0.8"
+static_cell = "2"
 tokio = { version = "1", features = ["full"] }
-rs-matter = { git = "https://github.com/project-chip/matter-rs", features = ["async-io"] }
+rs-matter = { git = "https://github.com/project-chip/matter-rs", features = ["async-io", "astro-dnssd"] }
 dsiot = { path = "../dsiot", version = "0.3.0" }
 daikin-client = { path = "../daikin-client", version = "0.2.0" }

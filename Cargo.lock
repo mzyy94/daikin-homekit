@@ -110,6 +110,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
+name = "astro-dnssd"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c247a5549f186c77fe07ee4420d52c7766da36de4560504b5ccde98a4f208f1"
+dependencies = [
+ "libc",
+ "log",
+ "pkg-config",
+ "thiserror 2.0.12",
+ "widestring",
+ "winapi",
+]
+
+[[package]]
 name = "async-io"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -593,13 +607,19 @@ name = "daikin-matter"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-io",
  "clap",
  "daikin-client",
  "dsiot",
+ "embassy-futures",
+ "embassy-time",
+ "embassy-time-queue-utils",
  "env_logger",
  "futures-lite",
  "log",
+ "rand 0.8.5",
  "rs-matter",
+ "static_cell",
  "tokio",
 ]
 
@@ -2526,6 +2546,7 @@ version = "0.1.1"
 source = "git+https://github.com/project-chip/matter-rs#6bd5ee45a112a7ca1ff39fba134b90a43e31efd7"
 dependencies = [
  "aes",
+ "astro-dnssd",
  "async-io",
  "bitflags 2.9.1",
  "bluer",
@@ -2931,6 +2952,15 @@ name = "stable_deref_trait"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
+
+[[package]]
+name = "static_cell"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0530892bb4fa575ee0da4b86f86c667132a94b74bb72160f58ee5a4afec74c23"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "strsim"
@@ -3543,6 +3573,12 @@ checksum = "36a29fc0408b113f68cf32637857ab740edfafdf460c326cd2afaa2d84cc05dc"
 dependencies = [
  "rustls-pki-types",
 ]
+
+[[package]]
+name = "widestring"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72069c3113ab32ab29e5584db3c6ec55d416895e60715417b5b883a357c3e471"
 
 [[package]]
 name = "winapi"
