@@ -1,0 +1,21 @@
+[package]
+name = "daikin-matter"
+version = "0.1.0"
+edition = "2024"
+authors = ["mzyy94"]
+rust-version = "1.95"
+description = "Control Daikin Air Conditioner via Matter"
+repository = "https://github.com/mzyy94/daikin-matter/"
+license = "GPL-3.0"
+keywords = ["daikin", "matter"]
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive", "cargo"] }
+env_logger = "0.11"
+futures-lite = "2"
+log = "0.4"
+tokio = { version = "1", features = ["full"] }
+rs-matter = { git = "https://github.com/project-chip/matter-rs", features = ["async-io"] }
+dsiot = { path = "../dsiot", version = "0.3.0" }
+daikin-client = { path = "../daikin-client", version = "0.2.0" }
