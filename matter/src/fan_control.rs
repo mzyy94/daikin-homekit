@@ -1,5 +1,8 @@
 use dsiot::mapping::fan::{self, FanSpeed};
-use dsiot::{AutoModeWindSpeed, DaikinStatus, Mode, PowerState, WindSpeed};
+use dsiot::{
+    AutoModeWindSpeed, DaikinStatus, HorizontalDirection, Mode, PowerState, VerticalDirection,
+    WindSpeed,
+};
 use rs_matter::dm::clusters::decl::fan_control;
 use rs_matter::dm::{Cluster, Dataver, InvokeContext, ReadContext, WriteContext};
 use rs_matter::error::{Error, ErrorCode};
@@ -131,6 +134,84 @@ fn apply_wind_speed(status: &mut DaikinStatus, speed: WindSpeed) {
     }
 }
 
+/// Get vertical/horizontal direction for the active HVAC mode.
+fn current_directions(
+    status: &DaikinStatus,
+) -> (Option<VerticalDirection>, Option<HorizontalDirection>) {
+    let mode = status.mode.get_enum();
+    match mode {
+        Some(Mode::Cooling) => (
+            status.wind.cooling.vertical_direction.get_enum(),
+            status.wind.cooling.horizontal_direction.get_enum(),
+        ),
+        Some(Mode::Heating) => (
+            status.wind.heating.vertical_direction.get_enum(),
+            status.wind.heating.horizontal_direction.get_enum(),
+        ),
+        Some(Mode::Dehumidify) => (
+            status.wind.dehumidify.vertical_direction.get_enum(),
+            status.wind.dehumidify.horizontal_direction.get_enum(),
+        ),
+        Some(Mode::Auto) => (
+            status.wind.auto.vertical_direction.get_enum(),
+            status.wind.auto.horizontal_direction.get_enum(),
+        ),
+        Some(Mode::Fan) => (
+            status.wind.fan.vertical_direction.get_enum(),
+            status.wind.fan.horizontal_direction.get_enum(),
+        ),
+        _ => (None, None),
+    }
+}
+
+/// Apply vertical/horizontal direction to the current mode's wind settings.
+fn apply_directions(
+    status: &mut DaikinStatus,
+    vertical: VerticalDirection,
+    horizontal: HorizontalDirection,
+) {
+    let mode = status.mode.get_enum().unwrap_or(Mode::Auto);
+    match mode {
+        Mode::Cooling => {
+            status.wind.cooling.vertical_direction.set_value(vertical);
+            status
+                .wind
+                .cooling
+                .horizontal_direction
+                .set_value(horizontal);
+        }
+        Mode::Heating => {
+            status.wind.heating.vertical_direction.set_value(vertical);
+            status
+                .wind
+                .heating
+                .horizontal_direction
+                .set_value(horizontal);
+        }
+        Mode::Dehumidify => {
+            status
+                .wind
+                .dehumidify
+                .vertical_direction
+                .set_value(vertical);
+            status
+                .wind
+                .dehumidify
+                .horizontal_direction
+                .set_value(horizontal);
+        }
+        Mode::Auto => {
+            status.wind.auto.vertical_direction.set_value(vertical);
+            status.wind.auto.horizontal_direction.set_value(horizontal);
+        }
+        Mode::Fan => {
+            status.wind.fan.vertical_direction.set_value(vertical);
+            status.wind.fan.horizontal_direction.set_value(horizontal);
+        }
+        _ => {}
+    }
+}
+
 impl fan_control::ClusterHandler for FanControlHandler {
     const CLUSTER: Cluster<'static> = Self::CLUSTER;
 
@@ -191,13 +272,21 @@ impl fan_control::ClusterHandler for FanControlHandler {
             .unwrap_or(0))
     }
 
-    // Rock/wind reads — stub values for now (Phase 7 will make these real)
     fn rock_support(&self, _ctx: impl ReadContext) -> Result<fan_control::RockBitmap, Error> {
         Ok(fan_control::RockBitmap::ROCK_UP_DOWN | fan_control::RockBitmap::ROCK_LEFT_RIGHT)
     }
 
     fn rock_setting(&self, _ctx: impl ReadContext) -> Result<fan_control::RockBitmap, Error> {
-        Ok(fan_control::RockBitmap::empty())
+        let status = self.get_status()?;
+        let (vert, horiz) = current_directions(&status);
+        let mut bits = fan_control::RockBitmap::empty();
+        if vert == Some(VerticalDirection::Swing) {
+            bits |= fan_control::RockBitmap::ROCK_UP_DOWN;
+        }
+        if horiz == Some(HorizontalDirection::Swing) {
+            bits |= fan_control::RockBitmap::ROCK_LEFT_RIGHT;
+        }
+        Ok(bits)
     }
 
     fn wind_support(&self, _ctx: impl ReadContext) -> Result<fan_control::WindBitmap, Error> {
@@ -205,7 +294,17 @@ impl fan_control::ClusterHandler for FanControlHandler {
     }
 
     fn wind_setting(&self, _ctx: impl ReadContext) -> Result<fan_control::WindBitmap, Error> {
-        Ok(fan_control::WindBitmap::empty())
+        let status = self.get_status()?;
+        let speed = current_wind_speed(&status);
+        let (vert, _) = current_directions(&status);
+        let mut bits = fan_control::WindBitmap::empty();
+        if speed == Some(WindSpeed::Silent) {
+            bits |= fan_control::WindBitmap::SLEEP_WIND;
+        }
+        if vert == Some(VerticalDirection::Nice) {
+            bits |= fan_control::WindBitmap::NATURAL_WIND;
+        }
+        Ok(bits)
     }
 
     fn set_fan_mode(
@@ -259,6 +358,70 @@ impl fan_control::ClusterHandler for FanControlHandler {
         let mut status = self.get_status()?;
         apply_wind_speed(&mut status, speed);
         debug!("FanControl: speed_setting → {:?}", opt);
+        self.update(status)?;
+        self.dataver.changed();
+        Ok(())
+    }
+
+    fn set_rock_setting(
+        &self,
+        _ctx: impl WriteContext,
+        value: fan_control::RockBitmap,
+    ) -> Result<(), Error> {
+        let vertical = if value.contains(fan_control::RockBitmap::ROCK_UP_DOWN) {
+            VerticalDirection::Swing
+        } else {
+            VerticalDirection::Auto
+        };
+        let horizontal = if value.contains(fan_control::RockBitmap::ROCK_LEFT_RIGHT) {
+            HorizontalDirection::Swing
+        } else {
+            HorizontalDirection::Auto
+        };
+        let mut status = self.get_status()?;
+        apply_directions(&mut status, vertical, horizontal);
+        debug!("FanControl: rock_setting → {:?}", value);
+        self.update(status)?;
+        self.dataver.changed();
+        Ok(())
+    }
+
+    fn set_wind_setting(
+        &self,
+        _ctx: impl WriteContext,
+        value: fan_control::WindBitmap,
+    ) -> Result<(), Error> {
+        let mut status = self.get_status()?;
+        if value.contains(fan_control::WindBitmap::SLEEP_WIND) {
+            apply_wind_speed(&mut status, WindSpeed::Silent);
+        }
+        if value.contains(fan_control::WindBitmap::NATURAL_WIND) {
+            let (_, horiz) = current_directions(&status);
+            apply_directions(
+                &mut status,
+                VerticalDirection::Nice,
+                horiz.unwrap_or(HorizontalDirection::Auto),
+            );
+            apply_wind_speed(&mut status, WindSpeed::Auto);
+        } else {
+            // Clear Nice direction when NATURAL_WIND is off
+            let (vert, horiz) = current_directions(&status);
+            if vert == Some(VerticalDirection::Nice) {
+                apply_directions(
+                    &mut status,
+                    VerticalDirection::Auto,
+                    horiz.unwrap_or(HorizontalDirection::Auto),
+                );
+            }
+        }
+        if !value.contains(fan_control::WindBitmap::SLEEP_WIND) {
+            // Clear Silent speed when SLEEP_WIND is off
+            let speed = current_wind_speed(&status).unwrap_or(WindSpeed::Auto);
+            if speed == WindSpeed::Silent {
+                apply_wind_speed(&mut status, WindSpeed::Auto);
+            }
+        }
+        debug!("FanControl: wind_setting → {:?}", value);
         self.update(status)?;
         self.dataver.changed();
         Ok(())
