@@ -20,6 +20,7 @@ use static_cell::StaticCell;
 
 use rs_matter::crypto::{Crypto, default_crypto};
 use rs_matter::dm::clusters::basic_info::BasicInfoConfig;
+use rs_matter::dm::clusters::decl::bridged_device_basic_information;
 use rs_matter::dm::clusters::decl::fan_control as rs_fan_control;
 use rs_matter::dm::clusters::decl::thermostat as rs_thermostat;
 use rs_matter::dm::clusters::decl::{identify, on_off};
@@ -27,6 +28,7 @@ use rs_matter::dm::clusters::desc::{self, ClusterHandler as _};
 use rs_matter::dm::clusters::dev_att::DeviceAttestation;
 use rs_matter::dm::clusters::net_comm::SharedNetworks;
 use rs_matter::dm::devices::test::{TEST_DEV_ATT, TEST_DEV_COMM};
+use rs_matter::dm::devices::{DEV_TYPE_AGGREGATOR, DEV_TYPE_BRIDGED_NODE};
 use rs_matter::dm::events::NoEvents;
 use rs_matter::dm::networks::eth::EthNetwork;
 use rs_matter::dm::networks::unix::UnixNetifs;
@@ -35,16 +37,17 @@ use rs_matter::dm::{
     Async, Cluster, DataModel, Dataver, DeviceType, EmptyHandler, Endpoint, EpClMatcher, IMBuffer,
     InvokeContext, Node, ReadContext, WriteContext, endpoints,
 };
-use rs_matter::error::Error;
+use rs_matter::error::{Error, ErrorCode};
 use rs_matter::pairing::{DiscoveryCapabilities, qr::QrTextType};
 use rs_matter::persist::{DirKvBlobStore, SharedKvBlobStore};
 use rs_matter::respond::DefaultResponder;
 use rs_matter::sc::pase::MAX_COMM_WINDOW_TIMEOUT_SECS;
+use rs_matter::tlv::{TLVBuilderParent, Utf8StrBuilder};
 use rs_matter::transport::MATTER_SOCKET_BIND_ADDR;
 use rs_matter::utils::init::InitMaybeUninit;
 use rs_matter::utils::select::Coalesce;
 use rs_matter::utils::storage::pooled::PooledBuffers;
-use rs_matter::{MATTER_PORT, Matter, clusters, devices, root_endpoint};
+use rs_matter::{MATTER_PORT, Matter, clusters, devices, root_endpoint, with};
 
 static MATTER: StaticCell<Matter> = StaticCell::new();
 static BUFFERS: StaticCell<PooledBuffers<10, IMBuffer>> = StaticCell::new();
@@ -55,6 +58,8 @@ const DEV_TYPE_ROOM_AC: DeviceType = DeviceType {
     dtype: 0x0072,
     drev: 2,
 };
+
+const EP_BRIDGED: u16 = 2;
 
 fn dev_det(info: &DaikinInfo) -> &'static BasicInfoConfig<'static> {
     let device_name: &'static str = Box::leak(info.name.clone().into_boxed_str());
@@ -80,10 +85,16 @@ const NODE: Node<'static> = Node {
         root_endpoint!(geth),
         Endpoint {
             id: 1,
-            device_types: devices!(DEV_TYPE_ROOM_AC),
+            device_types: devices!(DEV_TYPE_AGGREGATOR),
+            clusters: clusters!(desc::DescHandler::CLUSTER),
+        },
+        Endpoint {
+            id: EP_BRIDGED,
+            device_types: devices!(DEV_TYPE_ROOM_AC, DEV_TYPE_BRIDGED_NODE),
             clusters: clusters!(
                 desc::DescHandler::CLUSTER,
                 StubIdentify::CLUSTER,
+                BridgedInfo::CLUSTER,
                 onoff::OnOffHandler::CLUSTER,
                 thermostat::ThermostatHandler::CLUSTER,
                 fan_control::FanControlHandler::CLUSTER
@@ -144,14 +155,101 @@ impl identify::ClusterHandler for StubIdentify {
     }
 }
 
+struct BridgedInfo {
+    dataver: Dataver,
+    device_name: &'static str,
+    unique_id: &'static str,
+}
+
+impl BridgedInfo {
+    const CLUSTER: Cluster<'static> = bridged_device_basic_information::FULL_CLUSTER
+        .with_features(0)
+        .with_attrs(with!(required))
+        .with_cmds(with!());
+
+    fn new(dataver: Dataver, info: &DaikinInfo) -> Self {
+        Self {
+            dataver,
+            device_name: Box::leak(info.name.clone().into_boxed_str()),
+            unique_id: Box::leak(info.mac.clone().into_boxed_str()),
+        }
+    }
+}
+
+impl bridged_device_basic_information::ClusterHandler for BridgedInfo {
+    const CLUSTER: Cluster<'static> = Self::CLUSTER;
+
+    fn dataver(&self) -> u32 {
+        self.dataver.get()
+    }
+    fn dataver_changed(&self) {
+        self.dataver.changed();
+    }
+
+    fn node_label<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(self.device_name)
+    }
+
+    fn vendor_name<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set("Daikin")
+    }
+
+    fn product_name<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set("Air Conditioner")
+    }
+
+    fn serial_number<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(self.unique_id)
+    }
+
+    fn reachable(&self, _ctx: impl ReadContext) -> Result<bool, Error> {
+        Ok(true)
+    }
+
+    fn unique_id<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(self.unique_id)
+    }
+
+    fn handle_keep_active(
+        &self,
+        _ctx: impl InvokeContext,
+        _req: bridged_device_basic_information::KeepActiveRequest<'_>,
+    ) -> Result<(), Error> {
+        Err(ErrorCode::InvalidCommand.into())
+    }
+}
+
 fn dm_handler<'a>(
     mut rand: impl rand::RngCore,
     identify: &'a StubIdentify,
+    bridged_info: &'a BridgedInfo,
     on_off: &'a onoff::OnOffHandler,
     therm: &'a thermostat::ThermostatHandler,
     fan_ctl: &'a fan_control::FanControlHandler,
 ) -> impl rs_matter::dm::AsyncMetadata + rs_matter::dm::AsyncHandler + 'a {
-    let desc_dataver = Dataver::new_rand(&mut rand);
+    let ep = Some(EP_BRIDGED);
+    let agg_desc_dataver = Dataver::new_rand(&mut rand);
+    let br_desc_dataver = Dataver::new_rand(&mut rand);
 
     (
         NODE,
@@ -161,24 +259,36 @@ fn dm_handler<'a>(
             &UnixNetifs,
             rand,
             EmptyHandler
+                // Aggregator endpoint
                 .chain(
                     EpClMatcher::new(Some(1), Some(desc::DescHandler::CLUSTER.id)),
-                    Async(desc::DescHandler::new(desc_dataver).adapt()),
+                    Async(desc::DescHandler::new_aggregator(agg_desc_dataver).adapt()),
+                )
+                // Bridged device endpoint
+                .chain(
+                    EpClMatcher::new(ep, Some(desc::DescHandler::CLUSTER.id)),
+                    Async(desc::DescHandler::new(br_desc_dataver).adapt()),
                 )
                 .chain(
-                    EpClMatcher::new(Some(1), Some(StubIdentify::CLUSTER.id)),
+                    EpClMatcher::new(ep, Some(StubIdentify::CLUSTER.id)),
                     Async(identify::HandlerAdaptor(identify)),
                 )
                 .chain(
-                    EpClMatcher::new(Some(1), Some(onoff::OnOffHandler::CLUSTER.id)),
+                    EpClMatcher::new(ep, Some(BridgedInfo::CLUSTER.id)),
+                    Async(bridged_device_basic_information::HandlerAdaptor(
+                        bridged_info,
+                    )),
+                )
+                .chain(
+                    EpClMatcher::new(ep, Some(onoff::OnOffHandler::CLUSTER.id)),
                     Async(on_off::HandlerAdaptor(on_off)),
                 )
                 .chain(
-                    EpClMatcher::new(Some(1), Some(thermostat::ThermostatHandler::CLUSTER.id)),
+                    EpClMatcher::new(ep, Some(thermostat::ThermostatHandler::CLUSTER.id)),
                     Async(rs_thermostat::HandlerAdaptor(therm)),
                 )
                 .chain(
-                    EpClMatcher::new(Some(1), Some(fan_control::FanControlHandler::CLUSTER.id)),
+                    EpClMatcher::new(ep, Some(fan_control::FanControlHandler::CLUSTER.id)),
                     Async(rs_fan_control::HandlerAdaptor(fan_ctl)),
                 ),
         ),
@@ -275,6 +385,7 @@ fn run_matter(
 
     // Create handlers
     let identify = StubIdentify::new(Dataver::new_rand(&mut rand));
+    let bridged_info = BridgedInfo::new(Dataver::new_rand(&mut rand), &dk_info);
     let on_off = onoff::OnOffHandler::new(Dataver::new_rand(&mut rand), device.clone());
     let therm = thermostat::ThermostatHandler::new(Dataver::new_rand(&mut rand), device.clone());
     let fan_ctl = fan_control::FanControlHandler::new(Dataver::new_rand(&mut rand), device.clone());
@@ -287,7 +398,7 @@ fn run_matter(
         buffers,
         subscriptions,
         &events,
-        dm_handler(rand, &identify, &on_off, &therm, &fan_ctl),
+        dm_handler(rand, &identify, &bridged_info, &on_off, &therm, &fan_ctl),
         SharedKvBlobStore::new(kv, kv_buf),
         SharedNetworks::new(EthNetwork::new_default()),
     );
@@ -318,7 +429,7 @@ fn run_matter(
                     on_off.dataver.changed();
                     therm.dataver.changed();
                     fan_ctl.dataver.changed();
-                    notifier.notify_attr_changed(1, onoff::OnOffHandler::CLUSTER.id, 0);
+                    notifier.notify_attr_changed(EP_BRIDGED, onoff::OnOffHandler::CLUSTER.id, 0);
                     debug!("Status polled, subscriptions notified");
                 }
                 Err(e) => warn!("Poll failed: {e}"),
