@@ -3,6 +3,7 @@ extern crate log;
 
 mod device;
 mod onoff;
+mod thermostat;
 
 use core::pin::pin;
 use std::net::{Ipv4Addr, UdpSocket};
@@ -16,7 +17,8 @@ use static_cell::StaticCell;
 
 use rs_matter::crypto::{Crypto, default_crypto};
 use rs_matter::dm::clusters::basic_info::BasicInfoConfig;
-use rs_matter::dm::clusters::decl::{fan_control, identify, on_off, thermostat};
+use rs_matter::dm::clusters::decl::thermostat as rs_thermostat;
+use rs_matter::dm::clusters::decl::{fan_control, identify, on_off};
 use rs_matter::dm::clusters::desc::{self, ClusterHandler as _};
 use rs_matter::dm::clusters::dev_att::DeviceAttestation;
 use rs_matter::dm::clusters::net_comm::SharedNetworks;
@@ -35,7 +37,7 @@ use rs_matter::pairing::{DiscoveryCapabilities, qr::QrTextType};
 use rs_matter::persist::{DirKvBlobStore, SharedKvBlobStore};
 use rs_matter::respond::DefaultResponder;
 use rs_matter::sc::pase::MAX_COMM_WINDOW_TIMEOUT_SECS;
-use rs_matter::tlv::{Nullable, TLVBuilderParent};
+use rs_matter::tlv::Nullable;
 use rs_matter::transport::MATTER_SOCKET_BIND_ADDR;
 use rs_matter::utils::init::InitMaybeUninit;
 use rs_matter::utils::select::Coalesce;
@@ -81,7 +83,7 @@ const NODE: Node<'static> = Node {
                 desc::DescHandler::CLUSTER,
                 StubIdentify::CLUSTER,
                 onoff::OnOffHandler::CLUSTER,
-                StubThermostat::CLUSTER,
+                thermostat::ThermostatHandler::CLUSTER,
                 StubFanControl::CLUSTER
             ),
         },
@@ -137,172 +139,6 @@ impl identify::ClusterHandler for StubIdentify {
         _req: identify::TriggerEffectRequest<'_>,
     ) -> Result<(), Error> {
         Ok(())
-    }
-}
-
-struct StubThermostat {
-    dataver: Dataver,
-}
-
-impl StubThermostat {
-    const CLUSTER: Cluster<'static> = thermostat::FULL_CLUSTER
-        .with_revision(7)
-        .with_features(
-            thermostat::Feature::HEATING.bits()
-                | thermostat::Feature::COOLING.bits()
-                | thermostat::Feature::AUTO_MODE.bits(),
-        )
-        .with_attrs(with!(
-            required;
-            thermostat::AttributeId::LocalTemperature
-            | thermostat::AttributeId::SystemMode
-            | thermostat::AttributeId::OccupiedCoolingSetpoint
-            | thermostat::AttributeId::OccupiedHeatingSetpoint
-            | thermostat::AttributeId::ControlSequenceOfOperation
-        ));
-
-    fn new(dataver: Dataver) -> Self {
-        Self { dataver }
-    }
-}
-
-impl thermostat::ClusterHandler for StubThermostat {
-    const CLUSTER: Cluster<'static> = Self::CLUSTER;
-
-    fn dataver(&self) -> u32 {
-        self.dataver.get()
-    }
-    fn dataver_changed(&self) {
-        self.dataver.changed();
-    }
-
-    fn local_temperature(&self, _ctx: impl ReadContext) -> Result<Nullable<i16>, Error> {
-        Ok(Nullable::some(2500)) // 25.0°C
-    }
-
-    fn system_mode(&self, _ctx: impl ReadContext) -> Result<thermostat::SystemModeEnum, Error> {
-        Ok(thermostat::SystemModeEnum::Off)
-    }
-
-    fn set_system_mode(
-        &self,
-        _ctx: impl WriteContext,
-        _value: thermostat::SystemModeEnum,
-    ) -> Result<(), Error> {
-        debug!("Thermostat: set system_mode (stub)");
-        Ok(())
-    }
-
-    fn occupied_cooling_setpoint(&self, _ctx: impl ReadContext) -> Result<i16, Error> {
-        Ok(2600) // 26.0°C
-    }
-
-    fn set_occupied_cooling_setpoint(
-        &self,
-        _ctx: impl WriteContext,
-        _value: i16,
-    ) -> Result<(), Error> {
-        debug!("Thermostat: set cooling setpoint (stub)");
-        Ok(())
-    }
-
-    fn occupied_heating_setpoint(&self, _ctx: impl ReadContext) -> Result<i16, Error> {
-        Ok(2000) // 20.0°C
-    }
-
-    fn set_occupied_heating_setpoint(
-        &self,
-        _ctx: impl WriteContext,
-        _value: i16,
-    ) -> Result<(), Error> {
-        debug!("Thermostat: set heating setpoint (stub)");
-        Ok(())
-    }
-
-    fn control_sequence_of_operation(
-        &self,
-        _ctx: impl ReadContext,
-    ) -> Result<thermostat::ControlSequenceOfOperationEnum, Error> {
-        Ok(thermostat::ControlSequenceOfOperationEnum::CoolingAndHeating)
-    }
-
-    fn set_control_sequence_of_operation(
-        &self,
-        _ctx: impl WriteContext,
-        _value: thermostat::ControlSequenceOfOperationEnum,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidAction.into())
-    }
-
-    fn handle_setpoint_raise_lower(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::SetpointRaiseLowerRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_set_weekly_schedule(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::SetWeeklyScheduleRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_get_weekly_schedule<P: TLVBuilderParent>(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::GetWeeklyScheduleRequest<'_>,
-        _response: thermostat::GetWeeklyScheduleResponseBuilder<P>,
-    ) -> Result<P, Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_clear_weekly_schedule(&self, _ctx: impl InvokeContext) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_set_active_schedule_request(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::SetActiveScheduleRequestRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_set_active_preset_request(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::SetActivePresetRequestRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_add_thermostat_suggestion<P: TLVBuilderParent>(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::AddThermostatSuggestionRequest<'_>,
-        _response: thermostat::AddThermostatSuggestionResponseBuilder<P>,
-    ) -> Result<P, Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_remove_thermostat_suggestion(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::RemoveThermostatSuggestionRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_atomic_request<P: TLVBuilderParent>(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: thermostat::AtomicRequestRequest<'_>,
-        _response: thermostat::AtomicResponseBuilder<P>,
-    ) -> Result<P, Error> {
-        Err(ErrorCode::InvalidCommand.into())
     }
 }
 
@@ -426,7 +262,7 @@ fn dm_handler<'a>(
     mut rand: impl rand::RngCore,
     identify: &'a StubIdentify,
     on_off: &'a onoff::OnOffHandler,
-    thermostat: &'a StubThermostat,
+    therm: &'a thermostat::ThermostatHandler,
     fan_control: &'a StubFanControl,
 ) -> impl rs_matter::dm::AsyncMetadata + rs_matter::dm::AsyncHandler + 'a {
     let desc_dataver = Dataver::new_rand(&mut rand);
@@ -452,8 +288,8 @@ fn dm_handler<'a>(
                     Async(on_off::HandlerAdaptor(on_off)),
                 )
                 .chain(
-                    EpClMatcher::new(Some(1), Some(StubThermostat::CLUSTER.id)),
-                    Async(thermostat::HandlerAdaptor(thermostat)),
+                    EpClMatcher::new(Some(1), Some(thermostat::ThermostatHandler::CLUSTER.id)),
+                    Async(rs_thermostat::HandlerAdaptor(therm)),
                 )
                 .chain(
                     EpClMatcher::new(Some(1), Some(StubFanControl::CLUSTER.id)),
@@ -541,7 +377,7 @@ fn run_matter(
     // Create handlers
     let identify = StubIdentify::new(Dataver::new_rand(&mut rand));
     let on_off = onoff::OnOffHandler::new(Dataver::new_rand(&mut rand), device.clone());
-    let thermostat = StubThermostat::new(Dataver::new_rand(&mut rand));
+    let therm = thermostat::ThermostatHandler::new(Dataver::new_rand(&mut rand), device.clone());
     let fan_control = StubFanControl::new(Dataver::new_rand(&mut rand));
 
     let events = NoEvents::new_default();
@@ -552,7 +388,7 @@ fn run_matter(
         buffers,
         subscriptions,
         &events,
-        dm_handler(rand, &identify, &on_off, &thermostat, &fan_control),
+        dm_handler(rand, &identify, &on_off, &therm, &fan_control),
         SharedKvBlobStore::new(kv, kv_buf),
         SharedNetworks::new(EthNetwork::new_default()),
     );
