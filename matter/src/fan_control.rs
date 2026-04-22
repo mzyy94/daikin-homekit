@@ -1,0 +1,274 @@
+use dsiot::mapping::fan::{self, FanSpeed};
+use dsiot::{AutoModeWindSpeed, DaikinStatus, Mode, PowerState, WindSpeed};
+use rs_matter::dm::clusters::decl::fan_control;
+use rs_matter::dm::{Cluster, Dataver, InvokeContext, ReadContext, WriteContext};
+use rs_matter::error::{Error, ErrorCode};
+use rs_matter::im::Percent;
+use rs_matter::tlv::Nullable;
+use rs_matter::with;
+
+use crate::device::Device;
+
+pub struct FanControlHandler {
+    dataver: Dataver,
+    device: Device,
+}
+
+const SPEED_MAX: u8 = 5;
+
+impl FanControlHandler {
+    pub const CLUSTER: Cluster<'static> = fan_control::FULL_CLUSTER
+        .with_revision(4)
+        .with_features(
+            fan_control::Feature::MULTI_SPEED.bits()
+                | fan_control::Feature::AUTO.bits()
+                | fan_control::Feature::ROCKING.bits()
+                | fan_control::Feature::WIND.bits()
+                | fan_control::Feature::STEP.bits(),
+        )
+        .with_attrs(with!(
+            required;
+            fan_control::AttributeId::FanMode
+            | fan_control::AttributeId::FanModeSequence
+            | fan_control::AttributeId::SpeedSetting
+            | fan_control::AttributeId::SpeedMax
+            | fan_control::AttributeId::SpeedCurrent
+            | fan_control::AttributeId::RockSupport
+            | fan_control::AttributeId::RockSetting
+            | fan_control::AttributeId::WindSupport
+            | fan_control::AttributeId::WindSetting
+        ));
+
+    pub fn new(dataver: Dataver, device: Device) -> Self {
+        Self { dataver, device }
+    }
+
+    fn get_status(&self) -> Result<DaikinStatus, Error> {
+        self.device.get_status().map_err(|e| {
+            warn!("Failed to get status: {e}");
+            Error::from(ErrorCode::Busy)
+        })
+    }
+
+    fn update(&self, status: DaikinStatus) -> Result<(), Error> {
+        self.device.update(status).map_err(|e| {
+            warn!("Failed to update: {e}");
+            Error::from(ErrorCode::Busy)
+        })
+    }
+}
+
+/// Get the current wind speed for the active HVAC mode.
+fn current_wind_speed(status: &DaikinStatus) -> Option<WindSpeed> {
+    let mode = status.mode.get_enum()?;
+    match mode {
+        Mode::Cooling => status.wind.cooling.speed.get_enum(),
+        Mode::Heating => status.wind.heating.speed.get_enum(),
+        Mode::Dehumidify => status.wind.dehumidify.speed.get_enum(),
+        Mode::Auto => status.wind.auto.speed.get_enum().map(|s| match s {
+            AutoModeWindSpeed::Auto => WindSpeed::Auto,
+            AutoModeWindSpeed::Silent => WindSpeed::Silent,
+            _ => WindSpeed::Auto,
+        }),
+        Mode::Fan => Some(WindSpeed::Auto), // Fan mode is always auto
+        _ => None,
+    }
+}
+
+fn wind_speed_to_setting(speed: WindSpeed) -> u8 {
+    match speed {
+        WindSpeed::Lev1 => 1,
+        WindSpeed::Lev2 => 2,
+        WindSpeed::Lev3 => 3,
+        WindSpeed::Lev4 => 4,
+        WindSpeed::Lev5 => 5,
+        _ => 0, // Silent, Auto, Unknown
+    }
+}
+
+fn setting_to_wind_speed(setting: u8) -> WindSpeed {
+    match setting {
+        1 => WindSpeed::Lev1,
+        2 => WindSpeed::Lev2,
+        3 => WindSpeed::Lev3,
+        4 => WindSpeed::Lev4,
+        5 => WindSpeed::Lev5,
+        _ => WindSpeed::Silent,
+    }
+}
+
+fn wind_speed_to_fan_mode(speed: WindSpeed, is_off: bool) -> fan_control::FanModeEnum {
+    if is_off {
+        return fan_control::FanModeEnum::Off;
+    }
+    match speed {
+        WindSpeed::Auto => fan_control::FanModeEnum::Auto,
+        WindSpeed::Silent | WindSpeed::Lev1 => fan_control::FanModeEnum::Low,
+        WindSpeed::Lev2 | WindSpeed::Lev3 => fan_control::FanModeEnum::Medium,
+        WindSpeed::Lev4 | WindSpeed::Lev5 => fan_control::FanModeEnum::High,
+        _ => fan_control::FanModeEnum::Auto,
+    }
+}
+
+/// Apply wind speed to the current mode's wind settings.
+fn apply_wind_speed(status: &mut DaikinStatus, speed: WindSpeed) {
+    let mode = status.mode.get_enum().unwrap_or(Mode::Auto);
+    match mode {
+        Mode::Cooling => status.wind.cooling.speed.set_value(speed),
+        Mode::Heating => status.wind.heating.speed.set_value(speed),
+        Mode::Dehumidify => status.wind.dehumidify.speed.set_value(speed),
+        Mode::Auto => {
+            let auto_speed = fan::fan_speed_to_auto_mode(&FanSpeed {
+                percent: wind_speed_to_setting(speed) * 20,
+                auto: speed == WindSpeed::Auto,
+            });
+            status.wind.auto.speed.set_value(auto_speed);
+        }
+        Mode::Fan => {
+            status.wind.fan.speed.set_value(AutoModeWindSpeed::Auto);
+        }
+        _ => {}
+    }
+}
+
+impl fan_control::ClusterHandler for FanControlHandler {
+    const CLUSTER: Cluster<'static> = Self::CLUSTER;
+
+    fn dataver(&self) -> u32 {
+        self.dataver.get()
+    }
+    fn dataver_changed(&self) {
+        self.dataver.changed();
+    }
+
+    fn fan_mode(&self, _ctx: impl ReadContext) -> Result<fan_control::FanModeEnum, Error> {
+        let status = self.get_status()?;
+        let is_off = PowerState::from_status(&status) != Some(PowerState::On);
+        let speed = current_wind_speed(&status).unwrap_or(WindSpeed::Auto);
+        Ok(wind_speed_to_fan_mode(speed, is_off))
+    }
+
+    fn fan_mode_sequence(
+        &self,
+        _ctx: impl ReadContext,
+    ) -> Result<fan_control::FanModeSequenceEnum, Error> {
+        Ok(fan_control::FanModeSequenceEnum::OffLowMedHighAuto)
+    }
+
+    fn percent_setting(&self, _ctx: impl ReadContext) -> Result<Nullable<Percent>, Error> {
+        let status = self.get_status()?;
+        match current_wind_speed(&status) {
+            Some(WindSpeed::Auto) => Ok(Nullable::none()),
+            Some(s) => Ok(Nullable::some(wind_speed_to_setting(s) * 20)),
+            None => Ok(Nullable::some(0)),
+        }
+    }
+
+    fn percent_current(&self, _ctx: impl ReadContext) -> Result<Percent, Error> {
+        let status = self.get_status()?;
+        Ok(current_wind_speed(&status)
+            .map(|s| wind_speed_to_setting(s) * 20)
+            .unwrap_or(0))
+    }
+
+    fn speed_max(&self, _ctx: impl ReadContext) -> Result<u8, Error> {
+        Ok(SPEED_MAX)
+    }
+
+    fn speed_setting(&self, _ctx: impl ReadContext) -> Result<Nullable<u8>, Error> {
+        let status = self.get_status()?;
+        match current_wind_speed(&status) {
+            Some(WindSpeed::Auto) => Ok(Nullable::none()),
+            Some(s) => Ok(Nullable::some(wind_speed_to_setting(s))),
+            None => Ok(Nullable::some(0)),
+        }
+    }
+
+    fn speed_current(&self, _ctx: impl ReadContext) -> Result<u8, Error> {
+        let status = self.get_status()?;
+        Ok(current_wind_speed(&status)
+            .map(wind_speed_to_setting)
+            .unwrap_or(0))
+    }
+
+    // Rock/wind reads — stub values for now (Phase 7 will make these real)
+    fn rock_support(&self, _ctx: impl ReadContext) -> Result<fan_control::RockBitmap, Error> {
+        Ok(fan_control::RockBitmap::ROCK_UP_DOWN | fan_control::RockBitmap::ROCK_LEFT_RIGHT)
+    }
+
+    fn rock_setting(&self, _ctx: impl ReadContext) -> Result<fan_control::RockBitmap, Error> {
+        Ok(fan_control::RockBitmap::empty())
+    }
+
+    fn wind_support(&self, _ctx: impl ReadContext) -> Result<fan_control::WindBitmap, Error> {
+        Ok(fan_control::WindBitmap::SLEEP_WIND | fan_control::WindBitmap::NATURAL_WIND)
+    }
+
+    fn wind_setting(&self, _ctx: impl ReadContext) -> Result<fan_control::WindBitmap, Error> {
+        Ok(fan_control::WindBitmap::empty())
+    }
+
+    fn set_fan_mode(
+        &self,
+        _ctx: impl WriteContext,
+        value: fan_control::FanModeEnum,
+    ) -> Result<(), Error> {
+        let speed = match value {
+            fan_control::FanModeEnum::Off => return Ok(()), // Use OnOff cluster
+            fan_control::FanModeEnum::Low => WindSpeed::Lev1,
+            fan_control::FanModeEnum::Medium => WindSpeed::Lev3,
+            fan_control::FanModeEnum::High => WindSpeed::Lev5,
+            fan_control::FanModeEnum::On => WindSpeed::Lev3,
+            fan_control::FanModeEnum::Auto | fan_control::FanModeEnum::Smart => WindSpeed::Auto,
+        };
+        let mut status = self.get_status()?;
+        apply_wind_speed(&mut status, speed);
+        debug!("FanControl: fan_mode → {:?}", value);
+        self.update(status)?;
+        self.dataver.changed();
+        Ok(())
+    }
+
+    fn set_percent_setting(
+        &self,
+        _ctx: impl WriteContext,
+        value: Nullable<Percent>,
+    ) -> Result<(), Error> {
+        let opt: Option<Percent> = value.into();
+        let speed = match opt {
+            None => WindSpeed::Auto,
+            Some(pct) => fan::fan_speed_to_speed(&FanSpeed {
+                percent: pct,
+                auto: false,
+            }),
+        };
+        let mut status = self.get_status()?;
+        apply_wind_speed(&mut status, speed);
+        debug!("FanControl: percent_setting → {:?}", opt);
+        self.update(status)?;
+        self.dataver.changed();
+        Ok(())
+    }
+
+    fn set_speed_setting(&self, _ctx: impl WriteContext, value: Nullable<u8>) -> Result<(), Error> {
+        let opt: Option<u8> = value.into();
+        let speed = match opt {
+            None => WindSpeed::Auto,
+            Some(s) => setting_to_wind_speed(s),
+        };
+        let mut status = self.get_status()?;
+        apply_wind_speed(&mut status, speed);
+        debug!("FanControl: speed_setting → {:?}", opt);
+        self.update(status)?;
+        self.dataver.changed();
+        Ok(())
+    }
+
+    fn handle_step(
+        &self,
+        _ctx: impl InvokeContext,
+        _req: fan_control::StepRequest<'_>,
+    ) -> Result<(), Error> {
+        Err(ErrorCode::InvalidCommand.into())
+    }
+}

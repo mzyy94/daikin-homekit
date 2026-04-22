@@ -2,6 +2,7 @@
 extern crate log;
 
 mod device;
+mod fan_control;
 mod onoff;
 mod thermostat;
 
@@ -17,8 +18,9 @@ use static_cell::StaticCell;
 
 use rs_matter::crypto::{Crypto, default_crypto};
 use rs_matter::dm::clusters::basic_info::BasicInfoConfig;
+use rs_matter::dm::clusters::decl::fan_control as rs_fan_control;
 use rs_matter::dm::clusters::decl::thermostat as rs_thermostat;
-use rs_matter::dm::clusters::decl::{fan_control, identify, on_off};
+use rs_matter::dm::clusters::decl::{identify, on_off};
 use rs_matter::dm::clusters::desc::{self, ClusterHandler as _};
 use rs_matter::dm::clusters::dev_att::DeviceAttestation;
 use rs_matter::dm::clusters::net_comm::SharedNetworks;
@@ -31,18 +33,16 @@ use rs_matter::dm::{
     Async, Cluster, DataModel, Dataver, DeviceType, EmptyHandler, Endpoint, EpClMatcher, IMBuffer,
     InvokeContext, Node, ReadContext, WriteContext, endpoints,
 };
-use rs_matter::error::{Error, ErrorCode};
-use rs_matter::im::Percent;
+use rs_matter::error::Error;
 use rs_matter::pairing::{DiscoveryCapabilities, qr::QrTextType};
 use rs_matter::persist::{DirKvBlobStore, SharedKvBlobStore};
 use rs_matter::respond::DefaultResponder;
 use rs_matter::sc::pase::MAX_COMM_WINDOW_TIMEOUT_SECS;
-use rs_matter::tlv::Nullable;
 use rs_matter::transport::MATTER_SOCKET_BIND_ADDR;
 use rs_matter::utils::init::InitMaybeUninit;
 use rs_matter::utils::select::Coalesce;
 use rs_matter::utils::storage::pooled::PooledBuffers;
-use rs_matter::{MATTER_PORT, Matter, clusters, devices, root_endpoint, with};
+use rs_matter::{MATTER_PORT, Matter, clusters, devices, root_endpoint};
 
 static MATTER: StaticCell<Matter> = StaticCell::new();
 static BUFFERS: StaticCell<PooledBuffers<10, IMBuffer>> = StaticCell::new();
@@ -84,7 +84,7 @@ const NODE: Node<'static> = Node {
                 StubIdentify::CLUSTER,
                 onoff::OnOffHandler::CLUSTER,
                 thermostat::ThermostatHandler::CLUSTER,
-                StubFanControl::CLUSTER
+                fan_control::FanControlHandler::CLUSTER
             ),
         },
     ],
@@ -142,128 +142,12 @@ impl identify::ClusterHandler for StubIdentify {
     }
 }
 
-struct StubFanControl {
-    dataver: Dataver,
-}
-
-impl StubFanControl {
-    const CLUSTER: Cluster<'static> = fan_control::FULL_CLUSTER
-        .with_revision(4)
-        .with_features(
-            fan_control::Feature::MULTI_SPEED.bits()
-                | fan_control::Feature::AUTO.bits()
-                | fan_control::Feature::ROCKING.bits()
-                | fan_control::Feature::WIND.bits()
-                | fan_control::Feature::STEP.bits(),
-        )
-        .with_attrs(with!(
-            required;
-            fan_control::AttributeId::FanMode
-            | fan_control::AttributeId::FanModeSequence
-            | fan_control::AttributeId::SpeedSetting
-            | fan_control::AttributeId::SpeedMax
-            | fan_control::AttributeId::SpeedCurrent
-            | fan_control::AttributeId::RockSupport
-            | fan_control::AttributeId::RockSetting
-            | fan_control::AttributeId::WindSupport
-            | fan_control::AttributeId::WindSetting
-        ));
-
-    fn new(dataver: Dataver) -> Self {
-        Self { dataver }
-    }
-}
-
-impl fan_control::ClusterHandler for StubFanControl {
-    const CLUSTER: Cluster<'static> = Self::CLUSTER;
-
-    fn dataver(&self) -> u32 {
-        self.dataver.get()
-    }
-    fn dataver_changed(&self) {
-        self.dataver.changed();
-    }
-
-    fn fan_mode(&self, _ctx: impl ReadContext) -> Result<fan_control::FanModeEnum, Error> {
-        Ok(fan_control::FanModeEnum::Auto)
-    }
-
-    fn fan_mode_sequence(
-        &self,
-        _ctx: impl ReadContext,
-    ) -> Result<fan_control::FanModeSequenceEnum, Error> {
-        Ok(fan_control::FanModeSequenceEnum::OffLowMedHighAuto)
-    }
-
-    fn percent_setting(&self, _ctx: impl ReadContext) -> Result<Nullable<Percent>, Error> {
-        Ok(Nullable::some(0))
-    }
-
-    fn percent_current(&self, _ctx: impl ReadContext) -> Result<Percent, Error> {
-        Ok(0)
-    }
-
-    fn speed_max(&self, _ctx: impl ReadContext) -> Result<u8, Error> {
-        Ok(5)
-    }
-
-    fn speed_setting(&self, _ctx: impl ReadContext) -> Result<Nullable<u8>, Error> {
-        Ok(Nullable::some(0))
-    }
-
-    fn speed_current(&self, _ctx: impl ReadContext) -> Result<u8, Error> {
-        Ok(0)
-    }
-
-    fn rock_support(&self, _ctx: impl ReadContext) -> Result<fan_control::RockBitmap, Error> {
-        Ok(fan_control::RockBitmap::ROCK_UP_DOWN | fan_control::RockBitmap::ROCK_LEFT_RIGHT)
-    }
-
-    fn rock_setting(&self, _ctx: impl ReadContext) -> Result<fan_control::RockBitmap, Error> {
-        Ok(fan_control::RockBitmap::empty())
-    }
-
-    fn wind_support(&self, _ctx: impl ReadContext) -> Result<fan_control::WindBitmap, Error> {
-        Ok(fan_control::WindBitmap::SLEEP_WIND | fan_control::WindBitmap::NATURAL_WIND)
-    }
-
-    fn wind_setting(&self, _ctx: impl ReadContext) -> Result<fan_control::WindBitmap, Error> {
-        Ok(fan_control::WindBitmap::empty())
-    }
-
-    fn set_fan_mode(
-        &self,
-        _ctx: impl WriteContext,
-        _value: fan_control::FanModeEnum,
-    ) -> Result<(), Error> {
-        debug!("FanControl: set fan_mode (stub)");
-        Ok(())
-    }
-
-    fn set_percent_setting(
-        &self,
-        _ctx: impl WriteContext,
-        _value: Nullable<Percent>,
-    ) -> Result<(), Error> {
-        debug!("FanControl: set percent_setting (stub)");
-        Ok(())
-    }
-
-    fn handle_step(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: fan_control::StepRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-}
-
 fn dm_handler<'a>(
     mut rand: impl rand::RngCore,
     identify: &'a StubIdentify,
     on_off: &'a onoff::OnOffHandler,
     therm: &'a thermostat::ThermostatHandler,
-    fan_control: &'a StubFanControl,
+    fan_ctl: &'a fan_control::FanControlHandler,
 ) -> impl rs_matter::dm::AsyncMetadata + rs_matter::dm::AsyncHandler + 'a {
     let desc_dataver = Dataver::new_rand(&mut rand);
 
@@ -292,8 +176,8 @@ fn dm_handler<'a>(
                     Async(rs_thermostat::HandlerAdaptor(therm)),
                 )
                 .chain(
-                    EpClMatcher::new(Some(1), Some(StubFanControl::CLUSTER.id)),
-                    Async(fan_control::HandlerAdaptor(fan_control)),
+                    EpClMatcher::new(Some(1), Some(fan_control::FanControlHandler::CLUSTER.id)),
+                    Async(rs_fan_control::HandlerAdaptor(fan_ctl)),
                 ),
         ),
     )
@@ -378,7 +262,7 @@ fn run_matter(
     let identify = StubIdentify::new(Dataver::new_rand(&mut rand));
     let on_off = onoff::OnOffHandler::new(Dataver::new_rand(&mut rand), device.clone());
     let therm = thermostat::ThermostatHandler::new(Dataver::new_rand(&mut rand), device.clone());
-    let fan_control = StubFanControl::new(Dataver::new_rand(&mut rand));
+    let fan_ctl = fan_control::FanControlHandler::new(Dataver::new_rand(&mut rand), device.clone());
 
     let events = NoEvents::new_default();
 
@@ -388,7 +272,7 @@ fn run_matter(
         buffers,
         subscriptions,
         &events,
-        dm_handler(rand, &identify, &on_off, &therm, &fan_control),
+        dm_handler(rand, &identify, &on_off, &therm, &fan_ctl),
         SharedKvBlobStore::new(kv, kv_buf),
         SharedNetworks::new(EthNetwork::new_default()),
     );
