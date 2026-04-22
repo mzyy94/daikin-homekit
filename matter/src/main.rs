@@ -9,6 +9,8 @@ use std::net::{Ipv4Addr, UdpSocket};
 
 use clap::Parser;
 use daikin_client::{Daikin, ReqwestClient};
+use dsiot::DaikinInfo;
+
 use embassy_futures::select::select4;
 use static_cell::StaticCell;
 
@@ -50,19 +52,24 @@ const DEV_TYPE_ROOM_AC: DeviceType = DeviceType {
     drev: 2,
 };
 
-const DEV_DET: BasicInfoConfig<'static> = BasicInfoConfig {
-    vid: 0xfff1,
-    pid: 0x8001,
-    product_name: "Daikin Air Conditioner",
-    vendor_name: "Daikin",
-    device_name: "DaikinAC",
-    hw_ver: 1,
-    hw_ver_str: "1",
-    sw_ver: 1,
-    sw_ver_str: "0.1.0",
-    serial_no: "000000000000",
-    ..BasicInfoConfig::new()
-};
+fn dev_det(info: &DaikinInfo) -> &'static BasicInfoConfig<'static> {
+    let device_name: &'static str = Box::leak(info.name.clone().into_boxed_str());
+    let serial_no: &'static str = Box::leak(info.mac.clone().into_boxed_str());
+    let sw_ver_str: &'static str = Box::leak(info.version.clone().into_boxed_str());
+    Box::leak(Box::new(BasicInfoConfig {
+        vid: 0xfff1,
+        pid: 0x8001,
+        product_name: "Daikin Air Conditioner",
+        vendor_name: "Daikin",
+        device_name,
+        hw_ver: 1,
+        hw_ver_str: "1",
+        sw_ver: 1,
+        sw_ver_str,
+        serial_no,
+        ..BasicInfoConfig::new()
+    }))
+}
 
 const NODE: Node<'static> = Node {
     endpoints: &[
@@ -479,7 +486,7 @@ fn main() -> anyhow::Result<()> {
 
     // Initialize daikin-client on tokio
     let rt = tokio::runtime::Runtime::new()?;
-    let dk = rt.block_on(async {
+    let (dk, dk_info) = rt.block_on(async {
         let dk = Daikin::new(cli.ip_addr, ReqwestClient::try_new()?);
         let info = dk.get_info().await?;
         info!(
@@ -488,7 +495,7 @@ fn main() -> anyhow::Result<()> {
         );
         let status = dk.get_status().await?;
         debug!("Status: {:?}", status);
-        anyhow::Ok(dk)
+        anyhow::Ok((dk, info))
     })?;
 
     let rt_handle = rt.handle().clone();
@@ -496,15 +503,20 @@ fn main() -> anyhow::Result<()> {
     // Run Matter stack on a separate thread with increased stack
     let thread = std::thread::Builder::new()
         .stack_size(550 * 1024)
-        .spawn(move || run_matter(dk, rt_handle))
+        .spawn(move || run_matter(dk, dk_info, rt_handle))
         .unwrap();
 
     thread.join().unwrap()
 }
 
-fn run_matter(dk: Daikin<ReqwestClient>, rt_handle: tokio::runtime::Handle) -> anyhow::Result<()> {
+fn run_matter(
+    dk: Daikin<ReqwestClient>,
+    dk_info: DaikinInfo,
+    rt_handle: tokio::runtime::Handle,
+) -> anyhow::Result<()> {
+    let dev_det = dev_det(&dk_info);
     let matter = MATTER.uninit().init_with(Matter::init(
-        &DEV_DET,
+        dev_det,
         TEST_DEV_COMM,
         &TEST_DEV_ATT,
         rs_matter::utils::epoch::sys_epoch,
