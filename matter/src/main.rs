@@ -8,12 +8,13 @@ mod thermostat;
 
 use core::pin::pin;
 use std::net::{Ipv4Addr, UdpSocket};
+use std::time::Duration;
 
 use clap::Parser;
 use daikin_client::{Daikin, ReqwestClient};
 use dsiot::DaikinInfo;
 
-use embassy_futures::select::select4;
+use embassy_futures::select::{select, select4};
 use static_cell::StaticCell;
 
 use rs_matter::crypto::{Crypto, default_crypto};
@@ -251,7 +252,7 @@ fn run_matter(
     futures_lite::future::block_on(matter.load_persist(&mut kv, kv_buf))?;
 
     let buffers = BUFFERS.uninit().init_with(PooledBuffers::init(0));
-    let subscriptions = SUBSCRIPTIONS.uninit().init_with(Subscriptions::init());
+    let subscriptions: &Subscriptions = SUBSCRIPTIONS.uninit().init_with(Subscriptions::init());
 
     let crypto = default_crypto(rand::thread_rng(), TEST_DEV_ATT.dac_priv_key());
     let mut rand = crypto.rand()?;
@@ -294,7 +295,25 @@ fn run_matter(
 
     info!("Matter stack running");
 
-    let all = select4(&mut transport, &mut mdns, &mut respond, &mut dm_job).coalesce();
+    let notifier = dm.change_notify();
+    let mut poll = pin!(async {
+        loop {
+            async_io::Timer::after(Duration::from_secs(30)).await;
+            match device.get_status() {
+                Ok(_) => {
+                    on_off.dataver.changed();
+                    therm.dataver.changed();
+                    fan_ctl.dataver.changed();
+                    notifier.notify_attr_changed(1, onoff::OnOffHandler::CLUSTER.id, 0);
+                    debug!("Status polled, subscriptions notified");
+                }
+                Err(e) => warn!("Poll failed: {e}"),
+            }
+        }
+    });
+
+    let mut core = pin!(select4(&mut transport, &mut mdns, &mut respond, &mut dm_job).coalesce());
+    let all = select(&mut core, &mut poll).coalesce();
     futures_lite::future::block_on(all)?;
 
     Ok(())

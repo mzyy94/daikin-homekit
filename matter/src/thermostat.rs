@@ -8,7 +8,7 @@ use rs_matter::with;
 use crate::device::Device;
 
 pub struct ThermostatHandler {
-    dataver: Dataver,
+    pub(crate) dataver: Dataver,
     device: Device,
 }
 

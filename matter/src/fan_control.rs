@@ -13,7 +13,7 @@ use rs_matter::with;
 use crate::device::Device;
 
 pub struct FanControlHandler {
-    dataver: Dataver,
+    pub(crate) dataver: Dataver,
     device: Device,
 }
 
