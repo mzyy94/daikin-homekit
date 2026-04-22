@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate log;
 
+mod device;
+mod onoff;
+
 use core::pin::pin;
 use std::net::{Ipv4Addr, UdpSocket};
 
@@ -70,7 +73,7 @@ const NODE: Node<'static> = Node {
             clusters: clusters!(
                 desc::DescHandler::CLUSTER,
                 StubIdentify::CLUSTER,
-                StubOnOff::CLUSTER,
+                onoff::OnOffHandler::CLUSTER,
                 StubThermostat::CLUSTER,
                 StubFanControl::CLUSTER
             ),
@@ -127,73 +130,6 @@ impl identify::ClusterHandler for StubIdentify {
         _req: identify::TriggerEffectRequest<'_>,
     ) -> Result<(), Error> {
         Ok(())
-    }
-}
-
-struct StubOnOff {
-    dataver: Dataver,
-}
-
-impl StubOnOff {
-    const CLUSTER: Cluster<'static> = on_off::FULL_CLUSTER
-        .with_revision(6)
-        .with_attrs(with!(required; on_off::AttributeId::OnOff))
-        .with_cmds(with!(
-            on_off::CommandId::Off | on_off::CommandId::On | on_off::CommandId::Toggle
-        ));
-
-    fn new(dataver: Dataver) -> Self {
-        Self { dataver }
-    }
-}
-
-impl on_off::ClusterHandler for StubOnOff {
-    const CLUSTER: Cluster<'static> = Self::CLUSTER;
-
-    fn dataver(&self) -> u32 {
-        self.dataver.get()
-    }
-    fn dataver_changed(&self) {
-        self.dataver.changed();
-    }
-
-    fn on_off(&self, _ctx: impl ReadContext) -> Result<bool, Error> {
-        Ok(false)
-    }
-
-    fn handle_off(&self, _ctx: impl InvokeContext) -> Result<(), Error> {
-        debug!("OnOff: off (stub)");
-        Ok(())
-    }
-
-    fn handle_on(&self, _ctx: impl InvokeContext) -> Result<(), Error> {
-        debug!("OnOff: on (stub)");
-        Ok(())
-    }
-
-    fn handle_toggle(&self, _ctx: impl InvokeContext) -> Result<(), Error> {
-        debug!("OnOff: toggle (stub)");
-        Ok(())
-    }
-
-    fn handle_off_with_effect(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: on_off::OffWithEffectRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_on_with_recall_global_scene(&self, _ctx: impl InvokeContext) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
-    }
-
-    fn handle_on_with_timed_off(
-        &self,
-        _ctx: impl InvokeContext,
-        _req: on_off::OnWithTimedOffRequest<'_>,
-    ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
     }
 }
 
@@ -482,7 +418,7 @@ impl fan_control::ClusterHandler for StubFanControl {
 fn dm_handler<'a>(
     mut rand: impl rand::RngCore,
     identify: &'a StubIdentify,
-    on_off: &'a StubOnOff,
+    on_off: &'a onoff::OnOffHandler,
     thermostat: &'a StubThermostat,
     fan_control: &'a StubFanControl,
 ) -> impl rs_matter::dm::AsyncMetadata + rs_matter::dm::AsyncHandler + 'a {
@@ -505,7 +441,7 @@ fn dm_handler<'a>(
                     Async(identify::HandlerAdaptor(identify)),
                 )
                 .chain(
-                    EpClMatcher::new(Some(1), Some(StubOnOff::CLUSTER.id)),
+                    EpClMatcher::new(Some(1), Some(onoff::OnOffHandler::CLUSTER.id)),
                     Async(on_off::HandlerAdaptor(on_off)),
                 )
                 .chain(
@@ -543,7 +479,7 @@ fn main() -> anyhow::Result<()> {
 
     // Initialize daikin-client on tokio
     let rt = tokio::runtime::Runtime::new()?;
-    let _daikin = rt.block_on(async {
+    let dk = rt.block_on(async {
         let dk = Daikin::new(cli.ip_addr, ReqwestClient::try_new()?);
         let info = dk.get_info().await?;
         info!(
@@ -555,16 +491,18 @@ fn main() -> anyhow::Result<()> {
         anyhow::Ok(dk)
     })?;
 
+    let rt_handle = rt.handle().clone();
+
     // Run Matter stack on a separate thread with increased stack
     let thread = std::thread::Builder::new()
         .stack_size(550 * 1024)
-        .spawn(run_matter)
+        .spawn(move || run_matter(dk, rt_handle))
         .unwrap();
 
     thread.join().unwrap()
 }
 
-fn run_matter() -> anyhow::Result<()> {
+fn run_matter(dk: Daikin<ReqwestClient>, rt_handle: tokio::runtime::Handle) -> anyhow::Result<()> {
     let matter = MATTER.uninit().init_with(Matter::init(
         &DEV_DET,
         TEST_DEV_COMM,
@@ -586,9 +524,11 @@ fn run_matter() -> anyhow::Result<()> {
     let crypto = default_crypto(rand::thread_rng(), TEST_DEV_ATT.dac_priv_key());
     let mut rand = crypto.rand()?;
 
-    // Create stub handlers
+    let device = device::Device::new(dk, rt_handle);
+
+    // Create handlers
     let identify = StubIdentify::new(Dataver::new_rand(&mut rand));
-    let on_off = StubOnOff::new(Dataver::new_rand(&mut rand));
+    let on_off = onoff::OnOffHandler::new(Dataver::new_rand(&mut rand), device.clone());
     let thermostat = StubThermostat::new(Dataver::new_rand(&mut rand));
     let fan_control = StubFanControl::new(Dataver::new_rand(&mut rand));
 
