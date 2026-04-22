@@ -61,24 +61,21 @@ const DEV_TYPE_ROOM_AC: DeviceType = DeviceType {
 
 const EP_BRIDGED: u16 = 2;
 
-fn dev_det(info: &DaikinInfo) -> &'static BasicInfoConfig<'static> {
-    let device_name: &'static str = Box::leak(info.name.clone().into_boxed_str());
-    let serial_no: &'static str = Box::leak(info.mac.clone().into_boxed_str());
-    let sw_ver_str: &'static str = Box::leak(info.version.clone().into_boxed_str());
-    Box::leak(Box::new(BasicInfoConfig {
-        vid: 0xfff1,
-        pid: 0x8001,
-        product_name: "Daikin Air Conditioner",
-        vendor_name: "Daikin",
-        device_name,
-        hw_ver: 1,
-        hw_ver_str: "1",
-        sw_ver: 1,
-        sw_ver_str,
-        serial_no,
-        ..BasicInfoConfig::new()
-    }))
-}
+const BRIDGE_DEV_DET: BasicInfoConfig<'static> = BasicInfoConfig {
+    vid: 0xfff1,
+    pid: 0x8001,
+    product_name: "Daikin Matter Bridge",
+    vendor_name: "daikin-matter",
+    device_name: "Daikin Matter Bridge",
+    hw_ver: 1,
+    hw_ver_str: "1",
+    sw_ver: 1,
+    sw_ver_str: env!("CARGO_PKG_VERSION"),
+    serial_no: "daikin-matter",
+    product_label: "Daikin Matter Bridge",
+    product_url: env!("CARGO_PKG_REPOSITORY"),
+    ..BasicInfoConfig::new()
+};
 
 const NODE: Node<'static> = Node {
     endpoints: &[
@@ -359,9 +356,8 @@ fn run_matter(
     rt_handle: tokio::runtime::Handle,
     data_dir: PathBuf,
 ) -> anyhow::Result<()> {
-    let dev_det = dev_det(&dk_info);
     let matter = MATTER.uninit().init_with(Matter::init(
-        dev_det,
+        &BRIDGE_DEV_DET,
         TEST_DEV_COMM,
         &TEST_DEV_ATT,
         rs_matter::utils::epoch::sys_epoch,
