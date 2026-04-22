@@ -8,6 +8,7 @@ mod thermostat;
 
 use core::pin::pin;
 use std::net::{Ipv4Addr, UdpSocket};
+use std::path::PathBuf;
 use std::time::Duration;
 
 use clap::Parser;
@@ -195,6 +196,16 @@ async fn run_mdns(matter: &Matter<'_>) -> Result<(), Error> {
 struct Cli {
     /// IP address of the Daikin device
     ip_addr: Ipv4Addr,
+
+    /// Directory to store persistent data (pairing, fabrics, etc.)
+    #[arg(long, value_name = "DIR")]
+    data_dir: Option<PathBuf>,
+}
+
+fn default_data_dir() -> PathBuf {
+    dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("daikin-matter")
 }
 
 fn main() -> anyhow::Result<()> {
@@ -220,11 +231,13 @@ fn main() -> anyhow::Result<()> {
     })?;
 
     let rt_handle = rt.handle().clone();
+    let data_dir = cli.data_dir.unwrap_or_else(default_data_dir);
+    info!("Data directory: {}", data_dir.display());
 
     // Run Matter stack on a separate thread with increased stack
     let thread = std::thread::Builder::new()
         .stack_size(550 * 1024)
-        .spawn(move || run_matter(dk, dk_info, rt_handle))
+        .spawn(move || run_matter(dk, dk_info, rt_handle, data_dir))
         .unwrap();
 
     thread.join().unwrap()
@@ -234,6 +247,7 @@ fn run_matter(
     dk: Daikin<ReqwestClient>,
     dk_info: DaikinInfo,
     rt_handle: tokio::runtime::Handle,
+    data_dir: PathBuf,
 ) -> anyhow::Result<()> {
     let dev_det = dev_det(&dk_info);
     let matter = MATTER.uninit().init_with(Matter::init(
@@ -248,7 +262,7 @@ fn run_matter(
 
     // Persistence
     let kv_buf = KV_BUF.uninit().init_zeroed().as_mut_slice();
-    let mut kv = DirKvBlobStore::new_default();
+    let mut kv = DirKvBlobStore::new(data_dir);
     futures_lite::future::block_on(matter.load_persist(&mut kv, kv_buf))?;
 
     let buffers = BUFFERS.uninit().init_with(PooledBuffers::init(0));
