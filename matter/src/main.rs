@@ -172,7 +172,13 @@ struct BridgedInfo {
 impl BridgedInfo {
     const CLUSTER: Cluster<'static> = bridged_device_basic_information::FULL_CLUSTER
         .with_features(0)
-        .with_attrs(with!(required))
+        .with_attrs(with!(
+            required;
+            bridged_device_basic_information::AttributeId::VendorName
+            | bridged_device_basic_information::AttributeId::ProductName
+            | bridged_device_basic_information::AttributeId::NodeLabel
+            | bridged_device_basic_information::AttributeId::SerialNumber
+        ))
         .with_cmds(with!());
 
     fn new(dataver: Dataver, info: &DaikinInfo) -> Self {
