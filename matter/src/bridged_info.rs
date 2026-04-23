@@ -1,0 +1,96 @@
+use dsiot::DaikinInfo;
+use rs_matter::dm::clusters::decl::bridged_device_basic_information;
+use rs_matter::dm::{Cluster, Dataver, InvokeContext, ReadContext};
+use rs_matter::error::{Error, ErrorCode};
+use rs_matter::tlv::{TLVBuilderParent, Utf8StrBuilder};
+use rs_matter::with;
+
+pub(crate) struct BridgedInfo {
+    pub(crate) dataver: Dataver,
+    device_name: &'static str,
+    unique_id: &'static str,
+}
+
+impl BridgedInfo {
+    pub(crate) const CLUSTER: Cluster<'static> = bridged_device_basic_information::FULL_CLUSTER
+        .with_features(0)
+        .with_attrs(with!(
+            required;
+            bridged_device_basic_information::AttributeId::VendorName
+            | bridged_device_basic_information::AttributeId::ProductName
+            | bridged_device_basic_information::AttributeId::NodeLabel
+            | bridged_device_basic_information::AttributeId::SerialNumber
+        ))
+        .with_cmds(with!());
+
+    pub(crate) fn new(dataver: Dataver, info: &DaikinInfo) -> Self {
+        Self {
+            dataver,
+            device_name: Box::leak(info.name.clone().into_boxed_str()),
+            unique_id: Box::leak(info.mac.clone().into_boxed_str()),
+        }
+    }
+}
+
+impl bridged_device_basic_information::ClusterHandler for BridgedInfo {
+    const CLUSTER: Cluster<'static> = Self::CLUSTER;
+
+    fn dataver(&self) -> u32 {
+        self.dataver.get()
+    }
+    fn dataver_changed(&self) {
+        self.dataver.changed();
+    }
+
+    fn node_label<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(self.device_name)
+    }
+
+    fn vendor_name<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set("Daikin")
+    }
+
+    fn product_name<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set("Air Conditioner")
+    }
+
+    fn serial_number<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(self.unique_id)
+    }
+
+    fn reachable(&self, _ctx: impl ReadContext) -> Result<bool, Error> {
+        Ok(true)
+    }
+
+    fn unique_id<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(self.unique_id)
+    }
+
+    fn handle_keep_active(
+        &self,
+        _ctx: impl InvokeContext,
+        _req: bridged_device_basic_information::KeepActiveRequest<'_>,
+    ) -> Result<(), Error> {
+        Err(ErrorCode::InvalidCommand.into())
+    }
+}
