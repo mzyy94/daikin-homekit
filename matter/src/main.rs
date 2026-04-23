@@ -221,10 +221,13 @@ fn run_matter(
     let crypto = default_crypto(rand::thread_rng(), TEST_DEV_ATT.dac_priv_key());
     let mut rand = crypto.rand()?;
 
-    let device_count = connections.len();
-    let mut devices = Vec::with_capacity(device_count);
-    for (i, (dk, info)) in connections.into_iter().enumerate() {
-        let ep_id = 2 + i as u16;
+    let mut devices = Vec::with_capacity(connections.len());
+    for (dk, info) in connections {
+        let ep_id = (info.edid & 0xFFFF) as u16;
+        assert!(
+            ep_id >= 2,
+            "edid-derived endpoint ID {ep_id} conflicts with root/aggregator"
+        );
         let device = device::Device::new(dk, rt_handle.clone());
         let bridged_info = bridged_info::BridgedInfo::new(Dataver::new_rand(&mut rand), &info);
         devices.push(bridge::BridgedDevice::new(
@@ -235,8 +238,9 @@ fn run_matter(
         ));
         info!("Bridged endpoint {ep_id}: {}", info.name);
     }
+    let ep_ids: Vec<u16> = devices.iter().map(|d| d.ep_id).collect();
     let bridge_handler = BridgeHandler { devices };
-    let node = bridge::build_node(device_count);
+    let node = bridge::build_node(&ep_ids);
 
     let events = NoEvents::new_default();
 
@@ -266,7 +270,7 @@ fn run_matter(
         matter.open_basic_comm_window(MAX_COMM_WINDOW_TIMEOUT_SECS, &crypto, dm.change_notify())?;
     }
 
-    info!("Matter stack running ({device_count} device(s))");
+    info!("Matter stack running ({} device(s))", ep_ids.len());
 
     let notifier = dm.change_notify();
     let mut poll = pin!(async {

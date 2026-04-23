@@ -41,13 +41,10 @@ const BRIDGED_EP: Endpoint<'static> = Endpoint {
     ),
 };
 
-pub(crate) fn build_node(device_count: usize) -> Node<'static> {
+pub(crate) fn build_node(ep_ids: &[u16]) -> Node<'static> {
     let mut endpoints = vec![ROOT_EP, AGGREGATOR_EP];
-    for i in 0..device_count {
-        endpoints.push(Endpoint {
-            id: 2 + i as u16,
-            ..BRIDGED_EP
-        });
+    for &id in ep_ids {
+        endpoints.push(Endpoint { id, ..BRIDGED_EP });
     }
     Node {
         endpoints: Box::leak(endpoints.into_boxed_slice()),
