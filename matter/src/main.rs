@@ -22,12 +22,12 @@ use futures_lite::StreamExt;
 use embassy_futures::select::{select, select4};
 use static_cell::StaticCell;
 
-use rs_matter::crypto::{Crypto, default_crypto};
+use rs_matter::crypto::{Crypto, CryptoSensitive, CryptoSensitiveRef, default_crypto};
 use rs_matter::dm::clusters::basic_info::BasicInfoConfig;
 use rs_matter::dm::clusters::desc::{self, ClusterHandler as _};
 use rs_matter::dm::clusters::dev_att::DeviceAttestation;
 use rs_matter::dm::clusters::net_comm::SharedNetworks;
-use rs_matter::dm::devices::test::{TEST_DEV_ATT, TEST_DEV_COMM};
+use rs_matter::dm::devices::test::TEST_DEV_ATT;
 use rs_matter::dm::events::NoEvents;
 use rs_matter::dm::networks::eth::EthNetwork;
 use rs_matter::dm::networks::unix::UnixNetifs;
@@ -52,6 +52,11 @@ static MATTER: StaticCell<Matter> = StaticCell::new();
 static BUFFERS: StaticCell<PooledBuffers<10, IMBuffer>> = StaticCell::new();
 static SUBSCRIPTIONS: StaticCell<Subscriptions> = StaticCell::new();
 static KV_BUF: StaticCell<[u8; 4096]> = StaticCell::new();
+
+const COMM_DATA: rs_matter::BasicCommData = rs_matter::BasicCommData {
+    password: CryptoSensitive::new_from_ref(CryptoSensitiveRef::new(&20230420_u32.to_le_bytes())),
+    discriminator: 94,
+};
 
 const BRIDGE_DEV_DET: BasicInfoConfig<'static> = BasicInfoConfig {
     vid: 0xfff1,
@@ -198,7 +203,7 @@ fn run_matter(
 ) -> anyhow::Result<()> {
     let matter = MATTER.uninit().init_with(Matter::init(
         &BRIDGE_DEV_DET,
-        TEST_DEV_COMM,
+        COMM_DATA,
         &TEST_DEV_ATT,
         rs_matter::utils::epoch::sys_epoch,
         MATTER_PORT,
