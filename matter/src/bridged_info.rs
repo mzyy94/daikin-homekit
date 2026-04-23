@@ -9,6 +9,7 @@ pub(crate) struct BridgedInfo {
     pub(crate) dataver: Dataver,
     device_name: &'static str,
     unique_id: &'static str,
+    firmware_version: &'static str,
 }
 
 impl BridgedInfo {
@@ -20,6 +21,9 @@ impl BridgedInfo {
             | bridged_device_basic_information::AttributeId::ProductName
             | bridged_device_basic_information::AttributeId::NodeLabel
             | bridged_device_basic_information::AttributeId::SerialNumber
+            | bridged_device_basic_information::AttributeId::SoftwareVersion
+            | bridged_device_basic_information::AttributeId::SoftwareVersionString
+            | bridged_device_basic_information::AttributeId::ProductURL
         ))
         .with_cmds(with!());
 
@@ -28,6 +32,7 @@ impl BridgedInfo {
             dataver,
             device_name: Box::leak(info.name.clone().into_boxed_str()),
             unique_id: Box::leak(info.mac.clone().into_boxed_str()),
+            firmware_version: Box::leak(info.version.clone().into_boxed_str()),
         }
     }
 }
@@ -72,6 +77,26 @@ impl bridged_device_basic_information::ClusterHandler for BridgedInfo {
         builder: Utf8StrBuilder<P>,
     ) -> Result<P, Error> {
         builder.set(self.unique_id)
+    }
+
+    fn software_version(&self, _ctx: impl ReadContext) -> Result<u32, Error> {
+        Ok(1)
+    }
+
+    fn software_version_string<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(self.firmware_version)
+    }
+
+    fn product_url<P: TLVBuilderParent>(
+        &self,
+        _ctx: impl ReadContext,
+        builder: Utf8StrBuilder<P>,
+    ) -> Result<P, Error> {
+        builder.set(env!("CARGO_PKG_REPOSITORY"))
     }
 
     fn reachable(&self, _ctx: impl ReadContext) -> Result<bool, Error> {
