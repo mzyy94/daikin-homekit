@@ -98,9 +98,18 @@ fn dm_handler<'a>(
     )
 }
 
+#[cfg(all(feature = "astro-dnssd", not(feature = "avahi")))]
 async fn run_mdns(matter: &Matter<'_>) -> Result<(), Error> {
     rs_matter::transport::network::mdns::astro::AstroMdnsResponder::new(matter)
         .run()
+        .await
+}
+
+#[cfg(feature = "avahi")]
+async fn run_mdns(matter: &Matter<'_>) -> Result<(), Error> {
+    let connection = rs_matter::utils::zbus::Connection::system().await.unwrap();
+    rs_matter::transport::network::mdns::avahi::AvahiMdnsResponder::new(matter)
+        .run(&connection)
         .await
 }
 
