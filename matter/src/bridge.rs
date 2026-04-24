@@ -1,3 +1,4 @@
+use rs_matter::dm::AttrChangeNotifier;
 use rs_matter::dm::clusters::decl::bridged_device_basic_information;
 use rs_matter::dm::clusters::decl::fan_control as rs_fan_control;
 use rs_matter::dm::clusters::decl::relative_humidity_measurement;
@@ -5,6 +6,7 @@ use rs_matter::dm::clusters::decl::thermostat as rs_thermostat;
 use rs_matter::dm::clusters::decl::{identify, on_off};
 use rs_matter::dm::clusters::desc::{self, ClusterHandler as _};
 use rs_matter::dm::devices::{DEV_TYPE_AGGREGATOR, DEV_TYPE_BRIDGED_NODE};
+use rs_matter::dm::subscriptions::Subscriptions;
 use rs_matter::dm::{
     Dataver, DeviceType, Endpoint, Handler, InvokeContext, InvokeReply, Matcher, Node,
     NonBlockingHandler, OperationContext, ReadContext, ReadReply, WriteContext,
@@ -88,6 +90,7 @@ impl BridgedDevice {
 
 pub(crate) struct BridgeHandler {
     pub(crate) devices: Vec<BridgedDevice>,
+    pub(crate) subscriptions: &'static Subscriptions,
 }
 
 impl BridgeHandler {
@@ -139,7 +142,7 @@ impl Handler for BridgeHandler {
             .find(ep)
             .ok_or(Error::from(ErrorCode::EndpointNotFound))?;
 
-        if cl == StubIdentify::CLUSTER.id {
+        let result = if cl == StubIdentify::CLUSTER.id {
             identify::HandlerAdaptor(&dev.identify).write(ctx)
         } else if cl == onoff::OnOffHandler::CLUSTER.id {
             on_off::HandlerAdaptor(&dev.on_off).write(ctx)
@@ -149,7 +152,11 @@ impl Handler for BridgeHandler {
             rs_fan_control::HandlerAdaptor(&dev.fan_ctl).write(ctx)
         } else {
             Err(ErrorCode::AttributeNotFound.into())
+        };
+        if result.is_ok() {
+            self.subscriptions.notify_attr_changed(ep, cl, 0);
         }
+        result
     }
 
     fn invoke(&self, ctx: impl InvokeContext, reply: impl InvokeReply) -> Result<(), Error> {
@@ -159,7 +166,7 @@ impl Handler for BridgeHandler {
             .find(ep)
             .ok_or(Error::from(ErrorCode::EndpointNotFound))?;
 
-        if cl == StubIdentify::CLUSTER.id {
+        let result = if cl == StubIdentify::CLUSTER.id {
             identify::HandlerAdaptor(&dev.identify).invoke(ctx, reply)
         } else if cl == onoff::OnOffHandler::CLUSTER.id {
             on_off::HandlerAdaptor(&dev.on_off).invoke(ctx, reply)
@@ -169,7 +176,11 @@ impl Handler for BridgeHandler {
             rs_fan_control::HandlerAdaptor(&dev.fan_ctl).invoke(ctx, reply)
         } else {
             Err(ErrorCode::CommandNotFound.into())
+        };
+        if result.is_ok() {
+            self.subscriptions.notify_attr_changed(ep, cl, 0);
         }
+        result
     }
 }
 

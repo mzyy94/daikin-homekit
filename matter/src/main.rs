@@ -330,7 +330,10 @@ fn run_matter(
         info!("Bridged endpoint {ep_id}: {}", info.name);
     }
     let ep_ids: Vec<u16> = devices.iter().map(|d| d.ep_id).collect();
-    let bridge_handler = BridgeHandler { devices };
+    let bridge_handler = BridgeHandler {
+        devices,
+        subscriptions,
+    };
     let node = bridge::build_node(&ep_ids);
 
     let events = NoEvents::new_default();
