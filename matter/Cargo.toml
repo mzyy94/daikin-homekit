@@ -1,6 +1,6 @@
 [package]
 name = "daikin-matter"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2024"
 authors = ["mzyy94"]
 rust-version = "1.95"
@@ -17,7 +17,7 @@ avahi = ["rs-matter/zbus"]
 [dependencies]
 anyhow = "1.0"
 async-io = "2"
-clap = { version = "4.5", features = ["derive", "cargo"] }
+clap = { version = "4.6", features = ["derive", "cargo"] }
 dirs = "6"
 embassy-futures = "0.1"
 embassy-time = { version = "0.5", features = ["std"] }
