@@ -1,5 +1,6 @@
 use rs_matter::dm::clusters::decl::bridged_device_basic_information;
 use rs_matter::dm::clusters::decl::fan_control as rs_fan_control;
+use rs_matter::dm::clusters::decl::relative_humidity_measurement;
 use rs_matter::dm::clusters::decl::thermostat as rs_thermostat;
 use rs_matter::dm::clusters::decl::{identify, on_off};
 use rs_matter::dm::clusters::desc::{self, ClusterHandler as _};
@@ -13,7 +14,7 @@ use rs_matter::{clusters, devices, root_endpoint};
 
 use crate::bridged_info::BridgedInfo;
 use crate::identify::StubIdentify;
-use crate::{device, fan_control, onoff, thermostat};
+use crate::{device, fan_control, humidity, onoff, thermostat};
 
 pub(crate) const DEV_TYPE_ROOM_AC: DeviceType = DeviceType {
     dtype: 0x0072,
@@ -37,7 +38,8 @@ const BRIDGED_EP: Endpoint<'static> = Endpoint {
         BridgedInfo::CLUSTER,
         onoff::OnOffHandler::CLUSTER,
         thermostat::ThermostatHandler::CLUSTER,
-        fan_control::FanControlHandler::CLUSTER
+        fan_control::FanControlHandler::CLUSTER,
+        humidity::HumidityHandler::CLUSTER
     ),
 };
 
@@ -59,6 +61,7 @@ pub(crate) struct BridgedDevice {
     pub(crate) on_off: onoff::OnOffHandler,
     pub(crate) therm: thermostat::ThermostatHandler,
     pub(crate) fan_ctl: fan_control::FanControlHandler,
+    pub(crate) humidity: humidity::HumidityHandler,
     pub(crate) device: device::Device,
 }
 
@@ -77,6 +80,7 @@ impl BridgedDevice {
             on_off: onoff::OnOffHandler::new(Dataver::new_rand(rand), device.clone()),
             therm: thermostat::ThermostatHandler::new(Dataver::new_rand(rand), device.clone()),
             fan_ctl: fan_control::FanControlHandler::new(Dataver::new_rand(rand), device.clone()),
+            humidity: humidity::HumidityHandler::new(Dataver::new_rand(rand), device.clone()),
             device,
         }
     }
@@ -121,6 +125,8 @@ impl Handler for BridgeHandler {
             rs_thermostat::HandlerAdaptor(&dev.therm).read(ctx, reply)
         } else if cl == fan_control::FanControlHandler::CLUSTER.id {
             rs_fan_control::HandlerAdaptor(&dev.fan_ctl).read(ctx, reply)
+        } else if cl == humidity::HumidityHandler::CLUSTER.id {
+            relative_humidity_measurement::HandlerAdaptor(&dev.humidity).read(ctx, reply)
         } else {
             Err(ErrorCode::ClusterNotFound.into())
         }

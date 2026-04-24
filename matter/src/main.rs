@@ -5,6 +5,7 @@ mod bridge;
 mod bridged_info;
 mod device;
 mod fan_control;
+mod humidity;
 mod identify;
 mod onoff;
 mod thermostat;
@@ -372,6 +373,7 @@ fn run_matter(
                         dev.on_off.dataver.changed();
                         dev.therm.dataver.changed();
                         dev.fan_ctl.dataver.changed();
+                        dev.humidity.dataver.changed();
                         notifier.notify_attr_changed(dev.ep_id, onoff::OnOffHandler::CLUSTER.id, 0);
                     }
                     Err(e) => warn!("Poll failed (ep {}): {e}", dev.ep_id),
