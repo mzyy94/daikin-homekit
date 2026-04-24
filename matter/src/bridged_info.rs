@@ -5,11 +5,14 @@ use rs_matter::error::{Error, ErrorCode};
 use rs_matter::tlv::{TLVBuilderParent, Utf8StrBuilder};
 use rs_matter::with;
 
+use crate::device::Device;
+
 pub(crate) struct BridgedInfo {
     pub(crate) dataver: Dataver,
     device_name: &'static str,
     unique_id: &'static str,
     firmware_version: &'static str,
+    device: Device,
 }
 
 impl BridgedInfo {
@@ -24,15 +27,17 @@ impl BridgedInfo {
             | bridged_device_basic_information::AttributeId::SoftwareVersion
             | bridged_device_basic_information::AttributeId::SoftwareVersionString
             | bridged_device_basic_information::AttributeId::ProductURL
+            | bridged_device_basic_information::AttributeId::Reachable
         ))
         .with_cmds(with!());
 
-    pub(crate) fn new(dataver: Dataver, info: &DaikinInfo) -> Self {
+    pub(crate) fn new(dataver: Dataver, info: &DaikinInfo, device: Device) -> Self {
         Self {
             dataver,
             device_name: Box::leak(info.name.clone().into_boxed_str()),
             unique_id: Box::leak(info.mac.clone().into_boxed_str()),
             firmware_version: Box::leak(info.version.clone().into_boxed_str()),
+            device,
         }
     }
 }
@@ -100,7 +105,7 @@ impl bridged_device_basic_information::ClusterHandler for BridgedInfo {
     }
 
     fn reachable(&self, _ctx: impl ReadContext) -> Result<bool, Error> {
-        Ok(true)
+        Ok(self.device.is_reachable())
     }
 
     fn unique_id<P: TLVBuilderParent>(

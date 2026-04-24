@@ -320,7 +320,8 @@ fn run_matter(
             "edid-derived endpoint ID {ep_id} conflicts with root/aggregator"
         );
         let device = device::Device::new(dk, rt_handle.clone());
-        let bridged_info = bridged_info::BridgedInfo::new(Dataver::new_rand(&mut rand), &info);
+        let bridged_info =
+            bridged_info::BridgedInfo::new(Dataver::new_rand(&mut rand), &info, device.clone());
         devices.push(bridge::BridgedDevice::new(
             ep_id,
             &mut rand,
