@@ -279,7 +279,7 @@ fn main() -> anyhow::Result<()> {
     info!("Data directory: {}", data_dir.display());
 
     let thread = std::thread::Builder::new()
-        .stack_size(550 * 1024)
+        .stack_size(1024 * 1024)
         .spawn(move || run_matter(connections, rt_handle, data_dir))
         .unwrap();
 
@@ -346,7 +346,7 @@ fn run_matter(
     );
 
     let responder = DefaultResponder::new(&dm);
-    let mut respond = pin!(responder.run::<4, 4>());
+    let mut respond = pin!(responder.run::<8, 4>());
     let mut dm_job = pin!(dm.run());
 
     let socket = async_io::Async::<UdpSocket>::bind(MATTER_SOCKET_BIND_ADDR)?;
