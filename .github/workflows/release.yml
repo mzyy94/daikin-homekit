@@ -18,16 +18,14 @@ jobs:
           - os: macos-latest
             features: astro-dnssd
           - os: ubuntu-24.04
-            features: avahi
+            features: builtin-mdns
           - os: ubuntu-24.04-arm
-            features: avahi
+            features: builtin-mdns
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v6.0.2
-    - if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libavahi-compat-libdnssd-dev libdbus-1-dev pkg-config
     - run: rustup toolchain install 1.95 && rustup default 1.95
     - run: cargo build --verbose --release --no-default-features --features ${{ matrix.features }}
     - uses: actions/upload-artifact@v7.0.1
