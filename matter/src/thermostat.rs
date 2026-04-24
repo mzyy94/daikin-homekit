@@ -23,6 +23,7 @@ impl ThermostatHandler {
         .with_attrs(with!(
             required;
             thermostat::AttributeId::LocalTemperature
+            | thermostat::AttributeId::OutdoorTemperature
             | thermostat::AttributeId::SystemMode
             | thermostat::AttributeId::OccupiedCoolingSetpoint
             | thermostat::AttributeId::OccupiedHeatingSetpoint
@@ -85,6 +86,14 @@ impl thermostat::ClusterHandler for ThermostatHandler {
     fn local_temperature(&self, _ctx: impl ReadContext) -> Result<Nullable<i16>, Error> {
         let status = self.get_status()?;
         match status.sensors.temperature.get_f32() {
+            Some(t) => Ok(Nullable::some(temp_to_matter(t))),
+            None => Ok(Nullable::none()),
+        }
+    }
+
+    fn outdoor_temperature(&self, _ctx: impl ReadContext) -> Result<Nullable<i16>, Error> {
+        let status = self.get_status()?;
+        match status.sensors.outdoor_temperature.get_f32() {
             Some(t) => Ok(Nullable::some(temp_to_matter(t))),
             None => Ok(Nullable::none()),
         }
