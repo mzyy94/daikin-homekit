@@ -1,10 +1,10 @@
 [Unit]
-Description=Daikin HomeKit
+Description=Daikin Matter Bridge
 After=network.target
 
 [Service]
-Environment="RUST_LOG=hap=info,daikin_homekit=info"
-ExecStart=/usr/local/bin/daikin-homekit
+Environment="RUST_LOG=rs_matter=info,daikin_matter=info"
+ExecStart=/usr/local/bin/daikin-matter
 Type=simple
 Restart=always
 RestartSec=5
