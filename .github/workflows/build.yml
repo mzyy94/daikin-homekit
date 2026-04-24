@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4.2.2
+    - uses: actions/checkout@v6.0.2
+    - run: sudo apt-get update && sudo apt-get install -y libavahi-compat-libdnssd-dev libdbus-1-dev pkg-config
+    - run: rustup toolchain install 1.95 --component clippy && rustup default 1.95
     - run: cargo build --verbose
     - run: cargo test -p dsiot --verbose
     - run: cargo clippy --all-targets --all-features -- -D warnings
