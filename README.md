@@ -9,7 +9,7 @@ Control Daikin Air Conditioner via Matter. Compatible with new Daikin API. ([Leg
 > [!NOTE]
 > v0.3 and later use Matter. For HomeKit support, see [v0.2.4](https://github.com/mzyy94/daikin-homekit/releases/tag/v0.2.4) and [homekit branch](https://github.com/mzyy94/daikin-homekit/tree/homekit).
 
-![daikin-homekit](/docs/daikin-homekit.png)
+![daikin-matter](/docs/daikin-matter.png)
 
 
 [Legacy API]: https://github.com/ael-code/daikin-control/wiki/API-System
@@ -34,25 +34,33 @@ Get and unarchive latest release from [Releases Page](https://github.com/mzyy94/
 $ install -m0755 daikin-matter /usr/local/bin/
 ```
 
-On Linux, the Avahi daemon is required for mDNS discovery:
-
-```bash
-$ sudo apt-get install avahi-daemon
-```
-
 ## Build
 
 ```bash
-$ git clone https://github.com/mzyy94/daikin-matter
-$ cd daikin-matter
-$ cargo build --release
-$ install target/release/daikin-matter /usr/local/bin/
+$ cargo install --git https://github.com/mzyy94/daikin-matter --root /usr/local
 ```
 
-On Linux, build with the `avahi` feature instead of the default:
+On Linux, the `builtin-mdns` feature is recommended as it does not require Avahi:
 
 ```bash
-$ cargo build --release --no-default-features --features avahi
+$ cargo install --git https://github.com/mzyy94/daikin-matter --root /usr/local --no-default-features --features builtin-mdns
+```
+
+## Running as a daemon (systemd)
+
+A systemd service file is included in the repository. To run `daikin-matter` as a background service on Linux:
+
+```bash
+$ sudo curl https://github.com/mzyy94/daikin-matter/raw/refs/heads/master/daikin-matter.service -LO --output-dir /etc/systemd/system/
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable --now daikin-matter
+```
+
+To check the service status and logs:
+
+```bash
+$ sudo systemctl status daikin-matter
+$ journalctl -u daikin-matter -f
 ```
 
 ## Debug
@@ -60,6 +68,27 @@ $ cargo build --release --no-default-features --features avahi
 ```bash
 $ RUST_LOG=daikin_matter=debug daikin-matter
 ```
+
+## Controller support
+
+The bridge exposes the following Matter clusters for each air conditioner:
+
+| Feature | Cluster | Apple Home | Home Assistant |
+|---|---|---|---|
+| Power on/off | OnOff | ✅ | ✅ |
+| Mode: Cool / Heat / Auto | Thermostat | ✅ | ✅ |
+| Mode: Fan / Dry | Thermostat | ❌ | ❌ |
+| Target temperature (not available in Auto mode) | Thermostat | ✅ | ✅ |
+| Room temperature | Thermostat | ✅ | ✅ |
+| Outdoor temperature | Thermostat | ❌ | ✅ |
+| Fan speed | FanControl | ❌ | ✅ |
+| Swing (vertical/horizontal, toggles with auto) | FanControl | ❌ | ✅ |
+| Wind direction | (not in cluster) | ❌ | ❌ |
+| Humidity | RelativeHumidityMeasurement | ❌ | ✅ |
+
+Apple Home has limited support for Room Air Conditioner device type. Only basic thermostat and power controls are available. Home Assistant's Matter integration provides access to more features including fan control and sensor readings, but Fan/Dry modes are hidden by the vendor-level UI filtering.
+
+Tested with iOS 26.4.2, Home Assistant 2026.4.3, and Daikin AC firmware 3.11.0.
 
 ## Compatibility
 
