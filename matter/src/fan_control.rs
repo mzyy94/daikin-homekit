@@ -73,7 +73,7 @@ fn current_wind_speed(status: &DaikinStatus) -> Option<WindSpeed> {
             AutoModeWindSpeed::Silent => WindSpeed::Silent,
             _ => WindSpeed::Auto,
         }),
-        Mode::Fan => Some(WindSpeed::Auto), // Fan mode is always auto
+        Mode::Fan => status.wind.fan.speed.get_enum(),
         _ => None,
     }
 }
@@ -127,9 +127,7 @@ fn apply_wind_speed(status: &mut DaikinStatus, speed: WindSpeed) {
             });
             status.wind.auto.speed.set_value(auto_speed);
         }
-        Mode::Fan => {
-            status.wind.fan.speed.set_value(AutoModeWindSpeed::Auto);
-        }
+        Mode::Fan => status.wind.fan.speed.set_value(speed),
         _ => {}
     }
 }
@@ -301,7 +299,8 @@ impl fan_control::ClusterHandler for FanControlHandler {
         if speed == Some(WindSpeed::Silent) {
             bits |= fan_control::WindBitmap::SLEEP_WIND;
         }
-        if vert == Some(VerticalDirection::Nice) {
+        let mode = status.mode.get_enum();
+        if vert == Some(VerticalDirection::Nice) && mode != Some(Mode::Fan) {
             bits |= fan_control::WindBitmap::NATURAL_WIND;
         }
         Ok(bits)
@@ -395,7 +394,8 @@ impl fan_control::ClusterHandler for FanControlHandler {
         if value.contains(fan_control::WindBitmap::SLEEP_WIND) {
             apply_wind_speed(&mut status, WindSpeed::Silent);
         }
-        if value.contains(fan_control::WindBitmap::NATURAL_WIND) {
+        let is_fan_mode = status.mode.get_enum() == Some(Mode::Fan);
+        if value.contains(fan_control::WindBitmap::NATURAL_WIND) && !is_fan_mode {
             let (_, horiz) = current_directions(&status);
             apply_directions(
                 &mut status,

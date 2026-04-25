@@ -47,17 +47,6 @@ pub struct AutoModeWindSettings {
     pub horizontal_direction: Item<HorizontalDirection>,
 }
 
-/// Wind/airflow settings for fan mode (auto speed only).
-#[derive(Clone, Debug)]
-pub struct FanModeWindSettings {
-    /// Fan speed setting (Auto only).
-    pub speed: Item<AutoModeWindSpeed>,
-    /// Vertical air direction.
-    pub vertical_direction: Item<VerticalDirection>,
-    /// Horizontal air direction.
-    pub horizontal_direction: Item<HorizontalDirection>,
-}
-
 /// Wind/airflow control settings per operating mode.
 #[derive(Clone, Debug)]
 pub struct WindSettings {
@@ -65,8 +54,8 @@ pub struct WindSettings {
     pub cooling: ModeWindSettings,
     /// Wind settings for heating mode.
     pub heating: ModeWindSettings,
-    /// Wind settings for fan mode (auto speed only).
-    pub fan: FanModeWindSettings,
+    /// Wind settings for fan mode.
+    pub fan: ModeWindSettings,
     /// Wind settings for dehumidify mode.
     pub dehumidify: ModeWindSettings,
     /// Wind settings for auto mode.
@@ -114,7 +103,7 @@ impl From<DaikinResponse> for DaikinStatus {
                     vertical_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_07),
                     horizontal_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_08),
                 },
-                fan: FanModeWindSettings {
+                fan: ModeWindSettings {
                     speed: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_28),
                     vertical_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_24),
                     horizontal_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_25),

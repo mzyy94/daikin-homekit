@@ -13,6 +13,6 @@ pub use property::{Binary, BinaryEnum, BinaryStep, Item, Metadata, PropValue, Pr
 pub use request::DaikinRequest;
 pub use response::DaikinResponse;
 pub use status::{
-    AutoModeWindSettings, DaikinStatus, FanModeWindSettings, ModeWindSettings, SensorReadings,
-    TemperatureSettings, WindSettings,
+    AutoModeWindSettings, DaikinStatus, ModeWindSettings, SensorReadings, TemperatureSettings,
+    WindSettings,
 };
