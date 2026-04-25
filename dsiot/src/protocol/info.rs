@@ -1,3 +1,4 @@
+use super::property::Item;
 use super::response::DaikinResponse;
 use serde::{Deserialize, Deserializer, de};
 
@@ -9,6 +10,8 @@ pub struct DaikinInfo {
     pub version: String,
     #[serde(deserialize_with = "parse_edid")]
     pub edid: u64,
+    #[serde(default)]
+    pub en_ipower: bool,
 }
 
 fn parse_version<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
@@ -42,6 +45,10 @@ impl From<DaikinResponse> for DaikinInfo {
                 &get_prop!(res."/dsiot/edge.adp_i".edid .to_string()).unwrap_or_default(),
             )
             .unwrap_or(0),
+            en_ipower: {
+                let v: Item<f32> = get_prop!(res."/dsiot/edge.adp_i".func.en_ipower);
+                v.get_int() == Some(1)
+            },
         }
     }
 }
@@ -60,6 +67,7 @@ mod tests {
         assert_eq!(info.mac, "00005E005342");
         assert_eq!(info.version, "2.7.0");
         assert_eq!(info.edid, 19088743);
+        assert!(info.en_ipower);
     }
 
     #[test]

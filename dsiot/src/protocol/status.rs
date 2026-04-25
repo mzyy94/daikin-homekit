@@ -75,6 +75,8 @@ pub struct DaikinStatus {
     pub temperature: TemperatureSettings,
     /// Wind/airflow settings.
     pub wind: WindSettings,
+    /// Instantaneous power consumption in watts (requires en_ipower).
+    pub power_consumption: Item<f32>,
 }
 
 impl From<DaikinResponse> for DaikinStatus {
@@ -119,6 +121,7 @@ impl From<DaikinResponse> for DaikinStatus {
                     horizontal_direction: get_prop!(response."/dsiot/edge/adr_0100.dgc_status".e_1002.e_3001.p_21),
                 },
             },
+            power_consumption: get_prop!(response."/dsiot/edge/adr_0200.dgc_status".e_1003.e_A005.p_01),
         }
     }
 }
@@ -210,6 +213,9 @@ mod tests {
             status.wind.auto.speed.get_enum(),
             Some(AutoModeWindSpeed::Auto)
         );
+
+        // Power consumption
+        assert_eq!(status.power_consumption.get_f32(), Some(0.0));
     }
 
     #[test]

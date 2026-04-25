@@ -8,6 +8,7 @@ mod fan_control;
 mod humidity;
 mod identify;
 mod onoff;
+mod power;
 mod thermostat;
 
 use core::pin::pin;
@@ -239,7 +240,8 @@ fn main() -> anyhow::Result<()> {
             let mut stream = pin!(stream);
             while let Some(result) = stream.next().await {
                 match result {
-                    Ok((dk, info)) => {
+                    Ok((dk, _udp_info)) => {
+                        let info = dk.get_info().await?;
                         debug!("Status: {:?}", dk.get_status().await?);
                         conns.push((dk, info));
                         if conns.len() >= cli.count {
@@ -327,15 +329,22 @@ fn run_matter(
             &mut rand,
             bridged_info,
             device,
+            info.en_ipower,
         ));
-        info!("Bridged endpoint {ep_id}: {}", info.name);
+        info!(
+            "Bridged endpoint {ep_id}: {} (power monitoring: {})",
+            info.name, info.en_ipower
+        );
     }
-    let ep_ids: Vec<u16> = devices.iter().map(|d| d.ep_id).collect();
+    let ep_devs: Vec<(u16, bool)> = devices
+        .iter()
+        .map(|d| (d.ep_id, d.power.is_some()))
+        .collect();
     let bridge_handler = BridgeHandler {
         devices,
         subscriptions,
     };
-    let node = bridge::build_node(&ep_ids);
+    let node = bridge::build_node(&ep_devs);
 
     let events = NoEvents::new_default();
 
@@ -365,7 +374,7 @@ fn run_matter(
         matter.open_basic_comm_window(MAX_COMM_WINDOW_TIMEOUT_SECS, &crypto, dm.change_notify())?;
     }
 
-    info!("Matter stack running ({} device(s))", ep_ids.len());
+    info!("Matter stack running ({} device(s))", ep_devs.len());
 
     let notifier = dm.change_notify();
     let mut poll = pin!(async {
@@ -378,6 +387,9 @@ fn run_matter(
                         dev.therm.dataver.changed();
                         dev.fan_ctl.dataver.changed();
                         dev.humidity.dataver.changed();
+                        if let Some(ref p) = dev.power {
+                            p.dataver.changed();
+                        }
                         notifier.notify_attr_changed(dev.ep_id, onoff::OnOffHandler::CLUSTER.id, 0);
                     }
                     Err(e) => warn!("Poll failed (ep {}): {e}", dev.ep_id),

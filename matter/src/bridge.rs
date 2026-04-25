@@ -1,5 +1,6 @@
 use rs_matter::dm::AttrChangeNotifier;
 use rs_matter::dm::clusters::decl::bridged_device_basic_information;
+use rs_matter::dm::clusters::decl::electrical_power_measurement;
 use rs_matter::dm::clusters::decl::fan_control as rs_fan_control;
 use rs_matter::dm::clusters::decl::relative_humidity_measurement;
 use rs_matter::dm::clusters::decl::thermostat as rs_thermostat;
@@ -16,7 +17,7 @@ use rs_matter::{clusters, devices, root_endpoint};
 
 use crate::bridged_info::BridgedInfo;
 use crate::identify::StubIdentify;
-use crate::{device, fan_control, humidity, onoff, thermostat};
+use crate::{device, fan_control, humidity, onoff, power, thermostat};
 
 pub(crate) const DEV_TYPE_ROOM_AC: DeviceType = DeviceType {
     dtype: 0x0072,
@@ -45,10 +46,30 @@ const BRIDGED_EP: Endpoint<'static> = Endpoint {
     ),
 };
 
-pub(crate) fn build_node(ep_ids: &[u16]) -> Node<'static> {
+const BRIDGED_EP_POWER: Endpoint<'static> = Endpoint {
+    id: 0, // placeholder, overridden at runtime
+    device_types: devices!(DEV_TYPE_ROOM_AC, DEV_TYPE_BRIDGED_NODE),
+    clusters: clusters!(
+        desc::DescHandler::CLUSTER,
+        StubIdentify::CLUSTER,
+        BridgedInfo::CLUSTER,
+        onoff::OnOffHandler::CLUSTER,
+        thermostat::ThermostatHandler::CLUSTER,
+        fan_control::FanControlHandler::CLUSTER,
+        humidity::HumidityHandler::CLUSTER,
+        power::PowerHandler::CLUSTER
+    ),
+};
+
+pub(crate) fn build_node(devices: &[(u16, bool)]) -> Node<'static> {
     let mut endpoints = vec![ROOT_EP, AGGREGATOR_EP];
-    for &id in ep_ids {
-        endpoints.push(Endpoint { id, ..BRIDGED_EP });
+    for &(id, has_power) in devices {
+        let template = if has_power {
+            BRIDGED_EP_POWER
+        } else {
+            BRIDGED_EP
+        };
+        endpoints.push(Endpoint { id, ..template });
     }
     Node {
         endpoints: Box::leak(endpoints.into_boxed_slice()),
@@ -64,6 +85,7 @@ pub(crate) struct BridgedDevice {
     pub(crate) therm: thermostat::ThermostatHandler,
     pub(crate) fan_ctl: fan_control::FanControlHandler,
     pub(crate) humidity: humidity::HumidityHandler,
+    pub(crate) power: Option<power::PowerHandler>,
     pub(crate) device: device::Device,
 }
 
@@ -73,7 +95,16 @@ impl BridgedDevice {
         rand: &mut impl rand::RngCore,
         bridged_info: BridgedInfo,
         device: device::Device,
+        en_ipower: bool,
     ) -> Self {
+        let power = if en_ipower {
+            Some(power::PowerHandler::new(
+                Dataver::new_rand(rand),
+                device.clone(),
+            ))
+        } else {
+            None
+        };
         Self {
             ep_id,
             desc: desc::DescHandler::new(Dataver::new_rand(rand)).adapt(),
@@ -83,6 +114,7 @@ impl BridgedDevice {
             therm: thermostat::ThermostatHandler::new(Dataver::new_rand(rand), device.clone()),
             fan_ctl: fan_control::FanControlHandler::new(Dataver::new_rand(rand), device.clone()),
             humidity: humidity::HumidityHandler::new(Dataver::new_rand(rand), device.clone()),
+            power,
             device,
         }
     }
@@ -130,6 +162,11 @@ impl Handler for BridgeHandler {
             rs_fan_control::HandlerAdaptor(&dev.fan_ctl).read(ctx, reply)
         } else if cl == humidity::HumidityHandler::CLUSTER.id {
             relative_humidity_measurement::HandlerAdaptor(&dev.humidity).read(ctx, reply)
+        } else if cl == power::PowerHandler::CLUSTER.id {
+            match &dev.power {
+                Some(p) => electrical_power_measurement::HandlerAdaptor(p).read(ctx, reply),
+                None => Err(ErrorCode::ClusterNotFound.into()),
+            }
         } else {
             Err(ErrorCode::ClusterNotFound.into())
         }
