@@ -1,5 +1,14 @@
 use core::ops::RangeInclusive;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
+#[derive(Serialize_repr, Deserialize_repr, Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum PropertyType {
+    Tree = 1,
+    ReadWrite = 2,
+    ReadOnly = 3,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
@@ -7,8 +16,8 @@ pub enum Property {
     Tree {
         #[serde(rename = "pn")]
         name: String,
-        // #[serde(skip_serializing, rename = "pt")]
-        // type_: u8, // 1
+        #[serde(skip_serializing, rename = "pt")]
+        type_: PropertyType,
         #[serde(rename = "pch")]
         children: Vec<Property>,
     },
@@ -19,8 +28,8 @@ pub enum Property {
 pub struct Item<T: Sized + DeserializeOwned + Into<f32> = f32> {
     #[serde(rename = "pn")]
     pub name: String,
-    // #[serde(skip_serializing, rename = "pt")]
-    // type_: u8, // 2, 3
+    #[serde(skip_serializing, rename = "pt")]
+    pub type_: PropertyType,
     #[serde(rename = "pv")]
     pub value: PropValue,
     #[serde(skip_serializing, rename = "md")]
@@ -75,6 +84,7 @@ impl Property {
     pub fn new_tree(name: &str) -> Property {
         Property::Tree {
             name: name.to_string(),
+            type_: PropertyType::Tree,
             children: vec![],
         }
     }
@@ -460,7 +470,7 @@ mod tests {
 
         assert_eq!(
             format!("{p:?}"),
-            r#"Tree { name: "e_A00D", children: [Node(Item { name: "p_01", value: 19.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })) })] }"#
+            r#"Tree { name: "e_A00D", type_: Tree, children: [Node(Item { name: "p_01", value: 19.0, metadata: Binary(Step(BinaryStep { range: -9.0..=39.0, step: 0.5 })) })] }"#
         );
     }
 
