@@ -10,6 +10,7 @@ mod identify;
 mod onoff;
 mod power;
 mod thermostat;
+mod wifi_diag;
 
 use core::pin::pin;
 use std::net::{Ipv4Addr, UdpSocket};
@@ -100,7 +101,11 @@ fn dm_handler<'a>(
     )
 }
 
-#[cfg(all(feature = "astro-dnssd", not(feature = "avahi"), not(feature = "builtin-mdns")))]
+#[cfg(all(
+    feature = "astro-dnssd",
+    not(feature = "avahi"),
+    not(feature = "builtin-mdns")
+))]
 async fn run_mdns(matter: &Matter<'_>) -> Result<(), Error> {
     rs_matter::transport::network::mdns::astro::AstroMdnsResponder::new(matter)
         .run()
@@ -324,17 +329,17 @@ fn run_matter(
         let device = device::Device::new(dk, rt_handle.clone());
         let bridged_info =
             bridged_info::BridgedInfo::new(Dataver::new_rand(&mut rand), &info, device.clone());
+        info!(
+            "Bridged endpoint {ep_id}: {} (power: {})",
+            info.name, info.en_ipower
+        );
         devices.push(bridge::BridgedDevice::new(
             ep_id,
             &mut rand,
             bridged_info,
             device,
-            info.en_ipower,
+            info,
         ));
-        info!(
-            "Bridged endpoint {ep_id}: {} (power monitoring: {})",
-            info.name, info.en_ipower
-        );
     }
     let ep_devs: Vec<(u16, bool)> = devices
         .iter()

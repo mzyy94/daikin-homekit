@@ -61,10 +61,11 @@ macro_rules! get_child_prop {
         }
     };
     ({ $popt:expr } .to_string()) => {{
-        let Some(crate::protocol::property::Property::Node( item )) = $popt else {
-            panic!("Expected a Property::Node, but got something else.");
-        };
-        item.get_string()
+        if let Some(crate::protocol::property::Property::Node( item )) = $popt {
+            item.get_string()
+        } else {
+            None
+        }
     }};
     ({ $popt:expr } . $name:ident $($rest:tt)*) => {
         get_child_prop!(

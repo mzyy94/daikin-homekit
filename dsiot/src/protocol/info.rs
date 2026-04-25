@@ -12,6 +12,12 @@ pub struct DaikinInfo {
     pub edid: u64,
     #[serde(default)]
     pub en_ipower: bool,
+    #[serde(skip)]
+    pub rssi: Option<i8>,
+    #[serde(skip)]
+    pub ssid: Option<String>,
+    #[serde(skip)]
+    pub security_type: Option<String>,
 }
 
 fn parse_version<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
@@ -49,6 +55,18 @@ impl From<DaikinResponse> for DaikinInfo {
                 let v: Item<f32> = get_prop!(res."/dsiot/edge.adp_i".func.en_ipower);
                 v.get_int() == Some(1)
             },
+            rssi: {
+                let v: Item<f32> = get_prop!(res."/dsiot/edge.adp_r".wlan_info.rssi);
+                v.get_int().map(|v| v as i8)
+            },
+            ssid: {
+                let s = get_prop!(res."/dsiot/edge.adp_r".wlan_info.ssid .to_string());
+                s.filter(|s| !s.is_empty())
+            },
+            security_type: {
+                let s = get_prop!(res."/dsiot/edge.adp_r".wlan_info.sec_type .to_string());
+                s.filter(|s| !s.is_empty())
+            },
         }
     }
 }
@@ -68,6 +86,9 @@ mod tests {
         assert_eq!(info.version, "2.7.0");
         assert_eq!(info.edid, 19088743);
         assert!(info.en_ipower);
+        assert_eq!(info.rssi, Some(-30));
+        assert_eq!(info.ssid.as_deref(), Some("WLAN_SSID"));
+        assert_eq!(info.security_type.as_deref(), Some("WPA2"));
     }
 
     #[test]

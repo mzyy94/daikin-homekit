@@ -1,9 +1,11 @@
+use dsiot::protocol::DaikinInfo;
 use rs_matter::dm::AttrChangeNotifier;
 use rs_matter::dm::clusters::decl::bridged_device_basic_information;
 use rs_matter::dm::clusters::decl::electrical_power_measurement;
 use rs_matter::dm::clusters::decl::fan_control as rs_fan_control;
 use rs_matter::dm::clusters::decl::relative_humidity_measurement;
 use rs_matter::dm::clusters::decl::thermostat as rs_thermostat;
+use rs_matter::dm::clusters::decl::wi_fi_network_diagnostics;
 use rs_matter::dm::clusters::decl::{identify, on_off};
 use rs_matter::dm::clusters::desc::{self, ClusterHandler as _};
 use rs_matter::dm::devices::{DEV_TYPE_AGGREGATOR, DEV_TYPE_BRIDGED_NODE};
@@ -17,7 +19,7 @@ use rs_matter::{clusters, devices, root_endpoint};
 
 use crate::bridged_info::BridgedInfo;
 use crate::identify::StubIdentify;
-use crate::{device, fan_control, humidity, onoff, power, thermostat};
+use crate::{device, fan_control, humidity, onoff, power, thermostat, wifi_diag};
 
 pub(crate) const DEV_TYPE_ROOM_AC: DeviceType = DeviceType {
     dtype: 0x0072,
@@ -42,7 +44,8 @@ const BRIDGED_EP: Endpoint<'static> = Endpoint {
         onoff::OnOffHandler::CLUSTER,
         thermostat::ThermostatHandler::CLUSTER,
         fan_control::FanControlHandler::CLUSTER,
-        humidity::HumidityHandler::CLUSTER
+        humidity::HumidityHandler::CLUSTER,
+        wifi_diag::WifiDiagHandler::CLUSTER
     ),
 };
 
@@ -57,7 +60,8 @@ const BRIDGED_EP_POWER: Endpoint<'static> = Endpoint {
         thermostat::ThermostatHandler::CLUSTER,
         fan_control::FanControlHandler::CLUSTER,
         humidity::HumidityHandler::CLUSTER,
-        power::PowerHandler::CLUSTER
+        power::PowerHandler::CLUSTER,
+        wifi_diag::WifiDiagHandler::CLUSTER
     ),
 };
 
@@ -86,6 +90,7 @@ pub(crate) struct BridgedDevice {
     pub(crate) fan_ctl: fan_control::FanControlHandler,
     pub(crate) humidity: humidity::HumidityHandler,
     pub(crate) power: Option<power::PowerHandler>,
+    pub(crate) wifi_diag: wifi_diag::WifiDiagHandler,
     pub(crate) device: device::Device,
 }
 
@@ -95,9 +100,9 @@ impl BridgedDevice {
         rand: &mut impl rand::RngCore,
         bridged_info: BridgedInfo,
         device: device::Device,
-        en_ipower: bool,
+        info: DaikinInfo,
     ) -> Self {
-        let power = if en_ipower {
+        let power = if info.en_ipower {
             Some(power::PowerHandler::new(
                 Dataver::new_rand(rand),
                 device.clone(),
@@ -105,6 +110,8 @@ impl BridgedDevice {
         } else {
             None
         };
+        let wifi_diag =
+            wifi_diag::WifiDiagHandler::new(Dataver::new_rand(rand), info, device.clone());
         Self {
             ep_id,
             desc: desc::DescHandler::new(Dataver::new_rand(rand)).adapt(),
@@ -115,6 +122,7 @@ impl BridgedDevice {
             fan_ctl: fan_control::FanControlHandler::new(Dataver::new_rand(rand), device.clone()),
             humidity: humidity::HumidityHandler::new(Dataver::new_rand(rand), device.clone()),
             power,
+            wifi_diag,
             device,
         }
     }
@@ -167,6 +175,8 @@ impl Handler for BridgeHandler {
                 Some(p) => electrical_power_measurement::HandlerAdaptor(p).read(ctx, reply),
                 None => Err(ErrorCode::ClusterNotFound.into()),
             }
+        } else if cl == wifi_diag::WifiDiagHandler::CLUSTER.id {
+            wi_fi_network_diagnostics::HandlerAdaptor(&dev.wifi_diag).read(ctx, reply)
         } else {
             Err(ErrorCode::ClusterNotFound.into())
         }
@@ -211,6 +221,8 @@ impl Handler for BridgeHandler {
             rs_thermostat::HandlerAdaptor(&dev.therm).invoke(ctx, reply)
         } else if cl == fan_control::FanControlHandler::CLUSTER.id {
             rs_fan_control::HandlerAdaptor(&dev.fan_ctl).invoke(ctx, reply)
+        } else if cl == wifi_diag::WifiDiagHandler::CLUSTER.id {
+            wi_fi_network_diagnostics::HandlerAdaptor(&dev.wifi_diag).invoke(ctx, reply)
         } else {
             Err(ErrorCode::CommandNotFound.into())
         };

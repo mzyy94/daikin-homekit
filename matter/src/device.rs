@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use daikin_client::{Daikin, ReqwestClient};
 use dsiot::DaikinStatus;
+use dsiot::protocol::DaikinInfo;
 
 #[derive(Clone)]
 pub struct Device {
@@ -30,6 +31,10 @@ impl Device {
         let result = self.rt.block_on(self.dk.update(status));
         self.reachable.store(result.is_ok(), Ordering::Relaxed);
         result
+    }
+
+    pub fn get_info(&self) -> anyhow::Result<DaikinInfo> {
+        self.rt.block_on(self.dk.get_info())
     }
 
     pub fn is_reachable(&self) -> bool {

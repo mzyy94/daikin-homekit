@@ -126,6 +126,10 @@ impl<H: HttpClient> Daikin<H> {
             {
                 "op": 2,
                 "to": "/dsiot/edge.adp_d"
+            },
+            {
+                "op": 2,
+                "to": "/dsiot/edge.adp_r"
             }
         ]});
 
