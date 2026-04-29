@@ -1,7 +1,7 @@
 use dsiot::mapping::fan::{self, FanSpeed};
 use dsiot::{
-    AutoModeWindSpeed, DaikinStatus, HorizontalDirection, Mode, PowerState, VerticalDirection,
-    WindSpeed,
+    AutoModeWindSpeed, DaikinStatus, HorizontalDirection, Mode, PowerState, StateTransition,
+    VerticalDirection, WindSpeed,
 };
 use rs_matter::dm::clusters::decl::fan_control;
 use rs_matter::dm::{Cluster, Dataver, InvokeContext, ReadContext, WriteContext};
@@ -312,7 +312,20 @@ impl fan_control::ClusterHandler for FanControlHandler {
         value: fan_control::FanModeEnum,
     ) -> Result<(), Error> {
         let speed = match value {
-            fan_control::FanModeEnum::Off => return Ok(()), // Use OnOff cluster
+            fan_control::FanModeEnum::Off => {
+                let mut status = self.get_status()?;
+                StateTransition::new()
+                    .power(PowerState::Off)
+                    .apply_to_status(&mut status)
+                    .map_err(|e| {
+                        warn!("State transition failed: {e}");
+                        Error::from(ErrorCode::InvalidState)
+                    })?;
+                debug!("FanControl: fan_mode → Off (power off)");
+                self.update(status)?;
+                self.dataver.changed();
+                return Ok(());
+            }
             fan_control::FanModeEnum::Low => WindSpeed::Lev1,
             fan_control::FanModeEnum::Medium => WindSpeed::Lev3,
             fan_control::FanModeEnum::High => WindSpeed::Lev5,
