@@ -396,6 +396,28 @@ fn run_matter(
                             p.dataver.changed();
                         }
                         notifier.notify_attr_changed(dev.ep_id, onoff::OnOffHandler::CLUSTER.id, 0);
+                        notifier.notify_attr_changed(
+                            dev.ep_id,
+                            thermostat::ThermostatHandler::CLUSTER.id,
+                            0,
+                        );
+                        notifier.notify_attr_changed(
+                            dev.ep_id,
+                            fan_control::FanControlHandler::CLUSTER.id,
+                            0,
+                        );
+                        notifier.notify_attr_changed(
+                            dev.ep_id,
+                            humidity::HumidityHandler::CLUSTER.id,
+                            0,
+                        );
+                        if dev.power.is_some() {
+                            notifier.notify_attr_changed(
+                                dev.ep_id,
+                                power::PowerHandler::CLUSTER.id,
+                                0,
+                            );
+                        }
                     }
                     Err(e) => warn!("Poll failed (ep {}): {e}", dev.ep_id),
                 }
