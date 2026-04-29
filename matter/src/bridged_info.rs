@@ -29,6 +29,7 @@ impl BridgedInfo {
             | bridged_device_basic_information::AttributeId::SoftwareVersionString
             | bridged_device_basic_information::AttributeId::ProductURL
             | bridged_device_basic_information::AttributeId::Reachable
+            | bridged_device_basic_information::AttributeId::UniqueID
         ))
         .with_cmds(with!());
 

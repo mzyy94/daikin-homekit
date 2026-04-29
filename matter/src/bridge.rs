@@ -189,7 +189,9 @@ impl Handler for BridgeHandler {
             .find(ep)
             .ok_or(Error::from(ErrorCode::EndpointNotFound))?;
 
-        let result = if cl == StubIdentify::CLUSTER.id {
+        let result = if cl == BridgedInfo::CLUSTER.id {
+            bridged_device_basic_information::HandlerAdaptor(&dev.bridged_info).write(ctx)
+        } else if cl == StubIdentify::CLUSTER.id {
             identify::HandlerAdaptor(&dev.identify).write(ctx)
         } else if cl == onoff::OnOffHandler::CLUSTER.id {
             on_off::HandlerAdaptor(&dev.on_off).write(ctx)
