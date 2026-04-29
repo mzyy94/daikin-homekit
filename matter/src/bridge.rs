@@ -137,6 +137,21 @@ impl BridgeHandler {
     fn find(&self, ep_id: u16) -> Option<&BridgedDevice> {
         self.devices.iter().find(|d| d.ep_id == ep_id)
     }
+
+    fn notify_all_clusters(&self, ep: u16) {
+        self.subscriptions
+            .notify_attr_changed(ep, onoff::OnOffHandler::CLUSTER.id, 0);
+        self.subscriptions
+            .notify_attr_changed(ep, thermostat::ThermostatHandler::CLUSTER.id, 0);
+        self.subscriptions
+            .notify_attr_changed(ep, fan_control::FanControlHandler::CLUSTER.id, 0);
+        self.subscriptions
+            .notify_attr_changed(ep, humidity::HumidityHandler::CLUSTER.id, 0);
+        if self.find(ep).is_some_and(|d| d.power.is_some()) {
+            self.subscriptions
+                .notify_attr_changed(ep, power::PowerHandler::CLUSTER.id, 0);
+        }
+    }
 }
 
 /// Matches any bridged endpoint (id >= 2).
@@ -203,7 +218,7 @@ impl Handler for BridgeHandler {
             Err(ErrorCode::AttributeNotFound.into())
         };
         if result.is_ok() {
-            self.subscriptions.notify_attr_changed(ep, cl, 0);
+            self.notify_all_clusters(ep);
         }
         result
     }
@@ -229,7 +244,7 @@ impl Handler for BridgeHandler {
             Err(ErrorCode::CommandNotFound.into())
         };
         if result.is_ok() {
-            self.subscriptions.notify_attr_changed(ep, cl, 0);
+            self.notify_all_clusters(ep);
         }
         result
     }
