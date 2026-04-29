@@ -28,6 +28,8 @@ impl ThermostatHandler {
             | thermostat::AttributeId::OccupiedCoolingSetpoint
             | thermostat::AttributeId::OccupiedHeatingSetpoint
             | thermostat::AttributeId::ControlSequenceOfOperation
+            | thermostat::AttributeId::ThermostatRunningMode
+            | thermostat::AttributeId::ThermostatRunningState
         ))
         .with_cmds(with!());
 
@@ -193,6 +195,44 @@ impl thermostat::ClusterHandler for ThermostatHandler {
         _value: thermostat::ControlSequenceOfOperationEnum,
     ) -> Result<(), Error> {
         Err(ErrorCode::InvalidAction.into())
+    }
+
+    fn thermostat_running_mode(
+        &self,
+        _ctx: impl ReadContext,
+    ) -> Result<thermostat::ThermostatRunningModeEnum, Error> {
+        let status = self.get_status()?;
+        match PowerState::from_status(&status) {
+            Some(PowerState::On) => match status.mode.get_enum() {
+                Some(Mode::Cooling) | Some(Mode::Dehumidify) => {
+                    Ok(thermostat::ThermostatRunningModeEnum::Cool)
+                }
+                Some(Mode::Heating) => Ok(thermostat::ThermostatRunningModeEnum::Heat),
+                _ => Ok(thermostat::ThermostatRunningModeEnum::Off),
+            },
+            _ => Ok(thermostat::ThermostatRunningModeEnum::Off),
+        }
+    }
+
+    fn thermostat_running_state(
+        &self,
+        _ctx: impl ReadContext,
+    ) -> Result<thermostat::RelayStateBitmap, Error> {
+        let status = self.get_status()?;
+        match PowerState::from_status(&status) {
+            Some(PowerState::On) => match status.mode.get_enum() {
+                Some(Mode::Cooling) | Some(Mode::Dehumidify) => {
+                    Ok(thermostat::RelayStateBitmap::COOL | thermostat::RelayStateBitmap::FAN)
+                }
+                Some(Mode::Heating) => {
+                    Ok(thermostat::RelayStateBitmap::HEAT | thermostat::RelayStateBitmap::FAN)
+                }
+                Some(Mode::Fan) => Ok(thermostat::RelayStateBitmap::FAN),
+                Some(Mode::Auto) => Ok(thermostat::RelayStateBitmap::FAN),
+                _ => Ok(thermostat::RelayStateBitmap::empty()),
+            },
+            _ => Ok(thermostat::RelayStateBitmap::empty()),
+        }
     }
 
     fn handle_setpoint_raise_lower(
