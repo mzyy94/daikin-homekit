@@ -28,7 +28,8 @@ impl ThermostatHandler {
             | thermostat::AttributeId::OccupiedCoolingSetpoint
             | thermostat::AttributeId::OccupiedHeatingSetpoint
             | thermostat::AttributeId::ControlSequenceOfOperation
-        ));
+        ))
+        .with_cmds(with!());
 
     pub fn new(dataver: Dataver, device: Device) -> Self {
         Self { dataver, device }

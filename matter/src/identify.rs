@@ -7,7 +7,7 @@ pub(crate) struct StubIdentify {
 }
 
 impl StubIdentify {
-    pub(crate) const CLUSTER: Cluster<'static> = identify::FULL_CLUSTER;
+    pub(crate) const CLUSTER: Cluster<'static> = identify::FULL_CLUSTER.with_features(0);
 
     pub(crate) fn new(dataver: Dataver) -> Self {
         Self { dataver }

@@ -17,6 +17,7 @@ pub(crate) struct BridgedInfo {
 
 impl BridgedInfo {
     pub(crate) const CLUSTER: Cluster<'static> = bridged_device_basic_information::FULL_CLUSTER
+        .with_revision(4)
         .with_features(0)
         .with_attrs(with!(
             required;

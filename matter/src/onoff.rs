@@ -14,6 +14,7 @@ pub struct OnOffHandler {
 impl OnOffHandler {
     pub const CLUSTER: Cluster<'static> = on_off::FULL_CLUSTER
         .with_revision(6)
+        .with_features(0)
         .with_attrs(with!(required; on_off::AttributeId::OnOff))
         .with_cmds(with!(
             on_off::CommandId::Off | on_off::CommandId::On | on_off::CommandId::Toggle

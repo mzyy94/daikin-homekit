@@ -23,6 +23,7 @@ pub struct WifiDiagHandler {
 
 impl WifiDiagHandler {
     pub const CLUSTER: Cluster<'static> = wi_fi_network_diagnostics::FULL_CLUSTER
+        .with_revision(1)
         .with_features(0)
         .with_attrs(with!(required))
         .with_cmds(with!());

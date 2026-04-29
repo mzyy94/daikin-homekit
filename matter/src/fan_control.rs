@@ -40,7 +40,8 @@ impl FanControlHandler {
             | fan_control::AttributeId::RockSetting
             | fan_control::AttributeId::WindSupport
             | fan_control::AttributeId::WindSetting
-        ));
+        ))
+        .with_cmds(with!());
 
     pub fn new(dataver: Dataver, device: Device) -> Self {
         Self { dataver, device }

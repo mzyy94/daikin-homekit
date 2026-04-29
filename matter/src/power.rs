@@ -19,6 +19,7 @@ pub struct PowerHandler {
 
 impl PowerHandler {
     pub const CLUSTER: Cluster<'static> = electrical_power_measurement::FULL_CLUSTER
+        .with_revision(1)
         .with_features(electrical_power_measurement::Feature::ALTERNATING_CURRENT.bits())
         .with_attrs(with!(
             required;

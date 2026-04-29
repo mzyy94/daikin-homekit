@@ -14,6 +14,7 @@ pub struct HumidityHandler {
 
 impl HumidityHandler {
     pub const CLUSTER: Cluster<'static> = relative_humidity_measurement::FULL_CLUSTER
+        .with_revision(3)
         .with_features(0)
         .with_attrs(with!(required))
         .with_cmds(with!());
