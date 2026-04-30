@@ -1,4 +1,4 @@
-use dsiot::{DaikinStatus, Mode, PowerState, StateTransition, TemperatureTarget};
+use dsiot::{DaikinStatus, Mode, PowerState, StateTransition, TemperatureTarget, ValueConstraints};
 use rs_matter::dm::clusters::decl::thermostat;
 use rs_matter::dm::{Cluster, Dataver, InvokeContext, ReadContext, WriteContext};
 use rs_matter::error::{Error, ErrorCode};
@@ -27,6 +27,10 @@ impl ThermostatHandler {
             | thermostat::AttributeId::SystemMode
             | thermostat::AttributeId::OccupiedCoolingSetpoint
             | thermostat::AttributeId::OccupiedHeatingSetpoint
+            | thermostat::AttributeId::AbsMinHeatSetpointLimit
+            | thermostat::AttributeId::AbsMaxHeatSetpointLimit
+            | thermostat::AttributeId::AbsMinCoolSetpointLimit
+            | thermostat::AttributeId::AbsMaxCoolSetpointLimit
             | thermostat::AttributeId::ControlSequenceOfOperation
             | thermostat::AttributeId::ThermostatRunningMode
             | thermostat::AttributeId::ThermostatRunningState
@@ -74,6 +78,16 @@ fn temp_to_matter(celsius: f32) -> i16 {
 /// Convert Matter 0.01°C i16 to dsiot f32 °C.
 fn temp_from_matter(value: i16) -> f32 {
     value as f32 / 100.0
+}
+
+/// Validate and round temperature to the nearest step within the allowed range.
+fn validate_temp(temp: f32, constraints: &ValueConstraints) -> Result<f32, Error> {
+    if temp < constraints.min || temp > constraints.max {
+        return Err(ErrorCode::ConstraintError.into());
+    }
+    let stepped =
+        ((temp - constraints.min) / constraints.step).round() * constraints.step + constraints.min;
+    Ok(stepped.clamp(constraints.min, constraints.max))
 }
 
 impl thermostat::ClusterHandler for ThermostatHandler {
@@ -153,6 +167,10 @@ impl thermostat::ClusterHandler for ThermostatHandler {
     ) -> Result<(), Error> {
         let mut status = self.get_status()?;
         let temp = temp_from_matter(value);
+        let temp = match ValueConstraints::from_item(&status.temperature.cooling) {
+            Some(c) => validate_temp(temp, &c)?,
+            None => temp,
+        };
         TemperatureTarget::cooling(temp).apply_to_status(&mut status);
         debug!("Thermostat: cooling setpoint → {temp}°C");
         self.update(status)?;
@@ -175,11 +193,47 @@ impl thermostat::ClusterHandler for ThermostatHandler {
     ) -> Result<(), Error> {
         let mut status = self.get_status()?;
         let temp = temp_from_matter(value);
+        let temp = match ValueConstraints::from_item(&status.temperature.heating) {
+            Some(c) => validate_temp(temp, &c)?,
+            None => temp,
+        };
         TemperatureTarget::heating(temp).apply_to_status(&mut status);
         debug!("Thermostat: heating setpoint → {temp}°C");
         self.update(status)?;
         self.dataver.changed();
         Ok(())
+    }
+
+    fn abs_min_heat_setpoint_limit(&self, _ctx: impl ReadContext) -> Result<i16, Error> {
+        let status = self.get_status()?;
+        match ValueConstraints::from_item(&status.temperature.heating) {
+            Some(c) => Ok(temp_to_matter(c.min)),
+            None => Ok(700), // 7.0°C
+        }
+    }
+
+    fn abs_max_heat_setpoint_limit(&self, _ctx: impl ReadContext) -> Result<i16, Error> {
+        let status = self.get_status()?;
+        match ValueConstraints::from_item(&status.temperature.heating) {
+            Some(c) => Ok(temp_to_matter(c.max)),
+            None => Ok(3000), // 30.0°C
+        }
+    }
+
+    fn abs_min_cool_setpoint_limit(&self, _ctx: impl ReadContext) -> Result<i16, Error> {
+        let status = self.get_status()?;
+        match ValueConstraints::from_item(&status.temperature.cooling) {
+            Some(c) => Ok(temp_to_matter(c.min)),
+            None => Ok(1600), // 16.0°C
+        }
+    }
+
+    fn abs_max_cool_setpoint_limit(&self, _ctx: impl ReadContext) -> Result<i16, Error> {
+        let status = self.get_status()?;
+        match ValueConstraints::from_item(&status.temperature.cooling) {
+            Some(c) => Ok(temp_to_matter(c.max)),
+            None => Ok(3200), // 32.0°C
+        }
     }
 
     fn control_sequence_of_operation(
