@@ -75,16 +75,18 @@ The bridge exposes the following Matter clusters for each air conditioner:
 
 | Feature | Cluster | Apple Home | Home Assistant |
 |---|---|---|---|
-| Power on/off | OnOff | ✅ | ✅ |
-| Mode: Cool / Heat / Auto | Thermostat | ✅ | ✅ |
-| Mode: Fan / Dry | Thermostat | ❌ | ❌ |
-| Target temperature (not available in Auto mode) | Thermostat | ✅ | ✅ |
-| Room temperature | Thermostat | ✅ | ✅ |
-| Outdoor temperature | Thermostat | ❌ | ✅ |
-| Fan speed | FanControl | ❌ | ✅ |
-| Swing (vertical/horizontal, toggles with auto) | FanControl | ❌ | ✅ |
+| Power on/off | `OnOff` | ✅ | ✅ |
+| Mode: Cool / Heat / Auto | `Thermostat` | ✅ | ✅ |
+| Mode: Fan / Dry | `Thermostat` | ❌ | ❌ |
+| Target temperature (not available in Auto mode) | `Thermostat` | ✅ | ✅ |
+| Room temperature | `Thermostat` | ✅ | ✅ |
+| Outdoor temperature | `Thermostat` | ❌ | ✅ |
+| Fan speed | `FanControl` | ❌ | ✅ |
+| Swing (vertical/horizontal, toggles with auto) | `FanControl` | ❌ | ✅ |
 | Wind direction | (not in cluster) | ❌ | ❌ |
-| Humidity | RelativeHumidityMeasurement | ❌ | ✅ |
+| Humidity | `RelativeHumidityMeasurement` | ❌ | ✅ |
+| Power consumption (W) | `ElectricalPowerMeasurement` | ❌ | ✅ |
+| Wi-Fi signal strength (RSSI) | `WiFiNetworkDiagnostics` | ❌ | ❌ |
 
 Apple Home has limited support for Room Air Conditioner device type. Only basic thermostat and power controls are available. Home Assistant's Matter integration provides access to more features including fan control and sensor readings, but Fan/Dry modes are hidden by the vendor-level UI filtering.
 
