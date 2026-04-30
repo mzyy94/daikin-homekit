@@ -385,42 +385,74 @@ fn run_matter(
     let notifier = dm.change_notify();
     let mut poll = pin!(async {
         let mut was_reachable: HashMap<u16, bool> = HashMap::new();
+        let mut prev: HashMap<u16, dsiot::DaikinStatus> = HashMap::new();
         loop {
             async_io::Timer::after(Duration::from_secs(30)).await;
             for dev in &bridge_handler.devices {
                 let reachable_before = was_reachable.get(&dev.ep_id).copied().unwrap_or(true);
                 match dev.device.get_status() {
-                    Ok(_) => {
-                        dev.on_off.dataver.changed();
-                        dev.therm.dataver.changed();
-                        dev.fan_ctl.dataver.changed();
-                        dev.humidity.dataver.changed();
-                        if let Some(ref p) = dev.power {
-                            p.dataver.changed();
+                    Ok(status) => {
+                        let old = prev.get(&dev.ep_id);
+                        let mut changed = Vec::new();
+                        if old.is_none_or(|o| o.power != status.power || o.mode != status.mode) {
+                            dev.on_off.dataver.changed();
+                            notifier.notify_attr_changed(
+                                dev.ep_id,
+                                onoff::OnOffHandler::CLUSTER.id,
+                                0,
+                            );
+                            changed.push("OnOff");
                         }
-                        notifier.notify_attr_changed(dev.ep_id, onoff::OnOffHandler::CLUSTER.id, 0);
-                        notifier.notify_attr_changed(
-                            dev.ep_id,
-                            thermostat::ThermostatHandler::CLUSTER.id,
-                            0,
-                        );
-                        notifier.notify_attr_changed(
-                            dev.ep_id,
-                            fan_control::FanControlHandler::CLUSTER.id,
-                            0,
-                        );
-                        notifier.notify_attr_changed(
-                            dev.ep_id,
-                            humidity::HumidityHandler::CLUSTER.id,
-                            0,
-                        );
-                        if dev.power.is_some() {
+                        if old.is_none_or(|o| {
+                            o.mode != status.mode
+                                || o.temperature != status.temperature
+                                || o.sensors.temperature != status.sensors.temperature
+                                || o.sensors.outdoor_temperature
+                                    != status.sensors.outdoor_temperature
+                        }) {
+                            dev.therm.dataver.changed();
+                            notifier.notify_attr_changed(
+                                dev.ep_id,
+                                thermostat::ThermostatHandler::CLUSTER.id,
+                                0,
+                            );
+                            changed.push("Thermostat");
+                        }
+                        if old.is_none_or(|o| o.wind != status.wind || o.mode != status.mode) {
+                            dev.fan_ctl.dataver.changed();
+                            notifier.notify_attr_changed(
+                                dev.ep_id,
+                                fan_control::FanControlHandler::CLUSTER.id,
+                                0,
+                            );
+                            changed.push("FanControl");
+                        }
+                        if old.is_none_or(|o| o.sensors.humidity != status.sensors.humidity) {
+                            dev.humidity.dataver.changed();
+                            notifier.notify_attr_changed(
+                                dev.ep_id,
+                                humidity::HumidityHandler::CLUSTER.id,
+                                0,
+                            );
+                            changed.push("Humidity");
+                        }
+                        if let Some(ref p) = dev.power
+                            && old.is_none_or(|o| o.power_consumption != status.power_consumption)
+                        {
+                            p.dataver.changed();
                             notifier.notify_attr_changed(
                                 dev.ep_id,
                                 power::PowerHandler::CLUSTER.id,
                                 0,
                             );
+                            changed.push("Power");
                         }
+                        if changed.is_empty() {
+                            debug!("Poll ep {}: no changes", dev.ep_id);
+                        } else {
+                            debug!("Poll ep {}: notified [{}]", dev.ep_id, changed.join(", "));
+                        }
+                        prev.insert(dev.ep_id, status);
                     }
                     Err(e) => warn!("Poll failed (ep {}): {e}", dev.ep_id),
                 }
@@ -439,7 +471,6 @@ fn run_matter(
                 }
                 was_reachable.insert(dev.ep_id, reachable_now);
             }
-            debug!("Status polled, subscriptions notified");
         }
     });
 
