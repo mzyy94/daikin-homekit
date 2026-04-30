@@ -38,6 +38,12 @@ pub struct Item<T: Sized + DeserializeOwned + Into<f32> = f32> {
     pub phantom: std::marker::PhantomData<fn() -> T>,
 }
 
+impl<T: Sized + DeserializeOwned + Into<f32>> PartialEq for Item<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
 impl<T: Sized + DeserializeOwned + Into<f32>> std::fmt::Debug for Item<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Item {{ name: {:?}, ", self.name)?;

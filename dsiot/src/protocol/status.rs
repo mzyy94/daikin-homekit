@@ -4,7 +4,7 @@ use super::response::DaikinResponse;
 use crate::types::{AutoModeWindSpeed, HorizontalDirection, Mode, VerticalDirection, WindSpeed};
 
 /// Sensor readings from the device (read-only values).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SensorReadings {
     /// Indoor temperature in Celsius.
     pub temperature: Item<f32>,
@@ -15,7 +15,7 @@ pub struct SensorReadings {
 }
 
 /// Temperature target settings for each mode.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TemperatureSettings {
     /// Target temperature for cooling mode.
     pub cooling: Item<f32>,
@@ -26,7 +26,7 @@ pub struct TemperatureSettings {
 }
 
 /// Wind/airflow settings for a specific mode (cooling, heating, dehumidify).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ModeWindSettings {
     /// Fan speed setting.
     pub speed: Item<WindSpeed>,
@@ -37,7 +37,7 @@ pub struct ModeWindSettings {
 }
 
 /// Wind/airflow settings for auto mode (limited speed options).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AutoModeWindSettings {
     /// Fan speed setting (Auto or Silent only).
     pub speed: Item<AutoModeWindSpeed>,
@@ -48,7 +48,7 @@ pub struct AutoModeWindSettings {
 }
 
 /// Wind/airflow control settings per operating mode.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WindSettings {
     /// Wind settings for cooling mode.
     pub cooling: ModeWindSettings,
@@ -63,7 +63,7 @@ pub struct WindSettings {
 }
 
 /// Complete device status containing all readable and writable properties.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DaikinStatus {
     /// Power state (0.0 = off, 1.0 = on).
     pub power: Item<f32>,
