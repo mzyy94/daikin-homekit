@@ -84,7 +84,7 @@ pub(crate) struct BridgedDevice {
     pub(crate) ep_id: u16,
     desc: desc::HandlerAdaptor<desc::DescHandler<'static>>,
     identify: StubIdentify,
-    bridged_info: BridgedInfo,
+    pub(crate) bridged_info: BridgedInfo,
     pub(crate) on_off: onoff::OnOffHandler,
     pub(crate) therm: thermostat::ThermostatHandler,
     pub(crate) fan_ctl: fan_control::FanControlHandler,

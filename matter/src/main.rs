@@ -13,6 +13,7 @@ mod thermostat;
 mod wifi_diag;
 
 use core::pin::pin;
+use std::collections::HashMap;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -383,9 +384,11 @@ fn run_matter(
 
     let notifier = dm.change_notify();
     let mut poll = pin!(async {
+        let mut was_reachable: HashMap<u16, bool> = HashMap::new();
         loop {
             async_io::Timer::after(Duration::from_secs(30)).await;
             for dev in &bridge_handler.devices {
+                let reachable_before = was_reachable.get(&dev.ep_id).copied().unwrap_or(true);
                 match dev.device.get_status() {
                     Ok(_) => {
                         dev.on_off.dataver.changed();
@@ -421,6 +424,20 @@ fn run_matter(
                     }
                     Err(e) => warn!("Poll failed (ep {}): {e}", dev.ep_id),
                 }
+                let reachable_now = dev.device.is_reachable();
+                if reachable_now != reachable_before {
+                    dev.bridged_info.dataver.changed();
+                    notifier.notify_attr_changed(
+                        dev.ep_id,
+                        bridged_info::BridgedInfo::CLUSTER.id,
+                        0,
+                    );
+                    info!(
+                        "Poll ep {}: reachable {} → {}",
+                        dev.ep_id, reachable_before, reachable_now
+                    );
+                }
+                was_reachable.insert(dev.ep_id, reachable_now);
             }
             debug!("Status polled, subscriptions notified");
         }
