@@ -35,7 +35,7 @@ impl ThermostatHandler {
             | thermostat::AttributeId::ThermostatRunningMode
             | thermostat::AttributeId::ThermostatRunningState
         ))
-        .with_cmds(with!());
+        .with_cmds(with!(thermostat::CommandId::SetpointRaiseLower));
 
     pub fn new(dataver: Dataver, device: Device) -> Self {
         Self { dataver, device }
@@ -292,9 +292,45 @@ impl thermostat::ClusterHandler for ThermostatHandler {
     fn handle_setpoint_raise_lower(
         &self,
         _ctx: impl InvokeContext,
-        _req: thermostat::SetpointRaiseLowerRequest<'_>,
+        req: thermostat::SetpointRaiseLowerRequest<'_>,
     ) -> Result<(), Error> {
-        Err(ErrorCode::InvalidCommand.into())
+        let mode = req.mode()?;
+        let amount = req.amount()? as f32 * 0.1;
+        let mut status = self.get_status()?;
+
+        use thermostat::SetpointRaiseLowerModeEnum;
+        if matches!(
+            mode,
+            SetpointRaiseLowerModeEnum::Cool | SetpointRaiseLowerModeEnum::Both
+        ) {
+            let current = status.temperature.cooling.get_f32().unwrap_or(26.0);
+            let new_temp = current + amount;
+            let new_temp = match ValueConstraints::from_item(&status.temperature.cooling) {
+                Some(c) => validate_temp(new_temp, &c)?,
+                None => new_temp,
+            };
+            TemperatureTarget::cooling(new_temp).apply_to_status(&mut status);
+        }
+        if matches!(
+            mode,
+            SetpointRaiseLowerModeEnum::Heat | SetpointRaiseLowerModeEnum::Both
+        ) {
+            let current = status.temperature.heating.get_f32().unwrap_or(20.0);
+            let new_temp = current + amount;
+            let new_temp = match ValueConstraints::from_item(&status.temperature.heating) {
+                Some(c) => validate_temp(new_temp, &c)?,
+                None => new_temp,
+            };
+            TemperatureTarget::heating(new_temp).apply_to_status(&mut status);
+        }
+
+        debug!(
+            "Thermostat: setpoint_raise_lower mode={:?} amount={amount}°C",
+            mode
+        );
+        self.update(status)?;
+        self.dataver.changed();
+        Ok(())
     }
 
     fn handle_set_weekly_schedule(
